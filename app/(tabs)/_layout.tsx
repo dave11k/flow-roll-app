@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Zap, User, ChartBar as BarChart3, BookOpen, TrendingUp } from 'lucide-react-native';
+import { Zap, User, ChartBar as BarChart3, BookOpen, TrendingUp, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -47,11 +47,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="settings"
         options={{
-          title: 'Profile',
+          title: 'Settings',
           tabBarIcon: ({ size, color }) => (
-            <User size={size} color={color} />
+            <Settings size={size} color={color} />
           ),
         }}
       />
