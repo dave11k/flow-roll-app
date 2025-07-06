@@ -57,7 +57,7 @@ const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
   'Other': '#6b7280',
 };
 
-const POSITION_COLOR = '#4b5563';
+const POSITION_COLOR = '#1e3a2e';
 
 // Sample technique suggestions
 const TECHNIQUE_SUGGESTIONS = [
@@ -227,18 +227,10 @@ export default function AddTechniqueModal({
 
   const handleCategorySelect = (category: TechniqueCategory) => {
     setSelectedCategory(category);
-    // Scroll to beginning to show selected category at front
-    setTimeout(() => {
-      categoryScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const handlePositionSelect = (position: TechniquePosition) => {
     setSelectedPosition(position);
-    // Scroll to beginning to show selected position at front
-    setTimeout(() => {
-      positionScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const handleSuggestionPress = (suggestion: string) => {
@@ -381,10 +373,7 @@ export default function AddTechniqueModal({
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.horizontalScrollContent}
                   >
-                    {[
-                      ...(selectedCategory ? [selectedCategory] : []),
-                      ...CATEGORIES.filter(cat => cat !== selectedCategory)
-                    ].map((category) => (
+                    {CATEGORIES.map((category) => (
                       <TechniquePill
                         key={category}
                         label={category}
@@ -404,10 +393,7 @@ export default function AddTechniqueModal({
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.horizontalScrollContent}
                   >
-                    {[
-                      ...(selectedPosition ? [selectedPosition] : []),
-                      ...POSITIONS.filter(pos => pos !== selectedPosition)
-                    ].map((position) => (
+                    {POSITIONS.map((position) => (
                       <TechniquePill
                         key={position}
                         label={position}

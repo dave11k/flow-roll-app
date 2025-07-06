@@ -52,7 +52,7 @@ const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
   'Other': '#6b7280',
 };
 
-const POSITION_COLOR = '#4b5563';
+const POSITION_COLOR = '#1e3a2e';
 
 export default function TechniquesPage() {
   const [techniques, setTechniques] = useState<Technique[]>([]);
@@ -123,18 +123,10 @@ export default function TechniquesPage() {
 
   const handleCategorySelect = (category: TechniqueCategory | null) => {
     setSelectedCategory(selectedCategory === category ? null : category);
-    // Scroll to beginning to show selected category at front
-    setTimeout(() => {
-      categoryScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const handlePositionSelect = (position: TechniquePosition | null) => {
     setSelectedPosition(selectedPosition === position ? null : position);
-    // Scroll to beginning to show selected position at front
-    setTimeout(() => {
-      positionScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const handleEditTechnique = (technique: Technique) => {
@@ -182,11 +174,6 @@ export default function TechniquesPage() {
     setSearchQuery('');
     setSelectedCategory(null);
     setSelectedPosition(null);
-    // Reset scroll positions
-    setTimeout(() => {
-      categoryScrollRef.current?.scrollTo({ x: 0, animated: true });
-      positionScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const hasActiveFilters = searchQuery.trim() || selectedCategory || selectedPosition;
@@ -258,10 +245,7 @@ export default function TechniquesPage() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContent}
           >
-            {[
-              ...(selectedCategory ? [selectedCategory] : []),
-              ...CATEGORIES.filter(cat => cat !== selectedCategory)
-            ].map((category) => (
+            {CATEGORIES.map((category) => (
               <TechniquePill
                 key={category}
                 label={category}
@@ -280,10 +264,7 @@ export default function TechniquesPage() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContent}
           >
-            {[
-              ...(selectedPosition ? [selectedPosition] : []),
-              ...POSITIONS.filter(pos => pos !== selectedPosition)
-            ].map((position) => (
+            {POSITIONS.map((position) => (
               <TechniquePill
                 key={position}
                 label={position}

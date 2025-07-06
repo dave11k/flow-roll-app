@@ -118,10 +118,6 @@ export default function CreateSessionModal({
 
   const handleTypeSelect = (type: SessionType) => {
     setSelectedType(type);
-    // Scroll to beginning to show selected type at front
-    setTimeout(() => {
-      typeScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const handleAddSubmission = () => {
@@ -340,10 +336,7 @@ export default function CreateSessionModal({
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.typeScrollContent}
                 >
-                  {[
-                    ...(selectedType ? SESSION_TYPES.filter(t => t.type === selectedType) : []),
-                    ...SESSION_TYPES.filter(t => t.type !== selectedType)
-                  ].map((sessionType) => (
+                  {SESSION_TYPES.map((sessionType) => (
                     <TechniquePill
                       key={sessionType.type}
                       label={sessionType.label}

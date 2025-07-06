@@ -133,18 +133,10 @@ export default function EditTechniqueModal({
 
   const handleCategorySelect = (category: TechniqueCategory) => {
     setSelectedCategory(category);
-    // Scroll to beginning to show selected category at front
-    setTimeout(() => {
-      categoryScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
 
   const handlePositionSelect = (position: TechniquePosition) => {
     setSelectedPosition(position);
-    // Scroll to beginning to show selected position at front
-    setTimeout(() => {
-      positionScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
   };
   const handleSave = () => {
     if (!name.trim() || !selectedCategory || !selectedPosition) {
@@ -240,10 +232,7 @@ export default function EditTechniqueModal({
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.pillsContainer}
                 >
-                  {[
-                    ...(selectedCategory ? [selectedCategory] : []),
-                    ...CATEGORIES.filter(cat => cat !== selectedCategory)
-                  ].map((category) => (
+                  {CATEGORIES.map((category) => (
                     <TechniquePill
                       key={category}
                       label={category}
@@ -263,10 +252,7 @@ export default function EditTechniqueModal({
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.pillsContainer}
                 >
-                  {[
-                    ...(selectedPosition ? [selectedPosition] : []),
-                    ...POSITIONS.filter(pos => pos !== selectedPosition)
-                  ].map((position) => (
+                  {POSITIONS.map((position) => (
                     <TechniquePill
                       key={position}
                       label={position}
