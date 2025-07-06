@@ -248,7 +248,7 @@ export default function TechniquesPage() {
         </View>
         
         {/* Filters */}
-        <View style={styles.filterRow}>
+        <View style={[styles.filterRow, styles.firstFilterRow]}>
           <ScrollView 
             ref={categoryScrollRef}
             horizontal 
@@ -436,6 +436,9 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     marginBottom: 8,
+  },
+  firstFilterRow: {
+    marginTop: 16,
   },
   filterScrollContent: {
     paddingRight: 20,
