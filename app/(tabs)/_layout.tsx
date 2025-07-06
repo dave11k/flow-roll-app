@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Zap, User, ChartBar as BarChart3, BookOpen, TrendingUp, Settings } from 'lucide-react-native';
+import { ChartBar as BarChart3, BookOpen, TrendingUp, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (

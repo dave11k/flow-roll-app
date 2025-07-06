@@ -14,9 +14,8 @@ import {
   LineChart,
   BarChart,
   PieChart,
-  ProgressChart,
 } from 'react-native-chart-kit';
-import { TrendingUp, Calendar, Target, Award, Clock, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon, Filter } from 'lucide-react-native';
+import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import { Technique, TechniqueCategory } from '@/types/technique';
 import { getSessions, getTechniques } from '@/services/storage';
@@ -97,38 +96,34 @@ const chartConfig = {
 };
 
 export default function Analytics() {
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
-  const [techniques, setTechniques] = useState<Technique[]>([]);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'year'>('month');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     try {
       setIsLoading(true);
       const [sessionsData, techniquesData] = await Promise.all([
         getSessions(),
         getTechniques()
       ]);
-      setSessions(sessionsData);
-      setTechniques(techniquesData);
       calculateAnalytics(sessionsData, techniquesData);
     } catch (error) {
       console.error('Error loading analytics data:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const calculateAnalytics = (sessions: TrainingSession[], techniques: Technique[]) => {
     const now = new Date();
@@ -435,6 +430,8 @@ export default function Analytics() {
               verticalLabelRotation={0}
               showValuesOnTopOfBars
               fromZero
+              yAxisLabel=""
+              yAxisSuffix=""
             />
           </View>
         )}

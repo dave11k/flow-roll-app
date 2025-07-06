@@ -15,7 +15,6 @@ import {
   Bell, 
   Database, 
   Shield, 
-  Palette, 
   Download, 
   Upload,
   HelpCircle, 

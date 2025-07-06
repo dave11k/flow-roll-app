@@ -216,10 +216,11 @@ export const getSessionsFromDb = async (): Promise<TrainingSession[]> => {
     const result: TrainingSession[] = [];
     
     for (const sessionRow of sessions) {
+      const row = sessionRow as any; // Type assertion for database row
       // Get technique associations for this session
       const techniqueAssociations = await database.getAllAsync(
         'SELECT technique_id, is_submission FROM session_techniques WHERE session_id = ?',
-        [sessionRow.id]
+        [row.id]
       );
       
       const techniqueIds = techniqueAssociations.map((assoc: any) => assoc.technique_id);
@@ -228,12 +229,12 @@ export const getSessionsFromDb = async (): Promise<TrainingSession[]> => {
         .map((assoc: any) => assoc.technique_id);
       
       result.push({
-        id: sessionRow.id,
-        date: new Date(sessionRow.date),
-        location: sessionRow.location,
-        type: sessionRow.type,
-        notes: sessionRow.notes,
-        satisfaction: sessionRow.satisfaction,
+        id: row.id,
+        date: new Date(row.date),
+        location: row.location,
+        type: row.type,
+        notes: row.notes,
+        satisfaction: row.satisfaction,
         techniqueIds,
         submissions
       });

@@ -39,11 +39,14 @@ const CATEGORIES: TechniqueCategory[] = [
 
 const POSITIONS: TechniquePosition[] = [
   'Mount',
-  'Guard',
+  'Full Guard',
   'Side Control',
   'Back',
   'Half Guard',
   'Standing',
+  'Open Guard',
+  'Butterfly Guard',
+  'De La Riva Guard',
   'Other',
 ];
 
@@ -100,7 +103,7 @@ export default function AddTechniqueModal({
     y: number;
     width: number;
     height: number;
-  } | null>(null);
+  } | undefined>(undefined);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -218,7 +221,7 @@ export default function AddTechniqueModal({
         onClose();
       }, 1500);
       
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to save technique. Please try again.');
     } finally {
       setIsLoading(false);

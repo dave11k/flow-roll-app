@@ -12,7 +12,6 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Calendar, Trophy, Target, Plus, MapPin, Clock } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
-import { Technique } from '@/types/technique';
 import { getSessions, getTechniques, saveSession } from '@/services/storage';
 import CreateSessionModal from '@/components/CreateSessionModal';
 
@@ -68,7 +67,7 @@ export default function Sessions() {
       if (session.location) {
         setLastLocation(session.location);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to save session. Please try again.');
     }
   };

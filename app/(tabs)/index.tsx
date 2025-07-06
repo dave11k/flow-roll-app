@@ -78,23 +78,7 @@ export default function TechniquesPage() {
     }, [])
   );
 
-  useEffect(() => {
-    filterTechniques();
-  }, [techniques, searchQuery, selectedCategory, selectedPosition]);
-
-  const loadTechniques = async () => {
-    try {
-      setIsLoading(true);
-      const techniquesData = await getTechniques();
-      setTechniques(techniquesData);
-    } catch (error) {
-      console.error('Error loading techniques:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filterTechniques = () => {
+  const filterTechniques = React.useCallback(() => {
     let filtered = [...techniques];
 
     // Filter by search query
@@ -119,6 +103,22 @@ export default function TechniquesPage() {
     filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     setFilteredTechniques(filtered);
+  }, [techniques, searchQuery, selectedCategory, selectedPosition]);
+
+  useEffect(() => {
+    filterTechniques();
+  }, [filterTechniques]);
+
+  const loadTechniques = async () => {
+    try {
+      setIsLoading(true);
+      const techniquesData = await getTechniques();
+      setTechniques(techniquesData);
+    } catch (error) {
+      console.error('Error loading techniques:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCategorySelect = (category: TechniqueCategory | null) => {
@@ -143,7 +143,7 @@ export default function TechniquesPage() {
       await loadTechniques();
       setShowEditModal(false);
       setEditingTechnique(null);
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to update technique. Please try again.');
     }
   };
@@ -161,7 +161,7 @@ export default function TechniquesPage() {
             try {
               await deleteTechnique(technique.id);
               await loadTechniques();
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Failed to delete technique. Please try again.');
             }
           },
