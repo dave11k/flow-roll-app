@@ -59,6 +59,7 @@ const createTables = async (): Promise<void> => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id TEXT NOT NULL,
       name TEXT NOT NULL,
+      count INTEGER DEFAULT 1,
       FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
     );
 
@@ -83,6 +84,17 @@ const createTables = async (): Promise<void> => {
   `;
 
   await db.execAsync(createTablesSQL);
+  
+  // Handle schema migrations for existing databases
+  try {
+    // Add count column to submissions table if it doesn't exist
+    await db.execAsync(`
+      ALTER TABLE submissions ADD COLUMN count INTEGER DEFAULT 1;
+    `);
+  } catch (error) {
+    // Column already exists or other error - this is expected for new databases
+    console.log('Count column already exists or migration not needed');
+  }
 };
 
 export const getDatabase = (): SQLite.SQLiteDatabase => {
@@ -213,11 +225,12 @@ export const saveSessionToDb = async (session: TrainingSession): Promise<void> =
         );
       }
 
-      // Add submissions
+      // Add submissions with counts
       for (const submissionName of session.submissions) {
+        const count = session.submissionCounts[submissionName] || 1;
         await database.runAsync(
-          'INSERT INTO submissions (session_id, name) VALUES (?, ?)',
-          [session.id, submissionName]
+          'INSERT INTO submissions (session_id, name, count) VALUES (?, ?, ?)',
+          [session.id, submissionName, count]
         );
       }
     });
@@ -247,12 +260,16 @@ export const getSessionsFromDb = async (): Promise<TrainingSession[]> => {
       
       // Get submissions for this session
       const submissionRows = await database.getAllAsync(
-        'SELECT name FROM submissions WHERE session_id = ?',
+        'SELECT name, count FROM submissions WHERE session_id = ?',
         [row.id]
       );
       
       const techniqueIds = techniqueAssociations.map((assoc: any) => assoc.technique_id);
       const submissions = submissionRows.map((sub: any) => sub.name);
+      const submissionCounts: Record<string, number> = {};
+      submissionRows.forEach((sub: any) => {
+        submissionCounts[sub.name] = sub.count || 1;
+      });
       
       result.push({
         id: row.id,
@@ -262,7 +279,8 @@ export const getSessionsFromDb = async (): Promise<TrainingSession[]> => {
         notes: row.notes,
         satisfaction: row.satisfaction,
         techniqueIds,
-        submissions
+        submissions,
+        submissionCounts
       });
     }
     

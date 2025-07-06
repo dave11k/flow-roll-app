@@ -19,6 +19,7 @@ import { BlurView } from 'expo-blur';
 import { X, Save, MapPin, Plus, Trash2, Star, Zap, Pencil } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
 import TechniquePill from '@/components/TechniquePill';
+import SubmissionPill from '@/components/SubmissionPill';
 import AddTechniqueModal from '@/components/AddTechniqueModal';
 import NotesModal from '@/components/NotesModal';
 
@@ -48,6 +49,7 @@ export default function EditSessionModal({
   const [location, setLocation] = useState('');
   const [selectedType, setSelectedType] = useState<SessionType | null>(null);
   const [submissions, setSubmissions] = useState<string[]>([]);
+  const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
   const [newSubmission, setNewSubmission] = useState('');
   const [notes, setNotes] = useState('');
   const [satisfaction, setSatisfaction] = useState<1 | 2 | 3 | 4 | 5>(3);
@@ -73,6 +75,7 @@ export default function EditSessionModal({
       setLocation(session.location || '');
       setSelectedType(session.type);
       setSubmissions(session.submissions);
+      setSubmissionCounts(session.submissionCounts || {});
       setNewSubmission('');
       setNotes(session.notes || '');
       setSatisfaction(session.satisfaction);
@@ -133,13 +136,34 @@ export default function EditSessionModal({
 
   const handleAddSubmission = () => {
     if (newSubmission.trim() && !submissions.includes(newSubmission.trim())) {
-      setSubmissions([...submissions, newSubmission.trim()]);
+      const submission = newSubmission.trim();
+      setSubmissions([...submissions, submission]);
+      setSubmissionCounts(prev => ({ ...prev, [submission]: 1 }));
       setNewSubmission('');
     }
   };
 
-  const handleRemoveSubmission = (index: number) => {
-    setSubmissions(submissions.filter((_, i) => i !== index));
+  const handleRemoveSubmission = (submission: string) => {
+    setSubmissions(submissions.filter(s => s !== submission));
+    setSubmissionCounts(prev => {
+      const newCounts = { ...prev };
+      delete newCounts[submission];
+      return newCounts;
+    });
+  };
+
+  const handleIncrementSubmission = (submission: string) => {
+    setSubmissionCounts(prev => ({
+      ...prev,
+      [submission]: Math.min((prev[submission] || 1) + 1, 100)
+    }));
+  };
+
+  const handleDecrementSubmission = (submission: string) => {
+    setSubmissionCounts(prev => ({
+      ...prev,
+      [submission]: Math.max((prev[submission] || 1) - 1, 1)
+    }));
   };
 
   const handleDateChange = (days: number) => {
@@ -167,6 +191,7 @@ export default function EditSessionModal({
       location: location.trim() || undefined,
       type: selectedType,
       submissions,
+      submissionCounts,
       notes: notes.trim() || undefined,
       satisfaction,
     };
@@ -407,12 +432,18 @@ export default function EditSessionModal({
                 
                 {submissions.length > 0 && (
                   <View style={styles.submissionsList}>
-                    {submissions.map((submission, index) => (
-                      <View key={index} style={styles.submissionItem}>
-                        <Text style={styles.submissionText}>{submission}</Text>
+                    {submissions.map((submission) => (
+                      <View key={submission} style={styles.submissionPillContainer}>
+                        <SubmissionPill
+                          label={submission}
+                          count={submissionCounts[submission] || 1}
+                          onIncrement={() => handleIncrementSubmission(submission)}
+                          onDecrement={() => handleDecrementSubmission(submission)}
+                          color="#ef4444"
+                        />
                         <TouchableOpacity
                           style={styles.removeSubmissionButton}
-                          onPress={() => handleRemoveSubmission(index)}
+                          onPress={() => handleRemoveSubmission(submission)}
                           activeOpacity={0.7}
                         >
                           <Trash2 size={16} color="#ef4444" />
@@ -675,19 +706,11 @@ const styles = StyleSheet.create({
   submissionsList: {
     gap: 8,
   },
-  submissionItem: {
+  submissionPillContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  submissionText: {
-    fontSize: 16,
-    color: '#1f2937',
-    flex: 1,
+    gap: 8,
+    width: '100%',
   },
   removeSubmissionButton: {
     padding: 4,

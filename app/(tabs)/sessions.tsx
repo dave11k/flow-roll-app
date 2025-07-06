@@ -17,6 +17,7 @@ import { TrainingSession } from '@/types/session';
 import { getSessions, getTechniques, saveSession, deleteSession } from '@/services/storage';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
+import SessionDetailModal from '@/components/SessionDetailModal';
 
 export default function Sessions() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
@@ -25,6 +26,8 @@ export default function Sessions() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [lastLocation, setLastLocation] = useState('');
 
   useEffect(() => {
@@ -75,6 +78,12 @@ export default function Sessions() {
     } catch {
       Alert.alert('Error', 'Failed to save session. Please try again.');
     }
+  };
+
+  const handleShowSessionDetail = (session: TrainingSession) => {
+    Keyboard.dismiss();
+    setSelectedSession(session);
+    setShowDetailModal(true);
   };
 
   const handleEditSession = (session: TrainingSession) => {
@@ -157,6 +166,10 @@ export default function Sessions() {
     ));
   };
 
+  const getTotalSubmissionCount = (session: TrainingSession) => {
+    return Object.values(session.submissionCounts || {}).reduce((total, count) => total + count, 0);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -217,29 +230,43 @@ export default function Sessions() {
             <Text style={styles.sessionsTitle}>Recent Sessions</Text>
             {sessions.map((session) => (
               <View key={session.id} style={styles.sessionItemContainer}>
-                <TouchableOpacity style={styles.sessionCard}>
+                <TouchableOpacity 
+                  style={styles.sessionCard}
+                  onPress={() => handleShowSessionDetail(session)}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.sessionHeader}>
                     <View style={styles.sessionMainInfo}>
                       <Text style={styles.sessionDate}>{formatDate(session.date)}</Text>
-                      {session.location && (
-                        <View style={styles.locationContainer}>
-                          <MapPin size={14} color="#6b7280" />
-                          <Text style={styles.sessionLocation}>{session.location}</Text>
+                      <View style={styles.locationTimeContainer}>
+                        {session.location && (
+                          <View style={styles.locationContainer}>
+                            <MapPin size={14} color="#6b7280" />
+                            <Text style={styles.sessionLocation}>{session.location}</Text>
+                          </View>
+                        )}
+                        <View style={styles.timeContainer}>
+                          <Clock size={14} color="#6b7280" />
+                          <Text style={styles.sessionTime}>
+                            {session.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </Text>
                         </View>
-                      )}
+                      </View>
                     </View>
                   </View>
 
-                <View style={styles.sessionTimeInfo}>
-                  <Clock size={14} color="#6b7280" />
-                  <Text style={styles.sessionTime}>
-                    {session.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
 
-                <View style={styles.sessionStats}>
+                <View style={styles.sessionTypeContainer}>
+                  <View style={[
+                    styles.sessionTypeBadge, 
+                    { backgroundColor: getSessionTypeColor(session.type) }
+                  ]}>
+                    <Text style={styles.sessionTypeText}>
+                      {getSessionTypeLabel(session.type)}
+                    </Text>
+                  </View>
                   <View style={styles.sessionStat}>
-                    <Text style={styles.sessionStatNumber}>{session.submissions.length}</Text>
+                    <Text style={styles.sessionStatNumber}>{getTotalSubmissionCount(session)}</Text>
                     <Text style={styles.sessionStatLabel}>Submissions</Text>
                   </View>
                 </View>
@@ -251,21 +278,8 @@ export default function Sessions() {
                       {renderStars(session.satisfaction)}
                     </View>
                   </View>
-                  <View style={[
-                    styles.sessionTypeBadge, 
-                    { backgroundColor: getSessionTypeColor(session.type) }
-                  ]}>
-                    <Text style={styles.sessionTypeText}>
-                      {getSessionTypeLabel(session.type)}
-                    </Text>
-                  </View>
                 </View>
 
-                  {session.notes && (
-                    <Text style={styles.sessionNotes} numberOfLines={2}>
-                      {session.notes}
-                    </Text>
-                  )}
                 </TouchableOpacity>
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
@@ -309,6 +323,15 @@ export default function Sessions() {
           }}
         />
       )}
+
+      <SessionDetailModal
+        visible={showDetailModal}
+        session={selectedSession}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedSession(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -453,6 +476,11 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     marginBottom: 4,
   },
+  locationTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -462,15 +490,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
   },
-  sessionTimeInfo: {
+  timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 12,
   },
   sessionTime: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  sessionTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
   },
   sessionTypeBadge: {
     paddingHorizontal: 8,
@@ -481,11 +515,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
-  },
-  sessionStats: {
-    flexDirection: 'row',
-    gap: 20,
-    marginBottom: 12,
   },
   sessionStat: {
     alignItems: 'center',

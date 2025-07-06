@@ -98,7 +98,8 @@ const migrateSessions = async (): Promise<number> => {
           notes: sessionData.notes,
           satisfaction: sessionData.satisfaction,
           techniqueIds: sessionData.techniqueIds || [],
-          submissions: sessionData.submissions || []
+          submissions: sessionData.submissions || [],
+          submissionCounts: sessionData.submissionCounts || {}
         };
 
         await saveSessionToDb(session);
