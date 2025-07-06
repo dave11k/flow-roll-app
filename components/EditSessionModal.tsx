@@ -16,17 +16,17 @@ import {
   Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Calendar, MapPin, Plus, Trash2, Star, Zap } from 'lucide-react-native';
+import { X, Save, MapPin, Plus, Trash2, Star, Zap, Pencil } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
 import TechniquePill from '@/components/TechniquePill';
 import AddTechniqueModal from '@/components/AddTechniqueModal';
 import NotesModal from '@/components/NotesModal';
 
-interface CreateSessionModalProps {
+interface EditSessionModalProps {
   visible: boolean;
+  session: TrainingSession;
   onSave: (session: TrainingSession) => void;
   onClose: () => void;
-  lastLocation?: string;
 }
 
 const SESSION_TYPES: { type: SessionType; label: string; color: string }[] = [
@@ -38,12 +38,12 @@ const SESSION_TYPES: { type: SessionType; label: string; color: string }[] = [
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export default function CreateSessionModal({
+export default function EditSessionModal({
   visible,
+  session,
   onSave,
   onClose,
-  lastLocation = '',
-}: CreateSessionModalProps) {
+}: EditSessionModalProps) {
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState('');
   const [selectedType, setSelectedType] = useState<SessionType | null>(null);
@@ -67,19 +67,19 @@ export default function CreateSessionModal({
   const notesInputRef = useRef<View>(null);
 
   useEffect(() => {
-    if (visible) {
-      // Reset form
-      setDate(new Date());
-      setLocation(lastLocation);
-      setSelectedType(null);
-      setSubmissions([]);
+    if (visible && session) {
+      // Populate form with session data
+      setDate(session.date);
+      setLocation(session.location || '');
+      setSelectedType(session.type);
+      setSubmissions(session.submissions);
       setNewSubmission('');
-      setNotes('');
-      setSatisfaction(3);
+      setNotes(session.notes || '');
+      setSatisfaction(session.satisfaction);
       setShowAddTechniqueModal(false);
       setShowNotesModal(false);
     }
-  }, [visible, lastLocation]);
+  }, [visible, session]);
 
   useEffect(() => {
     if (visible) {
@@ -161,18 +161,17 @@ export default function CreateSessionModal({
       return;
     }
 
-    const newSession: TrainingSession = {
-      id: Date.now().toString(),
+    const updatedSession: TrainingSession = {
+      ...session,
       date,
       location: location.trim() || undefined,
       type: selectedType,
       submissions,
       notes: notes.trim() || undefined,
       satisfaction,
-      techniqueIds: [], // Will be populated when techniques are linked to sessions
     };
 
-    onSave(newSession);
+    onSave(updatedSession);
   };
 
   const handleAddTechniqueModalSave = () => {
@@ -284,8 +283,8 @@ export default function CreateSessionModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Calendar size={24} color="#1e3a2e" />
-                <Text style={styles.headerTitle}>New Session</Text>
+                <Pencil size={24} color="#1e3a2e" />
+                <Text style={styles.headerTitle}>Edit Session</Text>
               </View>
               <TouchableOpacity
                 style={styles.closeButton}

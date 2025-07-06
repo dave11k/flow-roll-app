@@ -13,9 +13,10 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Plus, CircleCheck as CheckCircle } from 'lucide-react-native';
+import { X, Save, Plus } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
 import { saveTechnique } from '@/services/storage';
 import TechniquePill from '@/components/TechniquePill';
@@ -96,7 +97,6 @@ export default function AddTechniqueModal({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSelectingSuggestion, setIsSelectingSuggestion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notesInputPosition, setNotesInputPosition] = useState<{
     x: number;
@@ -120,7 +120,6 @@ export default function AddTechniqueModal({
       setSelectedPosition(null);
       setNotes('');
       setShowSuggestions(false);
-      setShowSuccess(false);
     }
   }, [visible]);
 
@@ -213,13 +212,9 @@ export default function AddTechniqueModal({
 
       await saveTechnique(newTechnique);
       
-      // Show success feedback
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        onSave();
-        onClose();
-      }, 1500);
+      // Close immediately like session modal
+      onSave();
+      onClose();
       
     } catch {
       Alert.alert('Error', 'Failed to save technique. Please try again.');
@@ -316,12 +311,6 @@ export default function AddTechniqueModal({
                 <Text style={styles.headerTitle}>Add Technique</Text>
               </View>
               <View style={styles.headerRight}>
-                {showSuccess && (
-                  <View style={styles.successIndicator}>
-                    <CheckCircle size={20} color="#059669" />
-                    <Text style={styles.successText}>Saved!</Text>
-                  </View>
-                )}
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={handleClose}
@@ -332,7 +321,9 @@ export default function AddTechniqueModal({
               </View>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View>
               {/* Technique Name Section */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Name</Text>
@@ -351,7 +342,7 @@ export default function AddTechniqueModal({
                 {/* Auto-suggestions */}
                 {showSuggestions && suggestions.length > 0 && (
                   <View style={styles.suggestionsContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                       {suggestions.map((suggestion) => (
                         <TouchableOpacity
                           key={suggestion}
@@ -375,6 +366,7 @@ export default function AddTechniqueModal({
                     horizontal 
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.horizontalScrollContent}
+                    keyboardShouldPersistTaps="handled"
                   >
                     {CATEGORIES.map((category) => (
                       <TechniquePill
@@ -395,6 +387,7 @@ export default function AddTechniqueModal({
                     horizontal 
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.horizontalScrollContent}
+                    keyboardShouldPersistTaps="handled"
                   >
                     {POSITIONS.map((position) => (
                       <TechniquePill
@@ -431,6 +424,8 @@ export default function AddTechniqueModal({
                   </Text>
                 </TouchableOpacity>
               </View>
+                </View>
+              </TouchableWithoutFeedback>
             </ScrollView>
 
             <View style={styles.footer}>

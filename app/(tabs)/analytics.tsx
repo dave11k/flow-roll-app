@@ -8,6 +8,8 @@ import {
   Dimensions,
   TouchableOpacity,
   Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -17,7 +19,7 @@ import {
 } from 'react-native-chart-kit';
 import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
-import { Technique, TechniqueCategory } from '@/types/technique';
+import { Technique } from '@/types/technique';
 import { getSessions, getTechniques } from '@/services/storage';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -48,7 +50,7 @@ interface AnalyticsData {
   totalSubmissions: number;
   sessionsThisMonth: number;
   techniquesThisMonth: number;
-  categoryDistribution: { name: string; count: number; color: string }[];
+  submissionDistribution: { name: string; count: number; color: string }[];
   sessionTypeDistribution: { name: string; count: number; color: string }[];
   weeklyActivity: { day: string; sessions: number; techniques: number }[];
   monthlyProgress: { month: string; sessions: number; techniques: number }[];
@@ -56,15 +58,6 @@ interface AnalyticsData {
   streakData: { current: number; longest: number };
 }
 
-const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#22c55e',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
 
 const SESSION_TYPE_COLORS = {
   'gi': '#1e40af',
@@ -143,15 +136,20 @@ export default function Analytics() {
     const sessionsThisMonth = sessions.filter(s => s.date >= startOfMonth).length;
     const techniquesThisMonth = techniques.filter(t => t.timestamp >= startOfMonth).length;
 
-    // Category distribution
-    const categoryCount: Record<string, number> = {};
-    techniques.forEach(t => {
-      categoryCount[t.category] = (categoryCount[t.category] || 0) + 1;
+    // Submissions distribution
+    const submissionCount: Record<string, number> = {};
+    sessions.forEach(s => {
+      s.submissions.forEach(submission => {
+        submissionCount[submission] = (submissionCount[submission] || 0) + 1;
+      });
     });
-    const categoryDistribution = Object.entries(categoryCount).map(([name, count]) => ({
+    const submissionDistribution = Object.entries(submissionCount).map(([name, count], index) => ({
       name,
       count,
-      color: CATEGORY_COLORS[name as TechniqueCategory] || '#6b7280',
+      color: [
+        '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
+        '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1'
+      ][index % 10],
     }));
 
     // Session type distribution
@@ -251,7 +249,7 @@ export default function Analytics() {
       totalSubmissions,
       sessionsThisMonth,
       techniquesThisMonth,
-      categoryDistribution,
+      submissionDistribution,
       sessionTypeDistribution,
       weeklyActivity,
       monthlyProgress,
@@ -350,7 +348,8 @@ export default function Analytics() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Overview Stats */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Overview</Text>
@@ -426,12 +425,21 @@ export default function Analytics() {
               }}
               width={chartWidth}
               height={220}
-              chartConfig={chartConfig}
+              chartConfig={{
+                ...chartConfig,
+                propsForLabels: {
+                  fontSize: 12,
+                },
+              }}
               verticalLabelRotation={0}
               showValuesOnTopOfBars
               fromZero
               yAxisLabel=""
               yAxisSuffix=""
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+              }}
             />
           </View>
         )}
@@ -462,8 +470,17 @@ export default function Analytics() {
               }}
               width={chartWidth}
               height={220}
-              chartConfig={chartConfig}
+              chartConfig={{
+                ...chartConfig,
+                propsForLabels: {
+                  fontSize: 12,
+                },
+              }}
               bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+              }}
             />
           </View>
         )}
@@ -486,21 +503,31 @@ export default function Analytics() {
               }}
               width={chartWidth}
               height={220}
-              chartConfig={chartConfig}
+              chartConfig={{
+                ...chartConfig,
+                propsForLabels: {
+                  fontSize: 12,
+                },
+              }}
               bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+              }}
             />
           </View>
         )}
 
         {/* Distribution Charts */}
         <View style={styles.distributionContainer}>
-          {renderPieChart(analyticsData.categoryDistribution, 'Technique Categories')}
+          {renderPieChart(analyticsData.submissionDistribution, 'Submissions')}
           {renderPieChart(analyticsData.sessionTypeDistribution, 'Session Types')}
         </View>
 
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
-      </ScrollView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }

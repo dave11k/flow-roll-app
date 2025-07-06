@@ -7,19 +7,24 @@ import {
   ScrollView, 
   TouchableOpacity,
   RefreshControl,
-  Alert 
+  Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Calendar, Trophy, Target, Plus, MapPin, Clock } from 'lucide-react-native';
+import { Calendar, Trophy, Target, Plus, MapPin, Clock, Pencil, Trash2 } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
-import { getSessions, getTechniques, saveSession } from '@/services/storage';
+import { getSessions, getTechniques, saveSession, deleteSession } from '@/services/storage';
 import CreateSessionModal from '@/components/CreateSessionModal';
+import EditSessionModal from '@/components/EditSessionModal';
 
 export default function Sessions() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [totalTechniques, setTotalTechniques] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [lastLocation, setLastLocation] = useState('');
 
   useEffect(() => {
@@ -72,6 +77,50 @@ export default function Sessions() {
     }
   };
 
+  const handleEditSession = (session: TrainingSession) => {
+    Keyboard.dismiss();
+    setEditingSession(session);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateSession = async (updatedSession: TrainingSession) => {
+    try {
+      await saveSession(updatedSession);
+      await loadData();
+      setShowEditModal(false);
+      setEditingSession(null);
+      
+      // Update last location
+      if (updatedSession.location) {
+        setLastLocation(updatedSession.location);
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to update session. Please try again.');
+    }
+  };
+
+  const handleDeleteSession = (session: TrainingSession) => {
+    Alert.alert(
+      'Delete Session',
+      `Are you sure you want to delete this session from ${formatDate(session.date)}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteSession(session.id);
+              await loadData();
+            } catch {
+              Alert.alert('Error', 'Failed to delete session. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -114,18 +163,24 @@ export default function Sessions() {
         <Text style={styles.title}>Training Sessions</Text>
         <TouchableOpacity 
           style={styles.addButton}
-          onPress={() => setShowCreateModal(true)}
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowCreateModal(true);
+          }}
         >
           <Plus size={20} color="#fff" />
         </TouchableOpacity>
       </View>
       
-      <ScrollView 
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-        }
-      >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.content}>
+          <ScrollView 
+            style={styles.content}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+            }
+            keyboardShouldPersistTaps="handled"
+          >
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -161,16 +216,40 @@ export default function Sessions() {
           <View style={styles.sessionsList}>
             <Text style={styles.sessionsTitle}>Recent Sessions</Text>
             {sessions.map((session) => (
-              <TouchableOpacity key={session.id} style={styles.sessionCard}>
-                <View style={styles.sessionHeader}>
-                  <View style={styles.sessionMainInfo}>
-                    <Text style={styles.sessionDate}>{formatDate(session.date)}</Text>
-                    {session.location && (
-                      <View style={styles.locationContainer}>
-                        <MapPin size={14} color="#6b7280" />
-                        <Text style={styles.sessionLocation}>{session.location}</Text>
-                      </View>
-                    )}
+              <View key={session.id} style={styles.sessionItemContainer}>
+                <TouchableOpacity style={styles.sessionCard}>
+                  <View style={styles.sessionHeader}>
+                    <View style={styles.sessionMainInfo}>
+                      <Text style={styles.sessionDate}>{formatDate(session.date)}</Text>
+                      {session.location && (
+                        <View style={styles.locationContainer}>
+                          <MapPin size={14} color="#6b7280" />
+                          <Text style={styles.sessionLocation}>{session.location}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                <View style={styles.sessionTimeInfo}>
+                  <Clock size={14} color="#6b7280" />
+                  <Text style={styles.sessionTime}>
+                    {session.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+
+                <View style={styles.sessionStats}>
+                  <View style={styles.sessionStat}>
+                    <Text style={styles.sessionStatNumber}>{session.submissions.length}</Text>
+                    <Text style={styles.sessionStatLabel}>Submissions</Text>
+                  </View>
+                </View>
+
+                <View style={styles.sessionRating}>
+                  <View style={styles.satisfactionContainer}>
+                    <Text style={styles.ratingLabel}>Satisfaction:</Text>
+                    <View style={styles.starsContainer}>
+                      {renderStars(session.satisfaction)}
+                    </View>
                   </View>
                   <View style={[
                     styles.sessionTypeBadge, 
@@ -182,41 +261,35 @@ export default function Sessions() {
                   </View>
                 </View>
 
-                <View style={styles.sessionTimeInfo}>
-                  <Clock size={14} color="#6b7280" />
-                  <Text style={styles.sessionTime}>
-                    {session.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
+                  {session.notes && (
+                    <Text style={styles.sessionNotes} numberOfLines={2}>
+                      {session.notes}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.editButton]}
+                    onPress={() => handleEditSession(session)}
+                    activeOpacity={0.7}
+                  >
+                    <Pencil size={16} color="#3b82f6" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.deleteButton]}
+                    onPress={() => handleDeleteSession(session)}
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={16} color="#ef4444" />
+                  </TouchableOpacity>
                 </View>
-
-                <View style={styles.sessionStats}>
-                  <View style={styles.sessionStat}>
-                    <Text style={styles.sessionStatNumber}>{session.techniqueIds.length}</Text>
-                    <Text style={styles.sessionStatLabel}>Techniques</Text>
-                  </View>
-                  <View style={styles.sessionStat}>
-                    <Text style={styles.sessionStatNumber}>{session.submissions.length}</Text>
-                    <Text style={styles.sessionStatLabel}>Submissions</Text>
-                  </View>
-                </View>
-
-                <View style={styles.sessionRating}>
-                  <Text style={styles.ratingLabel}>Satisfaction:</Text>
-                  <View style={styles.starsContainer}>
-                    {renderStars(session.satisfaction)}
-                  </View>
-                </View>
-
-                {session.notes && (
-                  <Text style={styles.sessionNotes} numberOfLines={2}>
-                    {session.notes}
-                  </Text>
-                )}
-              </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
       
       <CreateSessionModal
         visible={showCreateModal}
@@ -224,6 +297,18 @@ export default function Sessions() {
         onClose={() => setShowCreateModal(false)}
         lastLocation={lastLocation}
       />
+
+      {editingSession && (
+        <EditSessionModal
+          visible={showEditModal}
+          session={editingSession}
+          onSave={handleUpdateSession}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingSession(null);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -339,11 +424,14 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 16,
   },
+  sessionItemContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
   sessionCard: {
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -415,12 +503,17 @@ const styles = StyleSheet.create({
   sessionRating: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
   ratingLabel: {
     fontSize: 14,
     color: '#6b7280',
     marginRight: 8,
+  },
+  satisfactionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   starsContainer: {
     flexDirection: 'row',
@@ -434,5 +527,33 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontStyle: 'italic',
     lineHeight: 20,
+  },
+  actionButtons: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  editButton: {
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+  },
+  deleteButton: {
+    borderWidth: 1,
+    borderColor: '#ef4444',
   },
 });

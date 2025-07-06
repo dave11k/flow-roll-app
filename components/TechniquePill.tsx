@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Keyboard } from 'react-native';
 
 interface TechniquePillProps {
   label: string;
@@ -14,13 +14,18 @@ export default function TechniquePill({
   onPress, 
   color 
 }: TechniquePillProps) {
+  const handlePress = () => {
+    Keyboard.dismiss();
+    onPress();
+  };
+
   return (
     <TouchableOpacity
       style={[
         styles.pill,
         { backgroundColor: isSelected ? color : '#f5f5f5' }
       ]}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.8}
     >
       <Text style={[

@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { Technique } from '@/types/technique';
 
 interface TechniqueItemProps {
@@ -11,6 +12,14 @@ export default function TechniqueItem({
   technique, 
   categoryColor 
 }: TechniqueItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const notesMaxLength = 100; // Maximum characters before showing "read more"
+
+  const shouldShowReadMore = technique.notes && technique.notes.length > notesMaxLength;
+  const displayNotes = isExpanded || !shouldShowReadMore 
+    ? technique.notes 
+    : technique.notes?.substring(0, notesMaxLength) + '...';
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -34,9 +43,28 @@ export default function TechniqueItem({
       </View>
       {technique.notes && (
         <View style={styles.notesContainer}>
-          <Text style={styles.notesText} numberOfLines={3}>
-            {technique.notes}
+          <Text 
+            style={styles.notesText}
+            numberOfLines={isExpanded ? undefined : 2}
+          >
+            {displayNotes}
           </Text>
+          {shouldShowReadMore && (
+            <TouchableOpacity
+              style={styles.readMoreButton}
+              onPress={() => setIsExpanded(!isExpanded)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.readMoreText}>
+                {isExpanded ? 'Read less' : 'Read more'}
+              </Text>
+              {isExpanded ? (
+                <ChevronUp size={16} color="#3b82f6" />
+              ) : (
+                <ChevronDown size={16} color="#3b82f6" />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>
@@ -100,5 +128,21 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+  readMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#f0f9ff',
+    gap: 4,
+  },
+  readMoreText: {
+    fontSize: 12,
+    color: '#3b82f6',
+    fontWeight: '600',
   },
 });

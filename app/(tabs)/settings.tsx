@@ -7,7 +7,9 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Switch,
-  Alert 
+  Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { 
   Settings, 
@@ -285,7 +287,9 @@ export default function SettingsPage() {
         <Text style={styles.title}>Settings</Text>
       </View>
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.content}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {sections.map((section, index) => (
           <View key={section.title} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -301,7 +305,9 @@ export default function SettingsPage() {
             Made with ❤️ for the BJJ community
           </Text>
         </View>
-      </ScrollView>
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }

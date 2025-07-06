@@ -54,6 +54,14 @@ const createTables = async (): Promise<void> => {
       satisfaction INTEGER NOT NULL CHECK (satisfaction >= 1 AND satisfaction <= 5)
     );
 
+    -- Submissions table for session submissions
+    CREATE TABLE IF NOT EXISTS submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
+    );
+
     -- Junction table for session techniques (many-to-many relationship)
     CREATE TABLE IF NOT EXISTS session_techniques (
       session_id TEXT NOT NULL,
@@ -71,6 +79,7 @@ const createTables = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_techniques_session_id ON techniques (session_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions (date);
     CREATE INDEX IF NOT EXISTS idx_sessions_type ON sessions (type);
+    CREATE INDEX IF NOT EXISTS idx_submissions_session ON submissions (session_id);
   `;
 
   await db.execAsync(createTablesSQL);
@@ -190,12 +199,25 @@ export const saveSessionToDb = async (session: TrainingSession): Promise<void> =
         [session.id]
       );
 
+      // Remove existing submissions
+      await database.runAsync(
+        'DELETE FROM submissions WHERE session_id = ?',
+        [session.id]
+      );
+
       // Add technique associations
       for (const techniqueId of session.techniqueIds) {
-        const isSubmission = session.submissions.includes(techniqueId) ? 1 : 0;
         await database.runAsync(
           'INSERT INTO session_techniques (session_id, technique_id, is_submission) VALUES (?, ?, ?)',
-          [session.id, techniqueId, isSubmission]
+          [session.id, techniqueId, 0]
+        );
+      }
+
+      // Add submissions
+      for (const submissionName of session.submissions) {
+        await database.runAsync(
+          'INSERT INTO submissions (session_id, name) VALUES (?, ?)',
+          [session.id, submissionName]
         );
       }
     });
@@ -219,14 +241,18 @@ export const getSessionsFromDb = async (): Promise<TrainingSession[]> => {
       const row = sessionRow as any; // Type assertion for database row
       // Get technique associations for this session
       const techniqueAssociations = await database.getAllAsync(
-        'SELECT technique_id, is_submission FROM session_techniques WHERE session_id = ?',
+        'SELECT technique_id FROM session_techniques WHERE session_id = ?',
+        [row.id]
+      );
+      
+      // Get submissions for this session
+      const submissionRows = await database.getAllAsync(
+        'SELECT name FROM submissions WHERE session_id = ?',
         [row.id]
       );
       
       const techniqueIds = techniqueAssociations.map((assoc: any) => assoc.technique_id);
-      const submissions = techniqueAssociations
-        .filter((assoc: any) => assoc.is_submission === 1)
-        .map((assoc: any) => assoc.technique_id);
+      const submissions = submissionRows.map((sub: any) => sub.name);
       
       result.push({
         id: row.id,

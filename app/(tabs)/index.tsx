@@ -9,6 +9,8 @@ import {
   SafeAreaView,
   Alert,
   FlatList,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Search, Pencil, Trash2, Filter, X, Plus, BookOpen } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -130,6 +132,7 @@ export default function TechniquesPage() {
   };
 
   const handleEditTechnique = (technique: Technique) => {
+    Keyboard.dismiss();
     setEditingTechnique(technique);
     setShowEditModal(true);
   };
@@ -171,6 +174,7 @@ export default function TechniquesPage() {
   };
 
   const clearFilters = () => {
+    Keyboard.dismiss();
     setSearchQuery('');
     setSelectedCategory(null);
     setSelectedPosition(null);
@@ -209,14 +213,18 @@ export default function TechniquesPage() {
         <Text style={styles.title}>Techniques</Text>
         <TouchableOpacity 
           style={styles.addButton}
-          onPress={() => setShowAddModal(true)}
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowAddModal(true);
+          }}
         >
           <Plus size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchSection}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <Search size={20} color="#9ca3af" />
           <TextInput
@@ -244,6 +252,7 @@ export default function TechniquesPage() {
             horizontal 
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContent}
+            keyboardShouldPersistTaps="handled"
           >
             {CATEGORIES.map((category) => (
               <TechniquePill
@@ -263,6 +272,7 @@ export default function TechniquesPage() {
             horizontal 
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContent}
+            keyboardShouldPersistTaps="handled"
           >
             {POSITIONS.map((position) => (
               <TechniquePill
@@ -286,7 +296,8 @@ export default function TechniquesPage() {
             <Text style={styles.clearFiltersText}>Clear Filters</Text>
           </TouchableOpacity>
         )}
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
 
       {/* Techniques List */}
       <View style={styles.listContainer}>

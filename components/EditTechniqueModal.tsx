@@ -12,11 +12,13 @@ import {
   Platform,
   TouchableWithoutFeedback,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Pencil } from 'lucide-react-native';
+import { X, Save, Pencil, FileText } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
 import TechniquePill from '@/components/TechniquePill';
+import NotesModal from '@/components/NotesModal';
 
 interface EditTechniqueModalProps {
   visible: boolean;
@@ -72,6 +74,8 @@ export default function EditTechniqueModal({
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<TechniquePosition | null>(null);
   const [notes, setNotes] = useState('');
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const notesInputRef = useRef<View>(null);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -213,7 +217,9 @@ export default function EditTechniqueModal({
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View>
               {/* Name Input */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Name</Text>
@@ -234,6 +240,7 @@ export default function EditTechniqueModal({
                   horizontal 
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.pillsContainer}
+                  keyboardShouldPersistTaps="handled"
                 >
                   {CATEGORIES.map((category) => (
                     <TechniquePill
@@ -254,6 +261,7 @@ export default function EditTechniqueModal({
                   horizontal 
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.pillsContainer}
+                  keyboardShouldPersistTaps="handled"
                 >
                   {POSITIONS.map((position) => (
                     <TechniquePill
@@ -270,20 +278,28 @@ export default function EditTechniqueModal({
               {/* Notes Input */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Notes</Text>
-                <TextInput
+                <TouchableOpacity
+                  ref={notesInputRef}
                   style={styles.notesInput}
-                  placeholder="Add notes about the technique..."
-                  placeholderTextColor="#9ca3af"
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  textAlignVertical="top"
-                  maxLength={2000}
-                />
+                  onPress={() => setShowNotesModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.notesInputContent}>
+                    <FileText size={20} color="#9ca3af" style={styles.notesIcon} />
+                    <Text style={[
+                      styles.notesText,
+                      !notes && styles.notesPlaceholder
+                    ]}>
+                      {notes || "Add notes about the technique..."}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
                 <Text style={styles.characterCount}>
                   {notes.length}/2000
                 </Text>
               </View>
+                </View>
+              </TouchableWithoutFeedback>
             </ScrollView>
 
             <View style={styles.footer}>
@@ -310,6 +326,13 @@ export default function EditTechniqueModal({
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      <NotesModal
+        visible={showNotesModal}
+        notes={notes}
+        onNotesChange={setNotes}
+        onClose={() => setShowNotesModal(false)}
+      />
     </Modal>
   );
 }
@@ -329,7 +352,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: screenWidth - 40,
-    maxHeight: screenHeight * 0.85,
+    maxHeight: screenHeight * 0.95,
     justifyContent: 'center',
   },
   modal: {
@@ -343,7 +366,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
-    maxHeight: screenHeight * 0.85,
+    maxHeight: screenHeight * 0.95,
   },
   header: {
     flexDirection: 'row',
@@ -372,7 +395,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    maxHeight: screenHeight * 0.5,
+    maxHeight: screenHeight * 0.65,
   },
   section: {
     padding: 14,
@@ -402,10 +425,25 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 16,
+    minHeight: 100,
+  },
+  notesInputContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  notesIcon: {
+    marginTop: 2,
+  },
+  notesText: {
+    flex: 1,
     fontSize: 16,
     color: '#1f2937',
-    minHeight: 100,
-    textAlignVertical: 'top',
+    lineHeight: 24,
+  },
+  notesPlaceholder: {
+    color: '#9ca3af',
+    fontStyle: 'italic',
   },
   characterCount: {
     fontSize: 12,
