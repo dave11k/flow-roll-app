@@ -1,5 +1,15 @@
 # dependencies
 node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
 
 # expo
 .expo/
@@ -35,3 +45,25 @@ yarn-error.*
 *.tsbuildinfo
 app.json
 CLAUDE.md
+
+
+# Temporary files
+*.log
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Misc
+.cache/
+.parcel-cache/
+.claude/settings.local.json
