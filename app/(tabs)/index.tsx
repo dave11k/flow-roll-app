@@ -31,11 +31,14 @@ const CATEGORIES: TechniqueCategory[] = [
 
 const POSITIONS: TechniquePosition[] = [
   'Mount',
-  'Guard',
+  'Full Guard',
   'Side Control',
   'Back',
   'Half Guard',
   'Standing',
+  'Open Guard',
+  'Butterfly Guard',
+  'De La Riva Guard',
   'Other',
 ];
 

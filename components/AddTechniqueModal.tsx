@@ -463,7 +463,7 @@ export default function AddTechniqueModal({
               >
                 <Save size={16} color="#fff" />
                 <Text style={styles.saveButtonText}>
-                  {isLoading ? 'Saving...' : 'Add Technique'}
+                  {isLoading ? 'Saving...' : 'Add'}
                 </Text>
               </TouchableOpacity>
             </View>

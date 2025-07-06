@@ -138,7 +138,14 @@ export default function CreateSessionModal({
   const handleDateChange = (days: number) => {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + days);
-    setDate(newDate);
+    
+    // Prevent setting dates in the future
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of today
+    
+    if (newDate <= today) {
+      setDate(newDate);
+    }
   };
 
   const handleSave = () => {
@@ -192,6 +199,14 @@ export default function CreateSessionModal({
         day: 'numeric',
       });
     }
+  };
+
+  const isForwardDisabled = () => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + 1);
+    return nextDate > today;
   };
 
   const renderStars = () => {
@@ -284,11 +299,18 @@ export default function CreateSessionModal({
                     </Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.dateButton}
+                    style={[
+                      styles.dateButton,
+                      isForwardDisabled() && styles.dateButtonDisabled
+                    ]}
                     onPress={() => handleDateChange(1)}
+                    disabled={isForwardDisabled()}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.dateButtonText}>→</Text>
+                    <Text style={[
+                      styles.dateButtonText,
+                      isForwardDisabled() && styles.dateButtonTextDisabled
+                    ]}>→</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -442,7 +464,7 @@ export default function CreateSessionModal({
                 activeOpacity={0.8}
               >
                 <Save size={16} color="#fff" />
-                <Text style={styles.saveButtonText}>Create Session</Text>
+                <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -548,6 +570,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  dateButtonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  dateButtonTextDisabled: {
+    color: '#d1d5db',
   },
   dateDisplay: {
     flex: 1,
