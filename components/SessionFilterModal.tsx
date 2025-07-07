@@ -10,7 +10,10 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, Calendar, MapPin, Target, Star, RotateCcw } from 'lucide-react-native';
 import { SessionType } from '@/types/session';
 
@@ -53,14 +56,20 @@ export default function SessionFilterModal({
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [isVisible, setIsVisible] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const dragY = useRef(new Animated.Value(0)).current;
+  const lastGestureY = useRef(0);
 
   useEffect(() => {
     if (visible) {
       setIsVisible(true);
+      dragY.setValue(0);
       setLocalFilters(filters);
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: screenHeight * 0.25,
+          toValue: screenHeight * 0.1,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -87,6 +96,47 @@ export default function SessionFilterModal({
       });
     }
   }, [visible, isVisible]);
+
+  const animateClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: screenHeight,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      dragY.setValue(0);
+      onClose();
+    });
+  };
+
+  const handlePanGesture = Animated.event(
+    [{ nativeEvent: { translationY: dragY } }],
+    { useNativeDriver: true }
+  );
+
+  const handlePanStateChange = (event: any) => {
+    if (event.nativeEvent.oldState === State.ACTIVE) {
+      const { translationY, velocityY } = event.nativeEvent;
+      lastGestureY.current = translationY;
+
+      // If dragged down significantly or with high velocity, animate close
+      if (translationY > 100 || velocityY > 1000) {
+        animateClose();
+      } else {
+        // Otherwise, snap back to original position
+        Animated.spring(dragY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+  };
 
   const handleSessionTypeToggle = (type: SessionType) => {
     setLocalFilters(prev => ({
@@ -156,7 +206,7 @@ export default function SessionFilterModal({
       animationType="none"
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={animateClose}>
         <View style={styles.backdrop}>
           <Animated.View
             style={[
@@ -174,24 +224,34 @@ export default function SessionFilterModal({
         style={[
           styles.modalContainer,
           {
-            transform: [{ translateY: slideAnim }],
+            transform: [
+              { translateY: slideAnim },
+              { translateY: dragY }
+            ],
           },
         ]}
       >
         <View style={styles.modal}>
-          <View style={styles.header}>
-            <View style={styles.dragHandle} />
-            <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Filter Sessions</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={onClose}
-                activeOpacity={0.7}
-              >
-                <X size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <PanGestureHandler
+            onGestureEvent={handlePanGesture}
+            onHandlerStateChange={handlePanStateChange}
+          >
+            <Animated.View>
+              <View style={styles.header}>
+                <View style={styles.dragHandle} />
+                <View style={styles.headerContent}>
+                  <Text style={styles.headerTitle}>Filter Sessions</Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={animateClose}
+                    activeOpacity={0.7}
+                  >
+                    <X size={24} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Animated.View>
+          </PanGestureHandler>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Date Range */}
@@ -326,7 +386,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: screenHeight * 0.75,
+    height: screenHeight * 0.9,
   },
   modal: {
     backgroundColor: '#fff',

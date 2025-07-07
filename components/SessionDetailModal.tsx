@@ -13,7 +13,7 @@ import {
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, Calendar, MapPin, Clock, Star, Target } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
-import SubmissionPill from '@/components/SubmissionPill';
+import SubmissionDisplayPill from '@/components/SubmissionDisplayPill';
 
 interface SessionDetailModalProps {
   visible: boolean;
@@ -68,9 +68,27 @@ export default function SessionDetailModal({
     }
   }, [visible, isVisible]);
 
+  const animateClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: screenHeight,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      dragY.setValue(0);
+      onClose();
+    });
+  };
+
   const handlePanGesture = Animated.event(
     [{ nativeEvent: { translationY: dragY } }],
-    { useNativeDriver: false }
+    { useNativeDriver: true }
   );
 
   const handlePanStateChange = (event: any) => {
@@ -78,14 +96,14 @@ export default function SessionDetailModal({
       const { translationY, velocityY } = event.nativeEvent;
       lastGestureY.current = translationY;
 
-      // If dragged down significantly or with high velocity, close modal
+      // If dragged down significantly or with high velocity, animate close
       if (translationY > 100 || velocityY > 1000) {
-        onClose();
+        animateClose();
       } else {
         // Otherwise, snap back to original position
         Animated.spring(dragY, {
           toValue: 0,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }).start();
       }
     }
@@ -148,7 +166,7 @@ export default function SessionDetailModal({
       animationType="none"
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={animateClose}>
         <Animated.View
           style={[
             styles.backdrop,
@@ -176,21 +194,23 @@ export default function SessionDetailModal({
             onGestureEvent={handlePanGesture}
             onHandlerStateChange={handlePanStateChange}
           >
-            <Animated.View style={styles.header}>
-              <View style={styles.dragHandle} />
+            <Animated.View>
+              <View style={styles.header}>
+                <View style={styles.dragHandle} />
+              </View>
+              
+              <View style={styles.headerWithClose}>
+                <Text style={styles.headerTitle}>Session Details</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={animateClose}
+                  activeOpacity={0.7}
+                >
+                  <X size={24} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
             </Animated.View>
           </PanGestureHandler>
-          
-          <View style={styles.headerWithClose}>
-            <Text style={styles.headerTitle}>Session Details</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <X size={24} color="#6b7280" />
-            </TouchableOpacity>
-          </View>
 
           <ScrollView 
             style={styles.content} 
@@ -246,15 +266,12 @@ export default function SessionDetailModal({
                 </View>
                 <View style={styles.submissionsList}>
                   {session.submissions.map((submission) => (
-                    <View key={submission} style={styles.submissionPillContainer}>
-                      <SubmissionPill
-                        label={submission}
-                        count={session.submissionCounts[submission] || 1}
-                        onIncrement={() => {}} // Read-only
-                        onDecrement={() => {}} // Read-only
-                        color="#ef4444"
-                      />
-                    </View>
+                    <SubmissionDisplayPill
+                      key={submission}
+                      label={submission}
+                      count={session.submissionCounts[submission] || 1}
+                      color="#ef4444"
+                    />
                   ))}
                 </View>
               </View>
@@ -405,11 +422,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submissionsList: {
-    gap: 8,
-  },
-  submissionPillContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   starsContainer: {
     flexDirection: 'row',

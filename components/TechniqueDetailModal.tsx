@@ -77,9 +77,27 @@ export default function TechniqueDetailModal({
     }
   }, [visible, isVisible]);
 
+  const animateClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: screenHeight,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      dragY.setValue(0);
+      onClose();
+    });
+  };
+
   const handlePanGesture = Animated.event(
     [{ nativeEvent: { translationY: dragY } }],
-    { useNativeDriver: false }
+    { useNativeDriver: true }
   );
 
   const handlePanStateChange = (event: any) => {
@@ -87,14 +105,14 @@ export default function TechniqueDetailModal({
       const { translationY, velocityY } = event.nativeEvent;
       lastGestureY.current = translationY;
 
-      // If dragged down significantly or with high velocity, close modal
+      // If dragged down significantly or with high velocity, animate close
       if (translationY > 100 || velocityY > 1000) {
-        onClose();
+        animateClose();
       } else {
         // Otherwise, snap back to original position
         Animated.spring(dragY, {
           toValue: 0,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }).start();
       }
     }
@@ -122,7 +140,7 @@ export default function TechniqueDetailModal({
       animationType="none"
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={animateClose}>
         <Animated.View
           style={[
             styles.backdrop,
@@ -150,21 +168,23 @@ export default function TechniqueDetailModal({
             onGestureEvent={handlePanGesture}
             onHandlerStateChange={handlePanStateChange}
           >
-            <Animated.View style={styles.header}>
-              <View style={styles.dragHandle} />
+            <Animated.View>
+              <View style={styles.header}>
+                <View style={styles.dragHandle} />
+              </View>
+              
+              <View style={styles.headerWithClose}>
+                <Text style={styles.headerTitle}>Technique Details</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={animateClose}
+                  activeOpacity={0.7}
+                >
+                  <X size={24} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
             </Animated.View>
           </PanGestureHandler>
-          
-          <View style={styles.headerWithClose}>
-            <Text style={styles.headerTitle}>Technique Details</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <X size={24} color="#6b7280" />
-            </TouchableOpacity>
-          </View>
 
           <ScrollView 
             style={styles.content} 
