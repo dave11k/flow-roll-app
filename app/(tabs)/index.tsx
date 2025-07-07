@@ -20,6 +20,7 @@ import TechniquePill from '@/components/TechniquePill';
 import TechniqueItem from '@/components/TechniqueItem';
 import EditTechniqueModal from '@/components/EditTechniqueModal';
 import AddTechniqueModal from '@/components/AddTechniqueModal';
+import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 
 const CATEGORIES: TechniqueCategory[] = [
   'Submission',
@@ -66,6 +67,8 @@ export default function TechniquesPage() {
   const [editingTechnique, setEditingTechnique] = useState<Technique | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const categoryScrollRef = useRef<ScrollView>(null);
   const positionScrollRef = useRef<ScrollView>(null);
 
@@ -131,6 +134,12 @@ export default function TechniquesPage() {
     setSelectedPosition(selectedPosition === position ? null : position);
   };
 
+  const handleShowTechniqueDetail = (technique: Technique) => {
+    Keyboard.dismiss();
+    setSelectedTechnique(technique);
+    setShowDetailModal(true);
+  };
+
   const handleEditTechnique = (technique: Technique) => {
     Keyboard.dismiss();
     setEditingTechnique(technique);
@@ -184,10 +193,15 @@ export default function TechniquesPage() {
 
   const renderTechniqueItem = ({ item }: { item: Technique }) => (
     <View style={styles.techniqueItemContainer}>
-      <TechniqueItem
-        technique={item}
-        categoryColor={CATEGORY_COLORS[item.category]}
-      />
+      <TouchableOpacity
+        onPress={() => handleShowTechniqueDetail(item)}
+        activeOpacity={0.7}
+      >
+        <TechniqueItem
+          technique={item}
+          categoryColor={CATEGORY_COLORS[item.category]}
+        />
+      </TouchableOpacity>
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={[styles.actionButton, styles.editButton]}
@@ -210,7 +224,7 @@ export default function TechniquesPage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Techniques</Text>
+        <Text style={styles.title}>Techniques ({techniques.length})</Text>
         <TouchableOpacity 
           style={styles.addButton}
           onPress={() => {
@@ -367,6 +381,16 @@ export default function TechniquesPage() {
           }}
         />
       )}
+
+      {/* Detail Modal */}
+      <TechniqueDetailModal
+        visible={showDetailModal}
+        technique={selectedTechnique}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedTechnique(null);
+        }}
+      />
     </SafeAreaView>
   );
 }

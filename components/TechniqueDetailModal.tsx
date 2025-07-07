@@ -11,23 +11,32 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { X, Calendar, MapPin, Clock, Star, Target } from 'lucide-react-native';
-import { TrainingSession } from '@/types/session';
-import SubmissionPill from '@/components/SubmissionPill';
+import { X, Target, MapPin, FileText, Calendar } from 'lucide-react-native';
+import { Technique } from '@/types/technique';
 
-interface SessionDetailModalProps {
+interface TechniqueDetailModalProps {
   visible: boolean;
-  session: TrainingSession | null;
+  technique: Technique | null;
   onClose: () => void;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
 
-export default function SessionDetailModal({
+const CATEGORY_COLORS: Record<string, string> = {
+  'Submission': '#ef4444',
+  'Sweep': '#f97316',
+  'Escape': '#eab308',
+  'Guard Pass': '#22c55e',
+  'Takedown': '#3b82f6',
+  'Defense': '#8b5cf6',
+  'Other': '#6b7280',
+};
+
+export default function TechniqueDetailModal({
   visible,
-  session,
+  technique,
   onClose,
-}: SessionDetailModalProps) {
+}: TechniqueDetailModalProps) {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [isVisible, setIsVisible] = useState(false);
@@ -91,7 +100,7 @@ export default function SessionDetailModal({
     }
   };
 
-  if (!session || !isVisible) return null;
+  if (!technique || !isVisible) return null;
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -104,41 +113,6 @@ export default function SessionDetailModal({
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getSessionTypeColor = (type: string) => {
-    switch (type) {
-      case 'gi': return '#1e40af';
-      case 'nogi': return '#dc2626';
-      case 'open-mat': return '#059669';
-      case 'wrestling': return '#7c3aed';
-      default: return '#6b7280';
-    }
-  };
-
-  const getSessionTypeLabel = (type: string) => {
-    switch (type) {
-      case 'gi': return 'Gi';
-      case 'nogi': return 'No-Gi';
-      case 'open-mat': return 'Open Mat';
-      case 'wrestling': return 'Wrestling';
-      default: return type;
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        size={24}
-        color={i < rating ? '#f59e0b' : '#e5e7eb'}
-        fill={i < rating ? '#f59e0b' : 'transparent'}
-      />
-    ));
-  };
-
-  const getTotalSubmissionCount = () => {
-    return Object.values(session.submissionCounts || {}).reduce((total, count) => total + count, 0);
   };
 
   return (
@@ -182,7 +156,7 @@ export default function SessionDetailModal({
           </PanGestureHandler>
           
           <View style={styles.headerWithClose}>
-            <Text style={styles.headerTitle}>Session Details</Text>
+            <Text style={styles.headerTitle}>Technique Details</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
@@ -198,92 +172,48 @@ export default function SessionDetailModal({
             keyboardShouldPersistTaps="handled"
             scrollEventThrottle={16}
           >
-            {/* Date and Time */}
+            {/* Technique Name */}
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#1e3a2e" />
-                <Text style={styles.sectionTitle}>Session Details</Text>
-              </View>
-              <Text style={styles.dateText}>{formatDate(session.date)}</Text>
-              <View style={styles.timeRow}>
-                <Clock size={16} color="#6b7280" />
-                <Text style={styles.timeText}>{formatTime(session.date)}</Text>
-              </View>
+              <Text style={styles.techniqueName}>{technique.name}</Text>
             </View>
 
-            {/* Location */}
-            {session.location && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <MapPin size={20} color="#1e3a2e" />
-                  <Text style={styles.sectionTitle}>Location</Text>
-                </View>
-                <Text style={styles.locationText}>{session.location}</Text>
-              </View>
-            )}
-
-            {/* Session Type */}
+            {/* Category and Position */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Target size={20} color="#1e3a2e" />
-                <Text style={styles.sectionTitle}>Session Type</Text>
+                <Text style={styles.sectionTitle}>Category & Position</Text>
               </View>
-              <View style={[
-                styles.sessionTypeBadge,
-                { backgroundColor: getSessionTypeColor(session.type) }
-              ]}>
-                <Text style={styles.sessionTypeText}>
-                  {getSessionTypeLabel(session.type)}
-                </Text>
+              <View style={styles.badgesContainer}>
+                <View style={[
+                  styles.categoryBadge,
+                  { backgroundColor: CATEGORY_COLORS[technique.category] || '#6b7280' }
+                ]}>
+                  <Text style={styles.badgeText}>{technique.category}</Text>
+                </View>
+                <View style={styles.positionBadge}>
+                  <Text style={styles.positionText}>{technique.position}</Text>
+                </View>
               </View>
             </View>
 
-            {/* Submissions */}
-            {session.submissions.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Submissions ({getTotalSubmissionCount()})</Text>
-                </View>
-                <View style={styles.submissionsList}>
-                  {session.submissions.map((submission) => (
-                    <View key={submission} style={styles.submissionPillContainer}>
-                      <SubmissionPill
-                        label={submission}
-                        count={session.submissionCounts[submission] || 1}
-                        onIncrement={() => {}} // Read-only
-                        onDecrement={() => {}} // Read-only
-                        color="#ef4444"
-                      />
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Satisfaction */}
+            {/* Date Added */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Satisfaction Rating</Text>
+                <Calendar size={20} color="#1e3a2e" />
+                <Text style={styles.sectionTitle}>Date Added</Text>
               </View>
-              <View style={styles.starsContainer}>
-                {renderStars(session.satisfaction)}
-              </View>
-              <Text style={styles.satisfactionLabel}>
-                {session.satisfaction === 1 && 'Poor'}
-                {session.satisfaction === 2 && 'Fair'}
-                {session.satisfaction === 3 && 'Good'}
-                {session.satisfaction === 4 && 'Great'}
-                {session.satisfaction === 5 && 'Excellent'}
-              </Text>
+              <Text style={styles.dateText}>{formatDate(technique.timestamp)}</Text>
+              <Text style={styles.timeText}>{formatTime(technique.timestamp)}</Text>
             </View>
 
             {/* Notes */}
-            {session.notes && (
+            {technique.notes && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
+                  <FileText size={20} color="#1e3a2e" />
                   <Text style={styles.sectionTitle}>Notes</Text>
                 </View>
-                <Text style={styles.notesText}>{session.notes}</Text>
+                <Text style={styles.notesText}>{technique.notes}</Text>
               </View>
             )}
             
@@ -375,51 +305,46 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
   },
-  dateText: {
-    fontSize: 16,
-    color: '#374151',
-    marginBottom: 8,
+  techniqueName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+    textAlign: 'center',
   },
-  timeRow: {
+  badgesContainer: {
     flexDirection: 'row',
+    gap: 12,
     alignItems: 'center',
-    gap: 6,
   },
-  timeText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  locationText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  sessionTypeBadge: {
-    alignSelf: 'flex-start',
+  categoryBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  sessionTypeText: {
+  badgeText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
-  submissionsList: {
-    gap: 8,
+  positionBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#1e3a2e',
   },
-  submissionPillContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: 8,
-  },
-  satisfactionLabel: {
-    fontSize: 16,
+  positionText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#374151',
+    marginBottom: 4,
+  },
+  timeText: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   notesText: {
     fontSize: 16,

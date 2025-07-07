@@ -52,9 +52,11 @@ export default function SessionFilterModal({
   const [localFilters, setLocalFilters] = useState<SessionFilters>(filters);
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      setIsVisible(true);
       setLocalFilters(filters);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -68,21 +70,23 @@ export default function SessionFilterModal({
           useNativeDriver: true,
         }),
       ]).start();
-    } else {
+    } else if (isVisible) {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: screenHeight,
-          duration: 250,
+          duration: 300,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 250,
+          duration: 300,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        setIsVisible(false);
+      });
     }
-  }, [visible]);
+  }, [visible, isVisible]);
 
   const handleSessionTypeToggle = (type: SessionType) => {
     setLocalFilters(prev => ({
@@ -147,7 +151,7 @@ export default function SessionFilterModal({
 
   return (
     <Modal
-      visible={visible}
+      visible={isVisible}
       transparent
       animationType="none"
       statusBarTranslucent

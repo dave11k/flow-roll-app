@@ -268,27 +268,15 @@ export default function Sessions() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Training Sessions ({sessions.length})</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={[styles.filterButton, hasActiveFilters() && styles.filterButtonActive]}
-            onPress={() => {
-              Keyboard.dismiss();
-              setShowFilterModal(true);
-            }}
-          >
-            <Filter size={20} color="#fff" />
-            {hasActiveFilters() && <View style={styles.filterIndicator} />}
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => {
-              Keyboard.dismiss();
-              setShowCreateModal(true);
-            }}
-          >
-            <Plus size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowCreateModal(true);
+          }}
+        >
+          <Plus size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -324,12 +312,26 @@ export default function Sessions() {
           </View>
         ) : (
           <View style={styles.sessionsList}>
-            <Text style={styles.sessionsTitle}>
-              {hasActiveFilters() 
-                ? `Filtered Sessions (${filteredSessions.length})`
-                : 'Recent Sessions'
-              }
-            </Text>
+            <View style={styles.sessionsHeader}>
+              <Text style={styles.sessionsTitle}>
+                {hasActiveFilters() 
+                  ? `Filtered Sessions (${filteredSessions.length})`
+                  : 'Sessions'
+                }
+              </Text>
+              <TouchableOpacity 
+                style={[styles.filterButtonMain, hasActiveFilters() && styles.filterButtonActive]}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setShowFilterModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Filter size={20} color="#1e3a2e" />
+                <Text style={styles.filterButtonText}>Filter</Text>
+                {hasActiveFilters() && <View style={styles.filterIndicatorMain} />}
+              </TouchableOpacity>
+            </View>
             {filteredSessions.map((session) => (
               <View key={session.id} style={styles.sessionItemContainer}>
                 <TouchableOpacity 
@@ -472,35 +474,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  filterButton: {
-    backgroundColor: '#1e3a2e',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    position: 'relative',
-  },
-  filterButtonActive: {
-    backgroundColor: '#f59e0b',
-  },
-  filterIndicator: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#ef4444',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
   addButton: {
     backgroundColor: '#1e3a2e',
     width: 40,
@@ -552,11 +525,43 @@ const styles = StyleSheet.create({
   sessionsList: {
     padding: 20,
   },
+  sessionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sessionsTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 16,
+  },
+  filterButtonMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    gap: 6,
+    position: 'relative',
+  },
+  filterButtonActive: {
+    backgroundColor: '#fef3c7',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e3a2e',
+  },
+  filterIndicatorMain: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
   },
   sessionItemContainer: {
     position: 'relative',
