@@ -23,7 +23,7 @@ import { Technique } from '@/types/technique';
 import { getSessions, getTechniques } from '@/services/storage';
 
 const { width: screenWidth } = Dimensions.get('window');
-const chartWidth = screenWidth - 40;
+const chartWidth = screenWidth - 50; // Increased padding to prevent overflow
 
 // Suppress chart-kit web warnings in development
 if (Platform.OS === 'web' && __DEV__) {
@@ -143,14 +143,17 @@ export default function Analytics() {
         submissionCount[submission] = (submissionCount[submission] || 0) + 1;
       });
     });
-    const submissionDistribution = Object.entries(submissionCount).map(([name, count], index) => ({
-      name,
-      count,
-      color: [
-        '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
-        '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1'
-      ][index % 10],
-    }));
+    const submissionDistribution = Object.entries(submissionCount)
+      .sort(([, a], [, b]) => b - a) // Sort by count descending
+      .slice(0, 5) // Take only top 5
+      .map(([name, count], index) => ({
+        name,
+        count,
+        color: [
+          '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
+          '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1'
+        ][index % 10],
+      }));
 
     // Session type distribution
     const sessionTypeCount: Record<string, number> = {};
@@ -285,7 +288,7 @@ export default function Analytics() {
       population: item.count,
       color: item.color,
       legendFontColor: '#6b7280',
-      legendFontSize: 12,
+      legendFontSize: 10,
     }));
 
     return (
@@ -296,13 +299,16 @@ export default function Analytics() {
         </View>
         <PieChart
           data={chartData}
-          width={chartWidth}
-          height={220}
-          chartConfig={chartConfig}
+          width={chartWidth - 20}
+          height={140}
+          chartConfig={{
+            ...chartConfig,
+            color: (opacity = 1) => `rgba(30, 58, 46, ${opacity})`,
+          }}
           accessor="population"
           backgroundColor="transparent"
-          paddingLeft="15"
-          center={[10, 0]}
+          paddingLeft="0"
+          center={[0, 0]}
           absolute
         />
       </View>
@@ -406,45 +412,8 @@ export default function Analytics() {
           </View>
         </View>
 
-        {/* Weekly Activity Chart */}
-        {analyticsData.weeklyActivity.some(d => d.sessions > 0 || d.techniques > 0) && (
-          <View style={styles.chartContainer}>
-            <View style={styles.chartHeader}>
-              <BarChart3 size={20} color="#1e3a2e" />
-              <Text style={styles.chartTitle}>Weekly Activity</Text>
-            </View>
-            <BarChart
-              data={{
-                labels: analyticsData.weeklyActivity.map(d => d.day),
-                datasets: [
-                  {
-                    data: analyticsData.weeklyActivity.map(d => d.sessions),
-                    color: (opacity = 1) => `rgba(30, 58, 46, ${opacity})`,
-                  }
-                ],
-              }}
-              width={chartWidth}
-              height={220}
-              chartConfig={{
-                ...chartConfig,
-                propsForLabels: {
-                  fontSize: 12,
-                },
-              }}
-              verticalLabelRotation={0}
-              showValuesOnTopOfBars
-              fromZero
-              yAxisLabel=""
-              yAxisSuffix=""
-              style={{
-                marginVertical: 8,
-                borderRadius: 16,
-              }}
-            />
-          </View>
-        )}
-
-        {/* Monthly Progress Chart */}
+            {/* TODO: Add monthly progress chart */}
+        {/* Monthly Progress Chart
         {analyticsData.monthlyProgress.some(d => d.sessions > 0 || d.techniques > 0) && (
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
@@ -468,12 +437,12 @@ export default function Analytics() {
                 ],
                 legend: ['Sessions', 'Techniques']
               }}
-              width={chartWidth}
+              width={chartWidth - 10}
               height={220}
               chartConfig={{
                 ...chartConfig,
                 propsForLabels: {
-                  fontSize: 12,
+                  fontSize: 10,
                 },
               }}
               bezier
@@ -486,7 +455,7 @@ export default function Analytics() {
         )}
 
         {/* Satisfaction Trend */}
-        {analyticsData.satisfactionTrend.length > 0 && (
+        {/* {analyticsData.satisfactionTrend.length > 0 && (
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
               <TrendingUp size={20} color="#1e3a2e" />
@@ -501,12 +470,12 @@ export default function Analytics() {
                   strokeWidth: 3,
                 }],
               }}
-              width={chartWidth}
+              width={chartWidth - 10}
               height={220}
               chartConfig={{
                 ...chartConfig,
                 propsForLabels: {
-                  fontSize: 12,
+                  fontSize: 10,
                 },
               }}
               bezier
@@ -516,7 +485,7 @@ export default function Analytics() {
               }}
             />
           </View>
-        )}
+        )} */}
 
         {/* Distribution Charts */}
         <View style={styles.distributionContainer}>

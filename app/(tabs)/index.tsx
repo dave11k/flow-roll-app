@@ -258,7 +258,7 @@ export default function TechniquesPage() {
       >
         <TouchableOpacity
           onPress={() => handleShowTechniqueDetail(item)}
-          activeOpacity={0.7}
+          activeOpacity={1}
         >
           <TechniqueItem
             technique={item}

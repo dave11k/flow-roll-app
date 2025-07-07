@@ -327,7 +327,7 @@ export default function Sessions() {
                   <TouchableOpacity 
                     style={styles.sessionCard}
                     onPress={() => handleShowSessionDetail(session)}
-                    activeOpacity={0.7}
+                    activeOpacity={1}
                   >
                   <View style={styles.sessionHeader}>
                     <View style={styles.sessionMainInfo}>
