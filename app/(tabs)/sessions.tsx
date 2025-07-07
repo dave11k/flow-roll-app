@@ -12,9 +12,9 @@ import {
   Keyboard,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Calendar, Trophy, Target, Plus, MapPin, Clock, Pencil, Trash2, Filter } from 'lucide-react-native';
+import { Calendar, Plus, MapPin, Clock, Pencil, Trash2, Filter } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
-import { getSessions, getTechniques, saveSession, deleteSession } from '@/services/storage';
+import { getSessions, saveSession, deleteSession } from '@/services/storage';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
 import SessionDetailModal from '@/components/SessionDetailModal';
@@ -34,7 +34,6 @@ interface SessionFilters {
 export default function Sessions() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<TrainingSession[]>([]);
-  const [totalTechniques, setTotalTechniques] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -64,12 +63,8 @@ export default function Sessions() {
 
   const loadData = async () => {
     try {
-      const [sessionsData, techniquesData] = await Promise.all([
-        getSessions(),
-        getTechniques()
-      ]);
+      const sessionsData = await getSessions();
       setSessions(sessionsData);
-      setTotalTechniques(techniquesData.length);
       
       // Set last location for modal default
       if (sessionsData.length > 0 && sessionsData[0].location) {
@@ -96,7 +91,7 @@ export default function Sessions() {
     // Filter by location
     if (filters.location.trim()) {
       filtered = filtered.filter(session => 
-        session.location?.toLowerCase().includes(filters.location.toLowerCase())
+        session.location?.toLowerCase() === filters.location.toLowerCase()
       );
     }
 
@@ -247,13 +242,6 @@ export default function Sessions() {
     setFilters(newFilters);
   };
 
-  const getAvailableLocations = () => {
-    const locations = sessions
-      .map(session => session.location)
-      .filter(location => location && location.trim())
-      .filter((location, index, array) => array.indexOf(location) === index);
-    return locations as string[];
-  };
 
   const hasActiveFilters = () => {
     return filters.dateRange.startDate !== null ||
@@ -442,7 +430,6 @@ export default function Sessions() {
         filters={filters}
         onApplyFilters={handleApplyFilters}
         onClose={() => setShowFilterModal(false)}
-        availableLocations={getAvailableLocations()}
       />
     </SafeAreaView>
   );

@@ -73,6 +73,14 @@ const createTables = async (): Promise<void> => {
       FOREIGN KEY (technique_id) REFERENCES techniques (id) ON DELETE CASCADE
     );
 
+    -- Locations table for storing unique locations
+    CREATE TABLE IF NOT EXISTS locations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      usage_count INTEGER DEFAULT 0,
+      last_used INTEGER
+    );
+
     -- Indexes for better performance
     CREATE INDEX IF NOT EXISTS idx_techniques_category ON techniques (category);
     CREATE INDEX IF NOT EXISTS idx_techniques_position ON techniques (position);
@@ -81,6 +89,8 @@ const createTables = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions (date);
     CREATE INDEX IF NOT EXISTS idx_sessions_type ON sessions (type);
     CREATE INDEX IF NOT EXISTS idx_submissions_session ON submissions (session_id);
+    CREATE INDEX IF NOT EXISTS idx_locations_usage_count ON locations (usage_count DESC);
+    CREATE INDEX IF NOT EXISTS idx_locations_last_used ON locations (last_used DESC);
   `;
 
   await db.execAsync(createTablesSQL);
@@ -204,6 +214,16 @@ export const saveSessionToDb = async (session: TrainingSession): Promise<void> =
           session.satisfaction
         ]
       );
+
+      // Save location if provided
+      if (session.location && session.location.trim()) {
+        const trimmedName = session.location.trim();
+        await database.runAsync(
+          `INSERT OR REPLACE INTO locations (name, usage_count, last_used) 
+           VALUES (?, COALESCE((SELECT usage_count FROM locations WHERE name = ?), 0) + 1, ?)`,
+          [trimmedName, trimmedName, Date.now()]
+        );
+      }
 
       // Remove existing technique associations
       await database.runAsync(
@@ -332,6 +352,54 @@ export const getRecentTechniquesFromDb = async (limit: number = 10): Promise<Tec
     }));
   } catch (error) {
     console.error('Error loading recent techniques from database:', error);
+    return [];
+  }
+};
+
+// Location operations
+export const saveLocationToDb = async (locationName: string): Promise<void> => {
+  if (!locationName || !locationName.trim()) return;
+  
+  const database = getDatabase();
+  const trimmedName = locationName.trim();
+  
+  try {
+    await database.runAsync(
+      `INSERT OR REPLACE INTO locations (name, usage_count, last_used) 
+       VALUES (?, COALESCE((SELECT usage_count FROM locations WHERE name = ?), 0) + 1, ?)`,
+      [trimmedName, trimmedName, Date.now()]
+    );
+  } catch (error) {
+    console.error('Error saving location to database:', error);
+  }
+};
+
+export const getLocationsFromDb = async (): Promise<string[]> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getAllAsync(
+      'SELECT name FROM locations ORDER BY usage_count DESC, last_used DESC'
+    );
+    
+    return result.map((row: any) => row.name);
+  } catch (error) {
+    console.error('Error loading locations from database:', error);
+    return [];
+  }
+};
+
+export const getUniqueSubmissionsFromDb = async (): Promise<string[]> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getAllAsync(
+      'SELECT DISTINCT name FROM submissions ORDER BY name ASC'
+    );
+    
+    return result.map((row: any) => row.name);
+  } catch (error) {
+    console.error('Error loading unique submissions from database:', error);
     return [];
   }
 };

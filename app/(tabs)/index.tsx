@@ -85,6 +85,7 @@ export default function TechniquesPage() {
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const justSelectedSuggestion = useRef(false);
   const categoryScrollRef = useRef<ScrollView>(null);
   const positionScrollRef = useRef<ScrollView>(null);
 
@@ -217,8 +218,14 @@ export default function TechniquesPage() {
   };
 
   const handleSuggestionPress = (suggestion: string) => {
+    justSelectedSuggestion.current = true;
     setSearchQuery(suggestion);
     setShowSuggestions(false);
+    Keyboard.dismiss();
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      justSelectedSuggestion.current = false;
+    }, 100);
   };
 
   const handleSearchFocus = () => {
@@ -228,9 +235,11 @@ export default function TechniquesPage() {
   };
 
   const handleSearchBlur = () => {
-    setTimeout(() => {
-      setShowSuggestions(false);
-    }, 150);
+    if (!justSelectedSuggestion.current) {
+      setTimeout(() => {
+        setShowSuggestions(false);
+      }, 150);
+    }
   };
 
   const hasActiveFilters = searchQuery.trim() || selectedCategory || selectedPosition;
@@ -308,12 +317,14 @@ export default function TechniquesPage() {
         {/* Auto-suggestions */}
         {showSuggestions && suggestions.length > 0 && (
           <View style={styles.suggestionsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {suggestions.map((suggestion) => (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
+              {suggestions.map((suggestion, index) => (
                 <TouchableOpacity
-                  key={suggestion}
+                  key={`${suggestion}-${index}`}
                   style={styles.suggestionPill}
                   onPress={() => handleSuggestionPress(suggestion)}
+                  delayPressIn={0}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.suggestionText}>{suggestion}</Text>
                 </TouchableOpacity>

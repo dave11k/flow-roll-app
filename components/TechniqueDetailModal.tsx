@@ -174,7 +174,7 @@ export default function TechniqueDetailModal({
               </View>
               
               <View style={styles.headerWithClose}>
-                <Text style={styles.headerTitle}>Technique Details</Text>
+                <Text style={styles.headerTitle}>{technique.name}</Text>
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={animateClose}
@@ -192,17 +192,9 @@ export default function TechniqueDetailModal({
             keyboardShouldPersistTaps="handled"
             scrollEventThrottle={16}
           >
-            {/* Technique Name */}
-            <View style={styles.section}>
-              <Text style={styles.techniqueName}>{technique.name}</Text>
-            </View>
 
             {/* Category and Position */}
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Target size={20} color="#1e3a2e" />
-                <Text style={styles.sectionTitle}>Category & Position</Text>
-              </View>
               <View style={styles.badgesContainer}>
                 <View style={[
                   styles.categoryBadge,
@@ -218,10 +210,6 @@ export default function TechniqueDetailModal({
 
             {/* Date Added */}
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#1e3a2e" />
-                <Text style={styles.sectionTitle}>Date Added</Text>
-              </View>
               <Text style={styles.dateText}>{formatDate(technique.timestamp)}</Text>
               <Text style={styles.timeText}>{formatTime(technique.timestamp)}</Text>
             </View>
@@ -312,7 +300,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   section: {
-    marginVertical: 16,
+    marginVertical: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -335,6 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
+    marginTop: 10
   },
   categoryBadge: {
     paddingHorizontal: 12,
