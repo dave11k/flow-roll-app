@@ -16,6 +16,7 @@ import { Search, Pencil, Trash2, Filter, X, Plus, BookOpen } from 'lucide-react-
 import { useFocusEffect } from '@react-navigation/native';
 import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
 import { getTechniques, deleteTechnique, saveTechnique } from '@/services/storage';
+import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
 import TechniquePill from '@/components/TechniquePill';
 import TechniqueItem from '@/components/TechniqueItem';
 import EditTechniqueModal from '@/components/EditTechniqueModal';
@@ -82,6 +83,8 @@ export default function TechniquesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const categoryScrollRef = useRef<ScrollView>(null);
   const positionScrollRef = useRef<ScrollView>(null);
 
@@ -126,6 +129,17 @@ export default function TechniquesPage() {
   useEffect(() => {
     filterTechniques();
   }, [filterTechniques]);
+
+  // Filter suggestions based on search query
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      const filtered = searchTechniqueSuggestions(searchQuery, 6);
+      setSuggestions(filtered);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [searchQuery]);
 
   const loadTechniques = async () => {
     try {
@@ -202,6 +216,23 @@ export default function TechniquesPage() {
     setSelectedPosition(null);
   };
 
+  const handleSuggestionPress = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+  };
+
+  const handleSearchFocus = () => {
+    if (searchQuery.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSearchBlur = () => {
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 150);
+  };
+
   const hasActiveFilters = searchQuery.trim() || selectedCategory || selectedPosition;
 
   const renderTechniqueItem = ({ item }: { item: Technique }) => (
@@ -260,6 +291,8 @@ export default function TechniquesPage() {
             placeholderTextColor="#9ca3af"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlur}
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
@@ -271,6 +304,23 @@ export default function TechniquesPage() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Auto-suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {suggestions.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion}
+                  style={styles.suggestionPill}
+                  onPress={() => handleSuggestionPress(suggestion)}
+                >
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
         
         {/* Filters */}
         <View style={[styles.filterRow, styles.firstFilterRow]}>
@@ -465,6 +515,21 @@ const styles = StyleSheet.create({
   },
   clearSearchButton: {
     padding: 4,
+  },
+  suggestionsContainer: {
+    marginTop: 12,
+  },
+  suggestionPill: {
+    backgroundColor: '#e0e7ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  suggestionText: {
+    color: '#1e40af',
+    fontSize: 14,
+    fontWeight: '500',
   },
   filterRow: {
     marginBottom: 8,

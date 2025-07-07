@@ -19,6 +19,7 @@ import { BlurView } from 'expo-blur';
 import { X, Save, Plus } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
 import { saveTechnique } from '@/services/storage';
+import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
 import TechniquePill from '@/components/TechniquePill';
 import NotesModal from '@/components/NotesModal';
 
@@ -76,244 +77,6 @@ const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
 
 const POSITION_COLOR = '#1e3a2e';
 
-// Sample technique suggestions
-const TECHNIQUE_SUGGESTIONS = [
-  'Armbar',
-  'Triangle Choke',
-  'Rear Naked Choke',
-  'Scissor Sweep',
-  'Hip Escape',
-  'Knee Slice Pass',
-  'Double Leg Takedown',
-  'Kimura',
-  'Omoplata',
-  'Butterfly Sweep',
-  'Berimbolo',
-  'Ezekiel Choke',
-  'Americana',
-  'Gogoplata',
-  'X-Guard Sweep',
-  'Guillotine Choke',
-  'D\'Arce Choke',
-  'Anaconda Choke',
-  'Inverted Triangle',
-  'Arm Triangle Choke',
-  'North South Choke',
-  'Bow and Arrow Choke',
-  'Collar Choke',
-  'Sleeve Choke',
-  'Lapel Choke',
-  'Cross Collar Choke',
-  'Loop Choke',
-  'Paper Cutter Choke',
-  'Baseball Bat Choke',
-  'Peruvian Necktie',
-  'Japanese Necktie',
-  'Calf Slicer',
-  'Bicep Slicer',
-  'Wrist Lock',
-  'Heel Hook',
-  'Straight Ankle Lock',
-  'Kneebar',
-  'Toe Hold',
-  'Leg Lace',
-  'Twister',
-  'Electric Chair',
-  'Crucifix Choke',
-  'Crucifix Armbar',
-  'Von Flue Choke',
-  'Brabo Choke',
-  'Clock Choke',
-  'Bolo Choke',
-  'Can Opener',
-  'Neck Crank',
-  'Inverted Heel Hook',
-  'Straight Leg Lock',
-  'Reverse Triangle',
-  'Flower Sweep',
-  'Balloon Sweep',
-  'Pendulum Sweep',
-  'Arm Drag Sweep',
-  'Hook Sweep',
-  'Hip Bump Sweep',
-  'Kimura Sweep',
-  'Tripod Sweep',
-  'Elevator Sweep',
-  'Leg Lasso Sweep',
-  'Spider Guard Sweep',
-  'De La Riva Sweep',
-  'Reverse De La Riva Sweep',
-  'Single Leg X-Guard Sweep',
-  'Double Leg X-Guard Sweep',
-  'Deep Half Guard Sweep',
-  'Knee Shield Half Guard Sweep',
-  'Underhook Half Guard Sweep',
-  'Dogfight Sweep',
-  'Roll-Over Sweep',
-  '50/50 Guard Sweep',
-  'Leg Drag Sweep',
-  'Overhead Sweep',
-  'Tomoe Nage',
-  'Sleeve and Collar Sweep',
-  'Sit Up Sweep',
-  'Rolling Back Take',
-  'Kiss of the Dragon',
-  'Lumberjack Sweep',
-  'Matrix Sweep',
-  'Shin-to-Shin Sweep',
-  'Ankle Pick Sweep',
-  'Collar Drag Sweep',
-  'Lapel Sweep',
-  'Guard Recovery Sweep',
-  'Osoto Gari Sweep',
-  'Ouchi Gari Sweep',
-  'Kouchi Gari Sweep',
-  'Harai Goshi Sweep',
-  'Uchi Mata Sweep',
-  'Seoi Nage Sweep',
-  'Tani Otoshi Sweep',
-  'Sasae Tsuri Komi Ashi Sweep',
-  'Okuri Ashi Harai Sweep',
-  'Ko Uchi Gari Sweep',
-  'Deashi Harai Sweep',
-  'Yoko Tomoe Nage',
-  'Sumo Sweep',
-  'Guard Pull Sweep',
-  'Rolling Kneebar Sweep',
-  'Rolling Toe Hold Sweep',
-  'Rolling Heel Hook Sweep',
-  'Rolling Straight Ankle Lock Sweep',
-  'Mount Escape',
-  'Side Control Escape',
-  'Back Escape',
-  'Half Guard Escape',
-  'Guard Escape',
-  'Knee on Belly Escape',
-  'North South Escape',
-  'Turtle Escape',
-  'Triangle Choke Escape',
-  'Armbar Escape',
-  'Kimura Escape',
-  'Rear Naked Choke Escape',
-  'Guillotine Escape',
-  'Leg Lock Escape',
-  '50/50 Guard Escape',
-  'Crucifix Escape',
-  'Truck Escape',
-  'Kesa Gatame Escape',
-  'S-Mount Escape',
-  'Mounted Triangle Escape',
-  'Mounted Armbar Escape',
-  'Mounted Kimura Escape',
-  'Mounted Americana Escape',
-  'Mounted Ezekiel Escape',
-  'Back Mount Escape',
-  'Closed Guard Escape',
-  'Open Guard Escape',
-  'De La Riva Guard Escape',
-  'X-Guard Escape',
-  'Spider Guard Escape',
-  'Lasso Guard Escape',
-  'Reverse De La Riva Guard Escape',
-  'Deep Half Guard Escape',
-  'Stack Pass',
-  'Over Under Pass',
-  'Double Under Pass',
-  'Leg Drag Pass',
-  'Toreando Pass',
-  'Smash Pass',
-  'Headquarters Pass',
-  'Long Step Pass',
-  'Weave Pass',
-  'Leg Weave Pass',
-  'Folding Pass',
-  'X-Pass',
-  'Bullfighter Pass',
-  'Knee Cut Pass',
-  'Back Step Pass',
-  'Overhook Pass',
-  'Underhook Pass',
-  'Darce Pass',
-  'Kimura Pass',
-  'Arm Triangle Pass',
-  'Double Underhook Half Guard Pass',
-  'Single Underhook Half Guard Pass',
-  'Knee on Belly Pass',
-  'North South Pass',
-  'Pressure Pass',
-  'Combat Base Pass',
-  'Spider Guard Pass',
-  'Lasso Guard Pass',
-  'De La Riva Guard Pass',
-  'Reverse De La Riva Guard Pass',
-  'X-Guard Pass',
-  'Deep Half Guard Pass',
-  '50/50 Guard Pass',
-  'Closed Guard Break',
-  'Butterfly Guard Pass',
-  'Open Guard Pass',
-  'Ankle Pick',
-  'Body Lock Takedown',
-  'Arm Drag Takedown',
-  'Snap Down',
-  'Guillotine Takedown',
-  'Hip Throw',
-  'Foot Sweep',
-  'Outside Leg Trip',
-  'Inside Leg Trip',
-  'Harai Goshi',
-  'Uchi Mata',
-  'Seoi Nage',
-  'Tani Otoshi',
-  'Sasae Tsuri Komi Ashi',
-  'Okuri Ashi Harai',
-  'Ko Uchi Gari',
-  'Kouchi Gake',
-  'Ippon Seoi Nage',
-  'Koshi Guruma',
-  'Uki Goshi',
-  'Hane Goshi',
-  'Sumi Gaeshi',
-  'Tomo Nage',
-  'Kata Guruma',
-  'Morote Gari',
-  'Soto Makikomi',
-  'Uchi Makikomi',
-  'Ouchi Gake',
-  'Ko Soto Gari',
-  'Ko Soto Gake',
-  'Tsuri Komi Goshi',
-  'Sode Tsuri Komi Goshi',
-  'Okuri Eri Jime',
-  'Hadaka Jime',
-  'Kata Ha Jime',
-  'Gyaku Juji Jime',
-  'Nami Juji Jime',
-  'Kata Juji Jime',
-  'Ude Garami',
-  'Ashi Garami',
-  'Hiza Garami',
-  'Ashi Jime',
-  'Kani Basami',
-  'Flying Armbar',
-  'Flying Triangle',
-  'Flying Guillotine',
-  'Guard Pull',
-  'Pulling Guard',
-  'Posture Defense',
-  'Crossface Defense',
-  'Underhook Defense',
-  'Frame Defense',
-  'Hand Trap Defense',
-  'Guard Retention',
-  'Submission Defense',
-  'Takedown Defense',
-  'Sweep Defense',
-  'Choke Defense',
-  'Arm Attack Defense',
-  'Leg Attack Defense',
-  'Guard Pass Defense',
-];
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -328,7 +91,6 @@ export default function AddTechniqueModal({
   const [notes, setNotes] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSelectingSuggestion, setIsSelectingSuggestion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notesInputPosition, setNotesInputPosition] = useState<{
@@ -405,9 +167,7 @@ export default function AddTechniqueModal({
   // Filter suggestions based on input
   useEffect(() => {
     if (techniqueName.length > 0) {
-      const filtered = TECHNIQUE_SUGGESTIONS.filter(suggestion =>
-        suggestion.toLowerCase().includes(techniqueName.toLowerCase())
-      );
+      const filtered = searchTechniqueSuggestions(techniqueName, 8);
       setSuggestions(filtered);
       setShowSuggestions(true);
     } else {
@@ -465,10 +225,8 @@ export default function AddTechniqueModal({
   };
 
   const handleSuggestionPress = (suggestion: string) => {
-    setIsSelectingSuggestion(true);
     setTechniqueName(suggestion);
     setShowSuggestions(false);
-    setTimeout(() => setIsSelectingSuggestion(false), 100);
   };
 
   const handleNotesPress = () => {
@@ -485,9 +243,9 @@ export default function AddTechniqueModal({
   };
 
   const handleTechniqueNameBlur = () => {
-    if (!isSelectingSuggestion) {
+    setTimeout(() => {
       setShowSuggestions(false);
-    }
+    }, 150);
   };
 
   const handleTechniqueNameFocus = () => {
