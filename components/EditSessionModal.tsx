@@ -18,6 +18,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { X, Save, MapPin, Plus, Trash2, Star, Zap, Pencil } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import TechniquePill from '@/components/TechniquePill';
 import SubmissionPill from '@/components/SubmissionPill';
 import AddTechniqueModal from '@/components/AddTechniqueModal';
@@ -546,6 +547,7 @@ export default function EditSessionModal({
             triggerPosition={notesInputPosition}
           />
         </Animated.View>
+        <KeyboardDismissButton />
       </KeyboardAvoidingView>
     </Modal>
   );

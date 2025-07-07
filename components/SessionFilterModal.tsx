@@ -10,7 +10,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Platform,
   Keyboard,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -18,6 +17,7 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, Calendar, MapPin, Target, Star, RotateCcw, ChevronDown } from 'lucide-react-native';
 import { SessionType } from '@/types/session';
 import { getLocationsFromDb, getUniqueSubmissionsFromDb } from '@/services/database';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 
 interface SessionFilters {
   dateRange: {
@@ -530,6 +530,7 @@ export default function SessionFilterModal({
           </View>
         </View>
       </Animated.View>
+      <KeyboardDismissButton />
     </Modal>
   );
 }

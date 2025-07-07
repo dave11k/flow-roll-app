@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { X, FileText } from 'lucide-react-native';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 
 interface NotesModalProps {
   visible: boolean;
@@ -197,6 +198,7 @@ export default function NotesModal({
             </View>
           </View>
         </Animated.View>
+        <KeyboardDismissButton />
       </KeyboardAvoidingView>
     </Modal>
   );

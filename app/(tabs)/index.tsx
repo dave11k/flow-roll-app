@@ -22,6 +22,9 @@ import TechniqueItem from '@/components/TechniqueItem';
 import EditTechniqueModal from '@/components/EditTechniqueModal';
 import AddTechniqueModal from '@/components/AddTechniqueModal';
 import TechniqueDetailModal from '@/components/TechniqueDetailModal';
+import FloatingAddButton from '@/components/FloatingAddButton';
+import SwipeableCard from '@/components/SwipeableCard';
+import { useToast } from '@/contexts/ToastContext';
 
 const CATEGORIES: TechniqueCategory[] = [
   'Submission',
@@ -72,6 +75,7 @@ const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
 const POSITION_COLOR = '#1e3a2e';
 
 export default function TechniquesPage() {
+  const { showSuccess, showError } = useToast();
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [filteredTechniques, setFilteredTechniques] = useState<Technique[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,8 +187,9 @@ export default function TechniquesPage() {
       await loadTechniques();
       setShowEditModal(false);
       setEditingTechnique(null);
+      showSuccess('Technique updated successfully!');
     } catch {
-      Alert.alert('Error', 'Failed to update technique. Please try again.');
+      showError('Failed to update technique. Please try again.');
     }
   };
 
@@ -201,8 +206,9 @@ export default function TechniquesPage() {
             try {
               await deleteTechnique(technique.id);
               await loadTechniques();
+              showError('Technique deleted successfully!');
             } catch {
-              Alert.alert('Error', 'Failed to delete technique. Please try again.');
+              showError('Failed to delete technique. Please try again.');
             }
           },
         },
@@ -246,15 +252,20 @@ export default function TechniquesPage() {
 
   const renderTechniqueItem = ({ item }: { item: Technique }) => (
     <View style={styles.techniqueItemContainer}>
-      <TouchableOpacity
-        onPress={() => handleShowTechniqueDetail(item)}
-        activeOpacity={0.7}
+      <SwipeableCard
+        onSwipeLeft={() => handleEditTechnique(item)}
+        onSwipeRight={() => handleDeleteTechnique(item)}
       >
-        <TechniqueItem
-          technique={item}
-          categoryColor={CATEGORY_COLORS[item.category]}
-        />
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleShowTechniqueDetail(item)}
+          activeOpacity={0.7}
+        >
+          <TechniqueItem
+            technique={item}
+            categoryColor={CATEGORY_COLORS[item.category]}
+          />
+        </TouchableOpacity>
+      </SwipeableCard>
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={[styles.actionButton, styles.editButton]}
@@ -278,15 +289,6 @@ export default function TechniquesPage() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Techniques ({techniques.length})</Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
-            Keyboard.dismiss();
-            setShowAddModal(true);
-          }}
-        >
-          <Plus size={20} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -465,6 +467,14 @@ export default function TechniquesPage() {
           setSelectedTechnique(null);
         }}
       />
+
+      {/* Floating Add Button */}
+      <FloatingAddButton
+        onPress={() => {
+          Keyboard.dismiss();
+          setShowAddModal(true);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -494,16 +504,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#fff',
-  },
-  addButton: {
-    backgroundColor: '#1e3a2e',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
   },
   searchSection: {
     padding: 20,

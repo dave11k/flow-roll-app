@@ -19,6 +19,9 @@ import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
 import SessionDetailModal from '@/components/SessionDetailModal';
 import SessionFilterModal from '@/components/SessionFilterModal';
+import FloatingAddButton from '@/components/FloatingAddButton';
+import SwipeableCard from '@/components/SwipeableCard';
+import { useToast } from '@/contexts/ToastContext';
 
 interface SessionFilters {
   dateRange: {
@@ -32,6 +35,7 @@ interface SessionFilters {
 }
 
 export default function Sessions() {
+  const { showSuccess, showError } = useToast();
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<TrainingSession[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -143,8 +147,9 @@ export default function Sessions() {
       if (session.location) {
         setLastLocation(session.location);
       }
+      showSuccess('Session created successfully!');
     } catch {
-      Alert.alert('Error', 'Failed to save session. Please try again.');
+      showError('Failed to save session. Please try again.');
     }
   };
 
@@ -171,8 +176,9 @@ export default function Sessions() {
       if (updatedSession.location) {
         setLastLocation(updatedSession.location);
       }
+      showSuccess('Session updated successfully!');
     } catch {
-      Alert.alert('Error', 'Failed to update session. Please try again.');
+      showError('Failed to update session. Please try again.');
     }
   };
 
@@ -189,8 +195,9 @@ export default function Sessions() {
             try {
               await deleteSession(session.id);
               await loadData();
+              showError('Session deleted successfully!');
             } catch {
-              Alert.alert('Error', 'Failed to delete session. Please try again.');
+              showError('Failed to delete session. Please try again.');
             }
           },
         },
@@ -256,15 +263,6 @@ export default function Sessions() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Training Sessions ({sessions.length})</Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
-            Keyboard.dismiss();
-            setShowCreateModal(true);
-          }}
-        >
-          <Plus size={20} color="#fff" />
-        </TouchableOpacity>
       </View>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -322,11 +320,15 @@ export default function Sessions() {
             </View>
             {filteredSessions.map((session) => (
               <View key={session.id} style={styles.sessionItemContainer}>
-                <TouchableOpacity 
-                  style={styles.sessionCard}
-                  onPress={() => handleShowSessionDetail(session)}
-                  activeOpacity={0.7}
+                <SwipeableCard
+                  onSwipeLeft={() => handleEditSession(session)}
+                  onSwipeRight={() => handleDeleteSession(session)}
                 >
+                  <TouchableOpacity 
+                    style={styles.sessionCard}
+                    onPress={() => handleShowSessionDetail(session)}
+                    activeOpacity={0.7}
+                  >
                   <View style={styles.sessionHeader}>
                     <View style={styles.sessionMainInfo}>
                       <Text style={styles.sessionDate}>{formatDate(session.date)}</Text>
@@ -372,7 +374,8 @@ export default function Sessions() {
                   </View>
                 </View>
 
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </SwipeableCard>
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.editButton]}
@@ -431,6 +434,14 @@ export default function Sessions() {
         onApplyFilters={handleApplyFilters}
         onClose={() => setShowFilterModal(false)}
       />
+
+      {/* Floating Add Button */}
+      <FloatingAddButton
+        onPress={() => {
+          Keyboard.dismiss();
+          setShowCreateModal(true);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -460,16 +471,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#fff',
-  },
-  addButton: {
-    backgroundColor: '#1e3a2e',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
   },
   content: {
     flex: 1,

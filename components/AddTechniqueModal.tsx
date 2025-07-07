@@ -18,10 +18,12 @@ import {
 import { BlurView } from 'expo-blur';
 import { X, Save, Plus } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { saveTechnique } from '@/services/storage';
 import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
 import TechniquePill from '@/components/TechniquePill';
 import NotesModal from '@/components/NotesModal';
+import { useToast } from '@/contexts/ToastContext';
 
 interface AddTechniqueModalProps {
   visible: boolean;
@@ -85,6 +87,7 @@ export default function AddTechniqueModal({
   onSave,
   onClose,
 }: AddTechniqueModalProps) {
+  const { showSuccess, showError } = useToast();
   const [techniqueName, setTechniqueName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<TechniquePosition | null>(null);
@@ -209,9 +212,10 @@ export default function AddTechniqueModal({
       // Close immediately like session modal
       onSave();
       onClose();
+      showSuccess('Technique added successfully!');
       
     } catch {
-      Alert.alert('Error', 'Failed to save technique. Please try again.');
+      showError('Failed to save technique. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -463,6 +467,7 @@ export default function AddTechniqueModal({
             />
           </View>
         </Animated.View>
+        <KeyboardDismissButton />
       </KeyboardAvoidingView>
     </Modal>
   );

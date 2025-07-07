@@ -17,6 +17,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { X, Save, Pencil, FileText } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import TechniquePill from '@/components/TechniquePill';
 import NotesModal from '@/components/NotesModal';
 
@@ -333,6 +334,7 @@ export default function EditTechniqueModal({
         onNotesChange={setNotes}
         onClose={() => setShowNotesModal(false)}
       />
+      <KeyboardDismissButton />
     </Modal>
   );
 }

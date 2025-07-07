@@ -1,51 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import {
-  View,
   TouchableOpacity,
   StyleSheet,
   Keyboard,
-  Dimensions,
   Animated,
   Platform,
 } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 export default function KeyboardDismissButton() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
-        setKeyboardHeight(event.endCoordinates.height);
-        setIsKeyboardVisible(true);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
+        // Use startTransition for non-urgent state updates
+        startTransition(() => {
+          setKeyboardHeight(event.endCoordinates.height);
+          setIsKeyboardVisible(true);
+        });
+        
+        // Defer animation start to prevent scheduling during render
+        requestAnimationFrame(() => {
+          if (isMountedRef.current) {
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 250,
+              useNativeDriver: true,
+            }).start();
+          }
+        });
       }
     );
 
     const keyboardDidHideListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsKeyboardVisible(false);
-          setKeyboardHeight(0);
+        // Defer animation start to prevent scheduling during render
+        requestAnimationFrame(() => {
+          if (isMountedRef.current) {
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 250,
+              useNativeDriver: true,
+            }).start(() => {
+              // Use startTransition for cleanup state updates
+              startTransition(() => {
+                if (isMountedRef.current) {
+                  setIsKeyboardVisible(false);
+                  setKeyboardHeight(0);
+                }
+              });
+            });
+          }
         });
       }
     );
 
     return () => {
+      isMountedRef.current = false;
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
     };

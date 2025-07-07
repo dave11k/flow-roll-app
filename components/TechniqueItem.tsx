@@ -29,7 +29,10 @@ export default function TechniqueItem({
           </View>
         </View>
         <Text style={styles.timestamp}>
-          {technique.timestamp.toLocaleTimeString([], { 
+          {technique.timestamp.toLocaleDateString([], { 
+            month: 'short', 
+            day: 'numeric' 
+          })} {technique.timestamp.toLocaleTimeString([], { 
             hour: '2-digit', 
             minute: '2-digit' 
           })}
@@ -69,6 +72,7 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: '#666',
+    marginTop: 6,
   },
   tags: {
     flexDirection: 'row',
