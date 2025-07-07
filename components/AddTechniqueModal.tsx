@@ -17,11 +17,13 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { X, Save, Plus } from 'lucide-react-native';
-import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
+import { Technique, TechniqueCategory } from '@/types/technique';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { saveTechnique } from '@/services/storage';
 import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
-import TechniquePill from '@/components/TechniquePill';
+import CategoryDropdown from '@/components/CategoryDropdown';
+import TagSelectionModal from '@/components/TagSelectionModal';
+import TagChip from '@/components/TagChip';
 import NotesModal from '@/components/NotesModal';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -31,53 +33,6 @@ interface AddTechniqueModalProps {
   onClose: () => void;
 }
 
-const CATEGORIES: TechniqueCategory[] = [
-  'Submission',
-  'Sweep',
-  'Escape',
-  'Guard Pass',
-  'Takedown',
-  'Defense',
-  'Other',
-];
-
-const POSITIONS: TechniquePosition[] = [
-  'Mount',
-  'Full Guard',
-  'Side Control',
-  'Back',
-  'Half Guard',
-  'Standing',
-  'Open Guard',
-  'Butterfly Guard',
-  'De La Riva Guard',
-  'X-Guard',
-  'Spider Guard',
-  'Lasso Guard',
-  'Reverse De La Riva Guard',
-  'Deep Half Guard',
-  'North South',
-  'Knee on Belly',
-  'Turtle',
-  '50/50 Guard',
-  'Leg Entanglement',
-  'Crucifix',
-  'Kesa Gatame',
-  'S-Mount',
-  'Other',
-];
-
-const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#22c55e',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
-
-const POSITION_COLOR = '#1e3a2e';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -90,13 +45,14 @@ export default function AddTechniqueModal({
   const { showSuccess, showError } = useToast();
   const [techniqueName, setTechniqueName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
-  const [selectedPosition, setSelectedPosition] = useState<TechniquePosition | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const justSelectedSuggestion = useRef(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showTagModal, setShowTagModal] = useState(false);
   const [notesInputPosition, setNotesInputPosition] = useState<{
     x: number;
     y: number;
@@ -108,15 +64,13 @@ export default function AddTechniqueModal({
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const backgroundOpacityAnim = useRef(new Animated.Value(0)).current;
   const notesInputRef = useRef<View>(null);
-  const categoryScrollRef = useRef<ScrollView>(null);
-  const positionScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (visible) {
       // Reset form
       setTechniqueName('');
       setSelectedCategory(null);
-      setSelectedPosition(null);
+      setSelectedTags([]);
       setNotes('');
       setShowSuggestions(false);
     }
@@ -190,10 +144,6 @@ export default function AddTechniqueModal({
       return;
     }
     
-    if (!selectedPosition) {
-      Alert.alert('Error', 'Please select a position');
-      return;
-    }
 
     setIsLoading(true);
 
@@ -202,7 +152,7 @@ export default function AddTechniqueModal({
         id: Date.now().toString(),
         name: techniqueName.trim(),
         category: selectedCategory,
-        position: selectedPosition,
+        tags: selectedTags,
         notes: notes.trim() || undefined,
         timestamp: new Date(),
       };
@@ -225,8 +175,13 @@ export default function AddTechniqueModal({
     setSelectedCategory(category);
   };
 
-  const handlePositionSelect = (position: TechniquePosition) => {
-    setSelectedPosition(position);
+  const handleTagsChange = (tags: string[]) => {
+    console.log('AddTechniqueModal - handleTagsChange called with:', tags);
+    setSelectedTags(tags);
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
   };
 
   const handleSuggestionPress = (suggestion: string) => {
@@ -271,7 +226,7 @@ export default function AddTechniqueModal({
     onClose();
   };
 
-  const isValid = techniqueName.trim() && selectedCategory && selectedPosition && !isLoading;
+  const isValid = techniqueName.trim() && selectedCategory && !isLoading;
 
   return (
     <Modal
@@ -363,49 +318,51 @@ export default function AddTechniqueModal({
                 )}
               </View>
 
-              {/* Category and Position Selection */}
-              <View style={styles.categoriesSection}>
-                {/* Category Selection */}
-                <View style={styles.categorySubsection}>
-                  <ScrollView 
-                    ref={categoryScrollRef}
-                    horizontal 
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScrollContent}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    {CATEGORIES.map((category) => (
-                      <TechniquePill
-                        key={category}
-                        label={category}
-                        isSelected={selectedCategory === category}
-                        onPress={() => handleCategorySelect(category)}
-                        color={CATEGORY_COLORS[category]}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
+              {/* Category Selection */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Category</Text>
+                <CategoryDropdown
+                  selectedCategory={selectedCategory}
+                  onCategorySelect={handleCategorySelect}
+                  placeholder="Select category"
+                />
+              </View>
 
-                {/* Position Selection */}
-                <View style={styles.positionSubsection}>
-                  <ScrollView 
-                    ref={positionScrollRef}
-                    horizontal 
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScrollContent}
-                    keyboardShouldPersistTaps="handled"
+              {/* Tags Selection */}
+              <View style={styles.section}>
+                <View style={styles.tagsHeader}>
+                  <Text style={styles.sectionTitle}>Tags</Text>
+                  <TouchableOpacity
+                    style={styles.addTagButton}
+                    onPress={() => setShowTagModal(true)}
+                    activeOpacity={0.7}
                   >
-                    {POSITIONS.map((position) => (
-                      <TechniquePill
-                        key={position}
-                        label={position}
-                        isSelected={selectedPosition === position}
-                        onPress={() => handlePositionSelect(position)}
-                        color={POSITION_COLOR}
-                      />
-                    ))}
-                  </ScrollView>
+                    <Plus size={16} color="#1e3a2e" />
+                    <Text style={styles.addTagText}>Add Tags</Text>
+                  </TouchableOpacity>
                 </View>
+                
+                {selectedTags.length > 0 ? (
+                  <View style={styles.selectedTagsContainer}>
+                    {selectedTags.map((tag) => {
+                      console.log('Rendering tag chip for:', tag);
+                      return (
+                        <TagChip
+                          key={tag}
+                          tag={tag}
+                          variant="removable"
+                          onRemove={() => handleRemoveTag(tag)}
+                        />
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={styles.noTagsContainer}>
+                    <Text style={styles.noTagsText}>
+                      No tags selected. Tags help categorize and find techniques later.
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Notes Section */}
@@ -464,6 +421,13 @@ export default function AddTechniqueModal({
               onNotesChange={setNotes}
               onClose={handleNotesModalClose}
               triggerPosition={notesInputPosition}
+            />
+
+            <TagSelectionModal
+              visible={showTagModal}
+              selectedTags={selectedTags}
+              onTagsChange={handleTagsChange}
+              onClose={() => setShowTagModal(false)}
             />
           </View>
         </Animated.View>
@@ -556,16 +520,46 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 16,
   },
-  categoriesSection: {
-    paddingHorizontal: 20,
-    paddingTop: 0,
-    paddingBottom: 4,
+  tagsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  categorySubsection: {
-    marginBottom: 16,
+  addTagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#1e3a2e',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
   },
-  positionSubsection: {
-    marginBottom: 0,
+  addTagText: {
+    color: '#1e3a2e',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectedTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  noTagsContainer: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  noTagsText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 16,
@@ -597,9 +591,6 @@ const styles = StyleSheet.create({
     color: '#1e40af',
     fontSize: 14,
     fontWeight: '500',
-  },
-  horizontalScrollContent: {
-    paddingRight: 20,
   },
   notesContainer: {
     position: 'relative',

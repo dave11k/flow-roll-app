@@ -37,7 +37,6 @@ const createTables = async (): Promise<void> => {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       category TEXT NOT NULL,
-      position TEXT NOT NULL,
       notes TEXT,
       timestamp INTEGER NOT NULL,
       session_id TEXT,
@@ -81,9 +80,27 @@ const createTables = async (): Promise<void> => {
       last_used INTEGER
     );
 
+    -- Tags table for storing available tags
+    CREATE TABLE IF NOT EXISTS tags (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      category TEXT NOT NULL CHECK (category IN ('position', 'attribute', 'style', 'custom')),
+      usage_count INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      is_custom INTEGER DEFAULT 0
+    );
+
+    -- Junction table for technique tags (many-to-many relationship)
+    CREATE TABLE IF NOT EXISTS technique_tags (
+      technique_id TEXT NOT NULL,
+      tag_name TEXT NOT NULL,
+      PRIMARY KEY (technique_id, tag_name),
+      FOREIGN KEY (technique_id) REFERENCES techniques (id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_name) REFERENCES tags (name) ON DELETE CASCADE
+    );
+
     -- Indexes for better performance
     CREATE INDEX IF NOT EXISTS idx_techniques_category ON techniques (category);
-    CREATE INDEX IF NOT EXISTS idx_techniques_position ON techniques (position);
     CREATE INDEX IF NOT EXISTS idx_techniques_timestamp ON techniques (timestamp);
     CREATE INDEX IF NOT EXISTS idx_techniques_session_id ON techniques (session_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions (date);
@@ -91,6 +108,11 @@ const createTables = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_submissions_session ON submissions (session_id);
     CREATE INDEX IF NOT EXISTS idx_locations_usage_count ON locations (usage_count DESC);
     CREATE INDEX IF NOT EXISTS idx_locations_last_used ON locations (last_used DESC);
+    CREATE INDEX IF NOT EXISTS idx_tags_category ON tags (category);
+    CREATE INDEX IF NOT EXISTS idx_tags_usage_count ON tags (usage_count DESC);
+    CREATE INDEX IF NOT EXISTS idx_tags_name ON tags (name);
+    CREATE INDEX IF NOT EXISTS idx_technique_tags_technique ON technique_tags (technique_id);
+    CREATE INDEX IF NOT EXISTS idx_technique_tags_tag ON technique_tags (tag_name);
   `;
 
   await db.execAsync(createTablesSQL);
@@ -117,22 +139,80 @@ export const saveTechniqueToDb = async (technique: Technique): Promise<void> => 
   const database = getDatabase();
   
   try {
-    // Insert or replace technique
-    await database.runAsync(
-      `INSERT OR REPLACE INTO techniques (id, name, category, position, notes, timestamp, session_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        technique.id,
-        technique.name,
-        technique.category,
-        technique.position,
-        technique.notes || null,
-        technique.timestamp.getTime(),
-        technique.sessionId || null
-      ]
-    );
+    // Validate input
+    if (!technique.id || !technique.name || !technique.category) {
+      throw new Error('Missing required technique fields');
+    }
+
+    // Ensure tags is an array
+    const tags = Array.isArray(technique.tags) ? technique.tags : [];
+
+    console.log('Saving technique with tags:', tags);
+
+    await database.withTransactionAsync(async () => {
+      // Insert or replace technique
+      await database.runAsync(
+        `INSERT OR REPLACE INTO techniques (id, name, category, notes, timestamp, session_id) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          technique.id,
+          technique.name,
+          technique.category,
+          technique.notes || null,
+          technique.timestamp.getTime(),
+          technique.sessionId || null
+        ]
+      );
+
+      // Remove existing tag associations for this technique
+      await database.runAsync(
+        'DELETE FROM technique_tags WHERE technique_id = ?',
+        [technique.id]
+      );
+
+      // Add new tag associations only if there are tags
+      if (tags.length > 0) {
+        for (const tagName of tags) {
+          // Skip empty or invalid tag names
+          if (!tagName || typeof tagName !== 'string' || !tagName.trim()) {
+            console.warn('Skipping invalid tag:', tagName);
+            continue;
+          }
+
+          const cleanTagName = tagName.trim();
+
+          // Ensure the tag exists in the tags table
+          await database.runAsync(
+            `INSERT OR IGNORE INTO tags (id, name, category, created_at, is_custom) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              cleanTagName.toLowerCase().replace(/\s+/g, '-'),
+              cleanTagName,
+              'custom',
+              Date.now(),
+              1
+            ]
+          );
+
+          // Create technique-tag association
+          await database.runAsync(
+            'INSERT INTO technique_tags (technique_id, tag_name) VALUES (?, ?)',
+            [technique.id, cleanTagName]
+          );
+
+          // Update tag usage count
+          await database.runAsync(
+            'UPDATE tags SET usage_count = usage_count + 1 WHERE name = ?',
+            [cleanTagName]
+          );
+        }
+      }
+    });
+
+    console.log('Technique saved successfully with', tags.length, 'tags');
   } catch (error) {
     console.error('Error saving technique to database:', error);
+    console.error('Technique data:', technique);
     throw new Error('Failed to save technique');
   }
 };
@@ -141,19 +221,35 @@ export const getTechniquesFromDb = async (): Promise<Technique[]> => {
   const database = getDatabase();
   
   try {
-    const result = await database.getAllAsync(
+    const techniques = await database.getAllAsync(
       'SELECT * FROM techniques ORDER BY timestamp DESC'
     );
     
-    return result.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      position: row.position,
-      notes: row.notes,
-      timestamp: new Date(row.timestamp),
-      sessionId: row.session_id
-    }));
+    const result: Technique[] = [];
+    
+    for (const techniqueRow of techniques) {
+      const row = techniqueRow as any;
+      
+      // Get tags for this technique
+      const tagRows = await database.getAllAsync(
+        'SELECT tag_name FROM technique_tags WHERE technique_id = ?',
+        [row.id]
+      );
+      
+      const tags = tagRows.map((tagRow: any) => tagRow.tag_name);
+      
+      result.push({
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        tags,
+        notes: row.notes,
+        timestamp: new Date(row.timestamp),
+        sessionId: row.session_id
+      });
+    }
+    
+    return result;
   } catch (error) {
     console.error('Error loading techniques from database:', error);
     return [];
@@ -164,7 +260,13 @@ export const deleteTechniqueFromDb = async (techniqueId: string): Promise<void> 
   const database = getDatabase();
   
   try {
-    await database.runAsync('DELETE FROM techniques WHERE id = ?', [techniqueId]);
+    await database.withTransactionAsync(async () => {
+      // Delete technique (cascade will handle technique_tags)
+      await database.runAsync('DELETE FROM techniques WHERE id = ?', [techniqueId]);
+      
+      // Optionally decrease usage count for tags that are no longer associated
+      // (This is handled by the foreign key cascade, but we could add cleanup logic here)
+    });
   } catch (error) {
     console.error('Error deleting technique from database:', error);
     throw new Error('Failed to delete technique');
@@ -175,20 +277,36 @@ export const getTechniquesBySessionFromDb = async (sessionId: string): Promise<T
   const database = getDatabase();
   
   try {
-    const result = await database.getAllAsync(
+    const techniques = await database.getAllAsync(
       'SELECT * FROM techniques WHERE session_id = ? ORDER BY timestamp DESC',
       [sessionId]
     );
     
-    return result.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      position: row.position,
-      notes: row.notes,
-      timestamp: new Date(row.timestamp),
-      sessionId: row.session_id
-    }));
+    const result: Technique[] = [];
+    
+    for (const techniqueRow of techniques) {
+      const row = techniqueRow as any;
+      
+      // Get tags for this technique
+      const tagRows = await database.getAllAsync(
+        'SELECT tag_name FROM technique_tags WHERE technique_id = ?',
+        [row.id]
+      );
+      
+      const tags = tagRows.map((tagRow: any) => tagRow.tag_name);
+      
+      result.push({
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        tags,
+        notes: row.notes,
+        timestamp: new Date(row.timestamp),
+        sessionId: row.session_id
+      });
+    }
+    
+    return result;
   } catch (error) {
     console.error('Error loading techniques by session from database:', error);
     return [];
@@ -336,20 +454,36 @@ export const getRecentTechniquesFromDb = async (limit: number = 10): Promise<Tec
   const database = getDatabase();
   
   try {
-    const result = await database.getAllAsync(
+    const techniques = await database.getAllAsync(
       'SELECT * FROM techniques ORDER BY timestamp DESC LIMIT ?',
       [limit]
     );
     
-    return result.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      position: row.position,
-      notes: row.notes,
-      timestamp: new Date(row.timestamp),
-      sessionId: row.session_id
-    }));
+    const result: Technique[] = [];
+    
+    for (const techniqueRow of techniques) {
+      const row = techniqueRow as any;
+      
+      // Get tags for this technique
+      const tagRows = await database.getAllAsync(
+        'SELECT tag_name FROM technique_tags WHERE technique_id = ?',
+        [row.id]
+      );
+      
+      const tags = tagRows.map((tagRow: any) => tagRow.tag_name);
+      
+      result.push({
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        tags,
+        notes: row.notes,
+        timestamp: new Date(row.timestamp),
+        sessionId: row.session_id
+      });
+    }
+    
+    return result;
   } catch (error) {
     console.error('Error loading recent techniques from database:', error);
     return [];
@@ -401,6 +535,106 @@ export const getUniqueSubmissionsFromDb = async (): Promise<string[]> => {
   } catch (error) {
     console.error('Error loading unique submissions from database:', error);
     return [];
+  }
+};
+
+// Tag operations
+export const getAllTagsFromDb = async (): Promise<{ name: string; category: string; usageCount: number; isCustom: boolean }[]> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getAllAsync(
+      'SELECT name, category, usage_count, is_custom FROM tags ORDER BY usage_count DESC, name ASC'
+    );
+    
+    return result.map((row: any) => ({
+      name: row.name,
+      category: row.category,
+      usageCount: row.usage_count,
+      isCustom: Boolean(row.is_custom)
+    }));
+  } catch (error) {
+    console.error('Error loading tags from database:', error);
+    return [];
+  }
+};
+
+export const getPopularTagsFromDb = async (limit: number = 20): Promise<string[]> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getAllAsync(
+      'SELECT name FROM tags WHERE usage_count > 0 ORDER BY usage_count DESC, name ASC LIMIT ?',
+      [limit]
+    );
+    
+    return result.map((row: any) => row.name);
+  } catch (error) {
+    console.error('Error loading popular tags from database:', error);
+    return [];
+  }
+};
+
+export const searchTagsFromDb = async (query: string, limit: number = 10): Promise<string[]> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getAllAsync(
+      'SELECT name FROM tags WHERE name LIKE ? ORDER BY usage_count DESC, name ASC LIMIT ?',
+      [`%${query}%`, limit]
+    );
+    
+    return result.map((row: any) => row.name);
+  } catch (error) {
+    console.error('Error searching tags from database:', error);
+    return [];
+  }
+};
+
+export const createCustomTagInDb = async (tagName: string): Promise<void> => {
+  const database = getDatabase();
+  
+  try {
+    await database.runAsync(
+      `INSERT OR IGNORE INTO tags (id, name, category, created_at, is_custom, usage_count) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        tagName.toLowerCase().replace(/\s+/g, '-'),
+        tagName,
+        'custom',
+        Date.now(),
+        1,
+        0
+      ]
+    );
+  } catch (error) {
+    console.error('Error creating custom tag in database:', error);
+    throw new Error('Failed to create custom tag');
+  }
+};
+
+export const initializePredefinedTagsInDb = async (tags: { name: string; category: string }[]): Promise<void> => {
+  const database = getDatabase();
+  
+  try {
+    // Insert tags individually without transaction since this might be called within another transaction
+    for (const tag of tags) {
+      await database.runAsync(
+        `INSERT OR IGNORE INTO tags (id, name, category, created_at, is_custom, usage_count) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          tag.name.toLowerCase().replace(/\s+/g, '-'),
+          tag.name,
+          tag.category,
+          Date.now(),
+          0,
+          0
+        ]
+      );
+    }
+  } catch (error) {
+    console.error('Error initializing predefined tags in database:', error);
+    throw new Error('Failed to initialize predefined tags');
   }
 };
 

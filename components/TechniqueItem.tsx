@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Technique } from '@/types/technique';
+import TagChip from '@/components/TagChip';
 
 interface TechniqueItemProps {
   technique: Technique;
@@ -13,23 +14,42 @@ export default function TechniqueItem({
   categoryColor,
   noMargin = false
 }: TechniqueItemProps) {
+  const MAX_VISIBLE_TAGS = 3;
+  const visibleTags = technique.tags.slice(0, MAX_VISIBLE_TAGS);
+  const hiddenTagsCount = technique.tags.length - MAX_VISIBLE_TAGS;
 
   return (
     <View style={[styles.container, noMargin && styles.noMargin]}>
       <View style={styles.header}>
         <Text style={styles.name}>{technique.name}</Text>
       </View>
-      <View style={styles.footer}>
-        <View style={styles.tags}>
-          <View style={[styles.tag, { backgroundColor: categoryColor }]}>
-            <Text style={styles.tagText}>{technique.category}</Text>
+      <View style={styles.content}>
+        <View style={styles.tagsSection}>
+          {/* Category Badge */}
+          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+            <Text style={styles.categoryText}>{technique.category}</Text>
           </View>
-          <View style={[styles.tag, styles.positionTag]}>
-            <Text style={[styles.tagText, { color: '#333' }]}>
-              {technique.position}
-            </Text>
-          </View>
+          
+          {/* Tags */}
+          {technique.tags.length > 0 && (
+            <View style={styles.tagsContainer}>
+              {visibleTags.map((tag) => (
+                <TagChip
+                  key={tag}
+                  tag={tag}
+                  size="small"
+                  variant="default"
+                />
+              ))}
+              {hiddenTagsCount > 0 && (
+                <View style={styles.moreTagsIndicator}>
+                  <Text style={styles.moreTagsText}>+{hiddenTagsCount}</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
+        
         <Text style={styles.timestamp}>
           {technique.timestamp.toLocaleDateString([], { 
             month: 'short', 
@@ -60,10 +80,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 12,
   },
-  footer: {
+  content: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   name: {
     fontSize: 16,
@@ -71,27 +92,47 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
-  timestamp: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 6,
-  },
-  tags: {
+  tagsSection: {
+    flex: 1,
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  tag: {
+  categoryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    marginRight: 2,
   },
-  positionTag: {
-    backgroundColor: '#f0f0f0',
-  },
-  tagText: {
+  categoryText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#fff',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    flex: 1,
+  },
+  moreTagsIndicator: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  moreTagsText: {
+    fontSize: 11,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+    textAlign: 'right',
+    minWidth: 80,
   },
   noMargin: {
     marginBottom: 0,

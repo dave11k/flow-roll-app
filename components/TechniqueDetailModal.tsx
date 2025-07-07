@@ -179,32 +179,6 @@ export default function TechniqueDetailModal({
               
               <View style={styles.headerWithClose}>
                 <Text style={styles.headerTitle}>{technique.name}</Text>
-                <View style={styles.actionButtons}>
-                  {onEdit && (
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.editButton]}
-                      onPress={() => {
-                        onEdit(technique);
-                        animateClose();
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Pencil size={20} color="#3b82f6" />
-                    </TouchableOpacity>
-                  )}
-                  {onDelete && (
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.deleteButton]}
-                      onPress={() => {
-                        onDelete(technique);
-                        animateClose();
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Trash2 size={20} color="#ef4444" />
-                    </TouchableOpacity>
-                  )}
-                </View>
               </View>
             </Animated.View>
           </PanGestureHandler>
@@ -216,19 +190,63 @@ export default function TechniqueDetailModal({
             scrollEventThrottle={16}
           >
 
-            {/* Category and Position */}
+            {/* Category and Action Buttons */}
             <View style={styles.section}>
-              <View style={styles.badgesContainer}>
-                <View style={[
-                  styles.categoryBadge,
-                  { backgroundColor: CATEGORY_COLORS[technique.category] || '#6b7280' }
-                ]}>
-                  <Text style={styles.badgeText}>{technique.category}</Text>
+              <View style={styles.categoryRow}>
+                <View style={styles.badgesContainer}>
+                  <View style={[
+                    styles.categoryBadge,
+                    { backgroundColor: CATEGORY_COLORS[technique.category] || '#6b7280' }
+                  ]}>
+                    <Text style={styles.badgeText}>{technique.category}</Text>
+                  </View>
                 </View>
-                <View style={styles.positionBadge}>
-                  <Text style={styles.positionText}>{technique.position}</Text>
+                
+                <View style={styles.actionButtons}>
+                  {onEdit && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.editButton]}
+                      onPress={() => {
+                        console.log('Edit button pressed');
+                        onEdit(technique);
+                        onClose();
+                      }}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Pencil size={12} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {onDelete && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.deleteButton]}
+                      onPress={() => {
+                        console.log('Delete button pressed');
+                        onDelete(technique);
+                        onClose();
+                      }}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={12} color="#ef4444" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
+              
+              {/* Tags */}
+              {technique.tags && technique.tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  <Text style={styles.tagsTitle}>Tags</Text>
+                  <View style={styles.tagsList}>
+                    {technique.tags.map((tag) => (
+                      <View key={tag} style={styles.tagPill}>
+                        <Text style={styles.tagText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Date Added */}
@@ -296,9 +314,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerWithClose: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -308,15 +323,21 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
+    textAlign: 'center',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
@@ -369,16 +390,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  positionBadge: {
+  tagsContainer: {
+    marginTop: 16,
+  },
+  tagsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  tagsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagPill: {
+    backgroundColor: '#f3f4f6',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#1e3a2e',
+    borderRadius: 16,
   },
-  positionText: {
-    color: '#fff',
+  tagText: {
+    color: '#6b7280',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   dateText: {
     fontSize: 16,

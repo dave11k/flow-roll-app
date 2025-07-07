@@ -15,11 +15,31 @@ import { runMigration } from './migration';
 
 // Initialize database and run migration on first import
 let initialized = false;
+let initializing = false;
+
 const ensureInitialized = async () => {
-  if (!initialized) {
+  if (initialized) return;
+  
+  if (initializing) {
+    // Wait for initialization to complete
+    while (initializing) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return;
+  }
+  
+  initializing = true;
+  
+  try {
     await initializeDatabase();
     await runMigration();
     initialized = true;
+    console.log('Storage successfully initialized');
+  } catch (error) {
+    console.error('Failed to initialize storage:', error);
+    throw error;
+  } finally {
+    initializing = false;
   }
 };
 
