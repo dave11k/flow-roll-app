@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { StyleSheet, Animated, Dimensions } from 'react-native';
+import { StyleSheet, Animated, Dimensions, View, Text } from 'react-native';
 import { 
   PanGestureHandler, 
   State 
@@ -27,7 +27,7 @@ export default function SwipeableCard({
 
   const handleGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
-    { useNativeDriver: true }
+    { useNativeDriver: false } // Changed to false to allow layout animations
   );
 
   const handleStateChange = (event: any) => {
@@ -43,7 +43,7 @@ export default function SwipeableCard({
         Animated.timing(translateX, {
           toValue: screenWidth,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }).start(() => {
           onSwipeLeft();
           translateX.setValue(0);
@@ -53,7 +53,7 @@ export default function SwipeableCard({
         Animated.timing(translateX, {
           toValue: -screenWidth,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }).start(() => {
           onSwipeRight();
           translateX.setValue(0);
@@ -64,35 +64,118 @@ export default function SwipeableCard({
           toValue: 0,
           tension: 100,
           friction: 8,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }).start();
       }
     }
   };
 
   return (
-    <PanGestureHandler
-      ref={panRef}
-      onGestureEvent={handleGestureEvent}
-      onHandlerStateChange={handleStateChange}
-      activeOffsetX={[-10, 10]}
-    >
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            transform: [{ translateX }],
-          },
-        ]}
+    <View style={styles.container}>
+      {/* Foreground Card */}
+      <PanGestureHandler
+        ref={panRef}
+        onGestureEvent={handleGestureEvent}
+        onHandlerStateChange={handleStateChange}
+        activeOffsetX={[-10, 10]}
       >
-        {children}
-      </Animated.View>
-    </PanGestureHandler>
+        <View style={styles.cardWrapper}>
+          {/* Background Actions */}
+          <View style={styles.backgroundContainer}>
+            {/* Edit Background (Blue) */}
+            <Animated.View 
+              style={[
+                styles.editBackground,
+                {
+                  opacity: translateX.interpolate({
+                    inputRange: [0, leftThreshold],
+                    outputRange: [0, 1],
+                    extrapolate: 'clamp',
+                  }),
+                }
+              ]}
+            >
+              <Text style={styles.actionText}>Edit</Text>
+            </Animated.View>
+            
+            {/* Delete Background (Red) */}
+            <Animated.View 
+              style={[
+                styles.deleteBackground,
+                {
+                  opacity: translateX.interpolate({
+                    inputRange: [-rightThreshold, 0],
+                    outputRange: [1, 0],
+                    extrapolate: 'clamp',
+                  }),
+                }
+              ]}
+            >
+              <Text style={styles.actionText}>Delete</Text>
+            </Animated.View>
+          </View>
+
+          <Animated.View
+            style={[
+              styles.foregroundCard,
+              {
+                transform: [{ translateX }],
+              },
+            ]}
+          >
+            {children}
+          </Animated.View>
+        </View>
+      </PanGestureHandler>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+  },
+  cardWrapper: {
+    position: 'relative',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    borderRadius: 12,
+  },
+  editBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: 20,
+  },
+  deleteBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 20,
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  foregroundCard: {
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
 });

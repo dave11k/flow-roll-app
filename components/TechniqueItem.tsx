@@ -5,15 +5,17 @@ import { Technique } from '@/types/technique';
 interface TechniqueItemProps {
   technique: Technique;
   categoryColor: string;
+  noMargin?: boolean;
 }
 
 export default function TechniqueItem({ 
   technique, 
-  categoryColor 
+  categoryColor,
+  noMargin = false
 }: TechniqueItemProps) {
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, noMargin && styles.noMargin]}>
       <View style={styles.header}>
         <Text style={styles.name}>{technique.name}</Text>
       </View>
@@ -90,5 +92,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#fff',
+  },
+  noMargin: {
+    marginBottom: 0,
   },
 });

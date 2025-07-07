@@ -68,6 +68,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     // Add translucent effect
-    opacity: 0.95,
+    opacity: 0.85,
   },
 });

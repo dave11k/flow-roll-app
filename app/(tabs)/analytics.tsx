@@ -90,7 +90,7 @@ const chartConfig = {
 
 export default function Analytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'year'>('month');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = React.useCallback(async () => {
@@ -328,7 +328,7 @@ export default function Analytics() {
       <View style={styles.header}>
         <Text style={styles.title}>Analytics</Text>
         <View style={styles.timeframeSelector}>
-          {(['week', 'month', 'year'] as const).map((timeframe) => (
+          {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
             <TouchableOpacity
               key={timeframe}
               style={[

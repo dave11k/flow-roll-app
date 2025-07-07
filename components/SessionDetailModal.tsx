@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { X, Calendar, MapPin, Clock, Star, Target } from 'lucide-react-native';
+import { Pencil, Trash2, Calendar, MapPin, Clock, Star, Target } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import SubmissionDisplayPill from '@/components/SubmissionDisplayPill';
 
@@ -19,6 +19,8 @@ interface SessionDetailModalProps {
   visible: boolean;
   session: TrainingSession | null;
   onClose: () => void;
+  onEdit?: (session: TrainingSession) => void;
+  onDelete?: (session: TrainingSession) => void;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -27,6 +29,8 @@ export default function SessionDetailModal({
   visible,
   session,
   onClose,
+  onEdit,
+  onDelete,
 }: SessionDetailModalProps) {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -201,13 +205,32 @@ export default function SessionDetailModal({
               
               <View style={styles.headerWithClose}>
                 <Text style={styles.headerTitle}>Session Details</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={animateClose}
-                  activeOpacity={0.7}
-                >
-                  <X size={24} color="#6b7280" />
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  {onEdit && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.editButton]}
+                      onPress={() => {
+                        onEdit(session);
+                        animateClose();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Pencil size={20} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {onDelete && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.deleteButton]}
+                      onPress={() => {
+                        onDelete(session);
+                        animateClose();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={20} color="#ef4444" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </Animated.View>
           </PanGestureHandler>
@@ -365,13 +388,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f2937',
   },
-  closeButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+  },
+  editButton: {
+    borderColor: '#3b82f6',
+  },
+  deleteButton: {
+    borderColor: '#ef4444',
   },
   content: {
     flex: 1,

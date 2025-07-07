@@ -23,6 +23,7 @@ import TechniquePill from '@/components/TechniquePill';
 import SubmissionPill from '@/components/SubmissionPill';
 import AddTechniqueModal from '@/components/AddTechniqueModal';
 import NotesModal from '@/components/NotesModal';
+import { searchSubmissionSuggestions, isValidSubmission } from '@/data/submissionSuggestions';
 
 interface CreateSessionModalProps {
   visible: boolean;
@@ -52,6 +53,8 @@ export default function CreateSessionModal({
   const [submissions, setSubmissions] = useState<string[]>([]);
   const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
   const [newSubmission, setNewSubmission] = useState('');
+  const [submissionSuggestions, setSubmissionSuggestions] = useState<string[]>([]);
+  const [showSubmissionDropdown, setShowSubmissionDropdown] = useState(false);
   const [notes, setNotes] = useState('');
   const [satisfaction, setSatisfaction] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [showAddTechniqueModal, setShowAddTechniqueModal] = useState(false);
@@ -136,12 +139,37 @@ export default function CreateSessionModal({
   };
 
   const handleAddSubmission = () => {
-    if (newSubmission.trim() && !submissions.includes(newSubmission.trim())) {
-      const submission = newSubmission.trim();
+    const submission = newSubmission.trim();
+    if (submission && isValidSubmission(submission) && !submissions.includes(submission)) {
+      setSubmissions([...submissions, submission]);
+      setSubmissionCounts(prev => ({ ...prev, [submission]: 1 }));
+      setNewSubmission('');
+      setShowSubmissionDropdown(false);
+    }
+  };
+
+  const handleSubmissionInputChange = (text: string) => {
+    setNewSubmission(text);
+    
+    if (text.trim()) {
+      const suggestions = searchSubmissionSuggestions(text, 6);
+      setSubmissionSuggestions(suggestions);
+      setShowSubmissionDropdown(suggestions.length > 0);
+    } else {
+      setShowSubmissionDropdown(false);
+    }
+  };
+
+  const handleSubmissionSelect = (submission: string) => {
+    setNewSubmission(submission);
+    setShowSubmissionDropdown(false);
+    // Auto-add the submission when selected
+    if (!submissions.includes(submission)) {
       setSubmissions([...submissions, submission]);
       setSubmissionCounts(prev => ({ ...prev, [submission]: 1 }));
       setNewSubmission('');
     }
+    Keyboard.dismiss();
   };
 
   const handleRemoveSubmission = (submission: string) => {
@@ -408,28 +436,46 @@ export default function CreateSessionModal({
               {/* Submissions */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Submissions</Text>
-                <View style={styles.submissionInputContainer}>
+                <View style={styles.submissionDropdownContainer}>
                   <TextInput
                     style={styles.submissionInput}
-                    placeholder="Add a submission..."
+                    placeholder="Search submissions..."
                     placeholderTextColor="#9ca3af"
                     value={newSubmission}
-                    onChangeText={setNewSubmission}
-                    onSubmitEditing={handleAddSubmission}
+                    onChangeText={handleSubmissionInputChange}
+                    onFocus={() => {
+                      if (newSubmission.trim()) {
+                        const suggestions = searchSubmissionSuggestions(newSubmission, 6);
+                        setSubmissionSuggestions(suggestions);
+                        setShowSubmissionDropdown(suggestions.length > 0);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => {
+                        setShowSubmissionDropdown(false);
+                      }, 150);
+                    }}
                     returnKeyType="done"
                     maxLength={50}
                   />
-                  <TouchableOpacity
-                    style={[
-                      styles.addSubmissionButton,
-                      !newSubmission.trim() && styles.addSubmissionButtonDisabled
-                    ]}
-                    onPress={handleAddSubmission}
-                    disabled={!newSubmission.trim()}
-                    activeOpacity={0.7}
-                  >
-                    <Plus size={20} color="#fff" />
-                  </TouchableOpacity>
+                  
+                  {/* Submission Suggestions Dropdown */}
+                  {showSubmissionDropdown && submissionSuggestions.length > 0 && (
+                    <View style={styles.submissionDropdown}>
+                      <ScrollView style={styles.submissionDropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="always">
+                        {submissionSuggestions.map((suggestion, index) => (
+                          <TouchableOpacity
+                            key={`${suggestion}-${index}`}
+                            style={styles.submissionDropdownItem}
+                            onPress={() => handleSubmissionSelect(suggestion)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.submissionDropdownItemText}>{suggestion}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
                 </View>
                 
                 {submissions.length > 0 && (
@@ -474,13 +520,6 @@ export default function CreateSessionModal({
                 <View style={styles.starsContainer}>
                   {renderStars()}
                 </View>
-                <Text style={styles.satisfactionLabel}>
-                  {satisfaction === 1 && 'Poor'}
-                  {satisfaction === 2 && 'Fair'}
-                  {satisfaction === 3 && 'Good'}
-                  {satisfaction === 4 && 'Great'}
-                  {satisfaction === 5 && 'Excellent'}
-                </Text>
               </View>
 
               {/* Notes */}
@@ -681,30 +720,18 @@ const styles = StyleSheet.create({
   typeScrollContent: {
     paddingRight: 20,
   },
-  submissionInputContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+  submissionDropdownContainer: {
+    position: 'relative',
+    zIndex: 1000,
   },
   submissionInput: {
-    flex: 1,
     backgroundColor: '#f9fafb',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     color: '#1f2937',
-  },
-  addSubmissionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1e3a2e',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addSubmissionButtonDisabled: {
-    backgroundColor: '#9ca3af',
+    marginBottom: 16,
   },
   submissionsList: {
     gap: 8,
@@ -718,20 +745,44 @@ const styles = StyleSheet.create({
   removeSubmissionButton: {
     padding: 4,
   },
+  submissionDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    marginTop: 4,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1001,
+  },
+  submissionDropdownScroll: {
+    maxHeight: 200,
+  },
+  submissionDropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  submissionDropdownItemText: {
+    fontSize: 16,
+    color: '#1f2937',
+  },
   starsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 12,
   },
   starButton: {
     padding: 4,
-  },
-  satisfactionLabel: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
   },
   notesContainer: {
     position: 'relative',
@@ -800,7 +851,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addTechniqueSection: {
-    paddingHorizontal: 20,
+    padding: 20,
     paddingBottom: 16,
   },
   addTechniqueButton: {

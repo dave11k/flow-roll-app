@@ -263,25 +263,10 @@ export default function TechniquesPage() {
           <TechniqueItem
             technique={item}
             categoryColor={CATEGORY_COLORS[item.category]}
+            noMargin={true}
           />
         </TouchableOpacity>
       </SwipeableCard>
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.editButton]}
-          onPress={() => handleEditTechnique(item)}
-          activeOpacity={0.7}
-        >
-          <Pencil size={16} color="#3b82f6" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteTechnique(item)}
-          activeOpacity={0.7}
-        >
-          <Trash2 size={16} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 
@@ -466,6 +451,8 @@ export default function TechniquesPage() {
           setShowDetailModal(false);
           setSelectedTechnique(null);
         }}
+        onEdit={handleEditTechnique}
+        onDelete={handleDeleteTechnique}
       />
 
       {/* Floating Add Button */}
@@ -632,33 +619,5 @@ const styles = StyleSheet.create({
   techniqueItemContainer: {
     position: 'relative',
     marginBottom: 12,
-  },
-  actionButtons: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  editButton: {
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-  },
-  deleteButton: {
-    borderWidth: 1,
-    borderColor: '#ef4444',
   },
 });
