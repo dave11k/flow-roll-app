@@ -283,8 +283,13 @@ export default function SettingsPage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Settings size={24} color="#fff" />
-        <Text style={styles.title}>Settings</Text>
+        <View style={styles.headerLeft}>
+          <Settings size={24} color="#fff" />
+          <Text style={styles.title}>Settings</Text>
+        </View>
+        <View style={styles.headerRight}>
+          {/* Empty space to match other headers */}
+        </View>
       </View>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -319,6 +324,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -331,7 +337,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minHeight: 64, // Match techniques/sessions header height
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
+  },
+  headerRight: {
+    // Empty space for consistency
   },
   title: {
     fontSize: 24,
