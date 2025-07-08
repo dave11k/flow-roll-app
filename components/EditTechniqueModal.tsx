@@ -15,8 +15,8 @@ import {
   Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Pencil, FileText, Plus } from 'lucide-react-native';
-import { Technique, TechniqueCategory } from '@/types/technique';
+import { X, Save, Pencil, FileText, Plus, Link2, Trash2 } from 'lucide-react-native';
+import { Technique, TechniqueCategory, TechniqueLink } from '@/types/technique';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import TagSelectionModal from '@/components/TagSelectionModal';
@@ -44,12 +44,16 @@ export default function EditTechniqueModal({
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [links, setLinks] = useState<TechniqueLink[]>([]);
+  const [newLinkUrl, setNewLinkUrl] = useState('');
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
+  const [showAddLinkInput, setShowAddLinkInput] = useState(false);
   const [suggestions, setSuggestions] = useState<TechniqueSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const justSelectedSuggestion = useRef(false);
   const notesInputRef = useRef<View>(null);
+  const linkInputRef = useRef<TextInput>(null);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -61,6 +65,9 @@ export default function EditTechniqueModal({
       setSelectedCategory(technique.category);
       setSelectedTags(technique.tags || []);
       setNotes(technique.notes || '');
+      setLinks(technique.links || []);
+      setNewLinkUrl('');
+      setShowAddLinkInput(false);
       setShowSuggestions(false);
     }
   }, [visible, technique]);
@@ -171,6 +178,7 @@ export default function EditTechniqueModal({
       category: selectedCategory,
       tags: selectedTags,
       notes: notes.trim() || undefined,
+      links: links.length > 0 ? links : undefined,
     };
 
     onSave(updatedTechnique);
@@ -178,6 +186,36 @@ export default function EditTechniqueModal({
 
   const handleClose = () => {
     onClose();
+  };
+
+  const handleAddLink = () => {
+    if (!newLinkUrl.trim()) return;
+    
+    let formattedUrl = newLinkUrl.trim();
+    // Add https:// if no protocol is specified
+    if (!formattedUrl.match(/^https?:\/\//)) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+    
+    const newLink: TechniqueLink = {
+      id: Date.now().toString(),
+      url: formattedUrl,
+      timestamp: new Date()
+    };
+    
+    if (links.length < 10) {
+      setLinks([...links, newLink]);
+      setNewLinkUrl('');
+      setShowAddLinkInput(false);
+    }
+  };
+
+  const handleRemoveLink = (linkId: string) => {
+    setLinks(links.filter(link => link.id !== linkId));
+  };
+
+  const handleClearName = () => {
+    setName('');
   };
 
   const isValid = name.trim() && selectedCategory;
@@ -189,7 +227,10 @@ export default function EditTechniqueModal({
       animationType="none"
       statusBarTranslucent
     >
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.backdrop}>
             <Animated.View
@@ -235,16 +276,27 @@ export default function EditTechniqueModal({
               {/* Name Input */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Name</Text>
-                <TextInput
-                  style={styles.nameInput}
-                  placeholder="Enter technique name..."
-                  placeholderTextColor="#9ca3af"
-                  value={name}
-                  onChangeText={setName}
-                  onFocus={handleNameFocus}
-                  onBlur={handleNameBlur}
-                  maxLength={100}
-                />
+                <View style={styles.nameInputContainer}>
+                  <TextInput
+                    style={styles.nameInput}
+                    placeholder="Enter technique name..."
+                    placeholderTextColor="#9ca3af"
+                    value={name}
+                    onChangeText={setName}
+                    onFocus={handleNameFocus}
+                    onBlur={handleNameBlur}
+                    maxLength={100}
+                  />
+                  {name.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={handleClearName}
+                      activeOpacity={0.7}
+                    >
+                      <X size={16} color="#9ca3af" />
+                    </TouchableOpacity>
+                  )}
+                </View>
 
                 {/* Auto-suggestions */}
                 {showSuggestions && suggestions.length > 0 && (
@@ -334,6 +386,80 @@ export default function EditTechniqueModal({
                   {notes.length}/2000
                 </Text>
               </View>
+
+              {/* Links Section */}
+              <View style={styles.section}>
+                <View style={styles.linksHeader}>
+                  <Text style={styles.sectionTitle}>Links & References</Text>
+                  {links.length < 10 && (
+                    <TouchableOpacity
+                      style={styles.addLinkButton}
+                      onPress={() => {
+                        setShowAddLinkInput(true);
+                        setTimeout(() => linkInputRef.current?.focus(), 100);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={16} color="#1e3a2e" />
+                      <Text style={styles.addLinkText}>Add Link</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {showAddLinkInput && (
+                  <View style={styles.addLinkInputContainer}>
+                    <TextInput
+                      ref={linkInputRef}
+                      style={styles.linkInput}
+                      placeholder="Enter YouTube or Reddit link..."
+                      placeholderTextColor="#9ca3af"
+                      value={newLinkUrl}
+                      onChangeText={setNewLinkUrl}
+                      onSubmitEditing={handleAddLink}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                    <TouchableOpacity
+                      style={styles.addLinkConfirmButton}
+                      onPress={handleAddLink}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={18} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {links.length > 0 ? (
+                  <View style={styles.linksContainer}>
+                    {links.map((link) => (
+                      <View key={link.id} style={styles.linkItem}>
+                        <Link2 size={16} color="#6b7280" style={styles.linkIcon} />
+                        <Text style={styles.linkText} numberOfLines={1}>
+                          {link.url}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.removeLinkButton}
+                          onPress={() => handleRemoveLink(link.id)}
+                          activeOpacity={0.7}
+                        >
+                          <Trash2 size={16} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <Text style={styles.linkCount}>{links.length}/10 links</Text>
+                  </View>
+                ) : (
+                  <View style={styles.noLinksContainer}>
+                    <Text style={styles.noLinksText}>
+                      No links added. Add YouTube videos or Reddit posts for reference.
+                    </Text>
+                  </View>
+                )}
+              </View>
+              
+              {/* Spacer for keyboard */}
+              <View style={styles.keyboardSpacer} />
                 </View>
               </TouchableWithoutFeedback>
             </ScrollView>
@@ -361,7 +487,7 @@ export default function EditTechniqueModal({
             </View>
           </View>
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
 
       <NotesModal
         visible={showNotesModal}
@@ -585,5 +711,116 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  nameInputContainer: {
+    position: 'relative',
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -8 }],
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  linksHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addLinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#1e3a2e',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  addLinkText: {
+    color: '#1e3a2e',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addLinkInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  linkInput: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  addLinkConfirmButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#1e3a2e',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  linksContainer: {
+    gap: 8,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  linkIcon: {
+    flexShrink: 0,
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4b5563',
+  },
+  removeLinkButton: {
+    padding: 4,
+  },
+  linkCount: {
+    fontSize: 12,
+    color: '#9ca3af',
+    textAlign: 'right',
+    marginTop: 8,
+  },
+  noLinksContainer: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  noLinksText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  keyboardSpacer: {
+    height: 200,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
 });

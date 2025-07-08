@@ -11,8 +11,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { Pencil, Trash2, Target, MapPin, FileText, Calendar } from 'lucide-react-native';
+import { Pencil, Trash2, Target, MapPin, FileText, Calendar, Link2, ExternalLink } from 'lucide-react-native';
 import { Technique } from '@/types/technique';
+import * as Linking from 'expo-linking';
 
 interface TechniqueDetailModalProps {
   visible: boolean;
@@ -265,6 +266,49 @@ export default function TechniqueDetailModal({
                 <Text style={styles.notesText}>{technique.notes}</Text>
               </View>
             )}
+
+            {/* Links & References */}
+            {technique.links && technique.links.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Link2 size={20} color="#1e3a2e" />
+                  <Text style={styles.sectionTitle}>Links & References</Text>
+                </View>
+                <View style={styles.linksContainer}>
+                  {technique.links.map((link) => (
+                    <TouchableOpacity
+                      key={link.id}
+                      style={styles.linkItem}
+                      onPress={async () => {
+                        try {
+                          let formattedUrl = link.url;
+                          // Add https:// if no protocol is specified
+                          if (!formattedUrl.match(/^https?:\/\//)) {
+                            formattedUrl = 'https://' + formattedUrl;
+                          }
+                          
+                          const canOpen = await Linking.canOpenURL(formattedUrl);
+                          if (canOpen) {
+                            await Linking.openURL(formattedUrl);
+                          } else {
+                            console.warn('Cannot open URL:', formattedUrl);
+                          }
+                        } catch (error) {
+                          console.error('Error opening URL:', error);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Link2 size={16} color="#6b7280" style={styles.linkIcon} />
+                      <Text style={styles.linkText} numberOfLines={1}>
+                        {link.title || link.url}
+                      </Text>
+                      <ExternalLink size={16} color="#6b7280" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
             
             {/* Invisible spacer to ensure full scrollability */}
             <View style={styles.scrollSpacer} />
@@ -428,6 +472,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     lineHeight: 24,
+  },
+  linksContainer: {
+    gap: 8,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  linkIcon: {
+    flexShrink: 0,
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4b5563',
   },
   scrollSpacer: {
     height: 100,

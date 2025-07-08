@@ -210,10 +210,12 @@ export default function SessionDetailModal({
                     <TouchableOpacity
                       style={[styles.actionButton, styles.editButton]}
                       onPress={() => {
+                        console.log('Edit button pressed');
                         onEdit(session);
-                        animateClose();
+                        onClose();
                       }}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Pencil size={20} color="#3b82f6" />
                     </TouchableOpacity>
@@ -222,10 +224,12 @@ export default function SessionDetailModal({
                     <TouchableOpacity
                       style={[styles.actionButton, styles.deleteButton]}
                       onPress={() => {
+                        console.log('Delete button pressed');
                         onDelete(session);
-                        animateClose();
+                        onClose();
                       }}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Trash2 size={20} color="#ef4444" />
                     </TouchableOpacity>
@@ -245,7 +249,7 @@ export default function SessionDetailModal({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Calendar size={20} color="#1e3a2e" />
-                <Text style={styles.sectionTitle}>Session Details</Text>
+                <Text style={styles.sectionTitle}>Date</Text>
               </View>
               <Text style={styles.dateText}>{formatDate(session.date)}</Text>
               <View style={styles.timeRow}>

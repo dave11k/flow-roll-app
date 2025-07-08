@@ -81,7 +81,7 @@ export default function Toast({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      onClose();
+      setTimeout(() => onClose(), 0);
     });
   };
 

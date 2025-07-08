@@ -4,8 +4,16 @@ export interface Technique {
   category: TechniqueCategory;
   tags: string[];
   notes?: string;
+  links?: TechniqueLink[];
   timestamp: Date;
   sessionId?: string; // Optional reference to the session where this was learned
+}
+
+export interface TechniqueLink {
+  id: string;
+  url: string;
+  title?: string;
+  timestamp: Date;
 }
 
 export type TechniqueCategory = 

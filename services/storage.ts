@@ -53,8 +53,10 @@ export const saveTechnique = async (technique: Technique): Promise<void> => {
     console.log('Storage: Technique saved successfully');
   } catch (error) {
     console.error('Error saving technique in storage layer:', error);
-    console.error('Storage error details:', error.message, error.stack);
-    throw new Error(`Failed to save technique: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Storage error details:', errorMessage, errorStack);
+    throw new Error(`Failed to save technique: ${errorMessage}`);
   }
 };
 

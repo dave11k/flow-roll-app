@@ -250,6 +250,10 @@ export default function EditSessionModal({
     onClose();
   };
 
+  const handleClearLocation = () => {
+    setLocation('');
+  };
+
   const isValid = selectedType;
 
   const formatDate = (date: Date) => {
@@ -407,6 +411,15 @@ export default function EditSessionModal({
                     onChangeText={setLocation}
                     maxLength={100}
                   />
+                  {location.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={handleClearLocation}
+                      activeOpacity={0.7}
+                    >
+                      <X size={16} color="#9ca3af" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -870,5 +883,8 @@ const styles = StyleSheet.create({
     color: '#1e3a2e',
     fontSize: 16,
     fontWeight: '600',
+  },
+  clearButton: {
+    padding: 4,
   },
 });

@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Technique } from '@/types/technique';
+import { Technique, TechniqueLink } from '@/types/technique';
 import { TrainingSession } from '@/types/session';
 
 // Database configuration
@@ -28,9 +28,11 @@ export const initializeDatabase = async (): Promise<void> => {
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
-    console.error('Database initialization error details:', error.message, error.stack);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Database initialization error details:', errorMessage, errorStack);
     db = null; // Reset db on failure
-    throw new Error(`Failed to initialize database: ${error.message}`);
+    throw new Error(`Failed to initialize database: ${errorMessage}`);
   }
 };
 
@@ -107,6 +109,16 @@ const createTables = async (): Promise<void> => {
       FOREIGN KEY (tag_name) REFERENCES tags (name) ON DELETE CASCADE
     );
 
+    -- Links table for technique references/resources
+    CREATE TABLE IF NOT EXISTS technique_links (
+      id TEXT PRIMARY KEY,
+      technique_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      title TEXT,
+      timestamp INTEGER NOT NULL,
+      FOREIGN KEY (technique_id) REFERENCES techniques (id) ON DELETE CASCADE
+    );
+
     -- Indexes for better performance
     CREATE INDEX IF NOT EXISTS idx_techniques_category ON techniques (category);
     CREATE INDEX IF NOT EXISTS idx_techniques_timestamp ON techniques (timestamp);
@@ -121,6 +133,8 @@ const createTables = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_tags_name ON tags (name);
     CREATE INDEX IF NOT EXISTS idx_technique_tags_technique ON technique_tags (technique_id);
     CREATE INDEX IF NOT EXISTS idx_technique_tags_tag ON technique_tags (tag_name);
+    CREATE INDEX IF NOT EXISTS idx_technique_links_technique ON technique_links (technique_id);
+    CREATE INDEX IF NOT EXISTS idx_technique_links_timestamp ON technique_links (timestamp);
   `;
 
     await db.execAsync(createTablesSQL);
@@ -177,14 +191,17 @@ const createTables = async (): Promise<void> => {
       console.log('Schema migration completed');
     } catch (error) {
       // Column already exists or other error - this is expected for new databases
-      console.log('Schema migrations completed or not needed:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log('Schema migrations completed or not needed:', errorMessage);
     }
     
     console.log('All table operations completed successfully');
   } catch (error) {
     console.error('Error creating tables:', error);
-    console.error('Table creation error details:', error.message, error.stack);
-    throw new Error(`Failed to create tables: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Table creation error details:', errorMessage, errorStack);
+    throw new Error(`Failed to create tables: ${errorMessage}`);
   }
 };
 
@@ -272,13 +289,42 @@ export const saveTechniqueToDb = async (technique: Technique): Promise<void> => 
           }
         }
       }
+
+      // Remove existing links for this technique
+      await database.runAsync(
+        'DELETE FROM technique_links WHERE technique_id = ?',
+        [technique.id]
+      );
+
+      // Add new links if any
+      if (technique.links && technique.links.length > 0) {
+        for (const link of technique.links) {
+          if (!link.url || !link.url.trim()) {
+            console.warn('Skipping invalid link:', link);
+            continue;
+          }
+
+          await database.runAsync(
+            `INSERT INTO technique_links (id, technique_id, url, title, timestamp) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              link.id,
+              technique.id,
+              link.url.trim(),
+              link.title?.trim() || null,
+              link.timestamp.getTime()
+            ]
+          );
+        }
+      }
     });
 
-    console.log('Technique saved successfully with', tags.length, 'tags');
+    console.log('Technique saved successfully with', tags.length, 'tags and', technique.links?.length || 0, 'links');
   } catch (error) {
     console.error('Error saving technique to database:', error);
     console.error('Technique data:', JSON.stringify(technique, null, 2));
-    throw new Error(`Failed to save technique: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to save technique: ${errorMessage}`);
   }
 };
 
@@ -303,12 +349,26 @@ export const getTechniquesFromDb = async (): Promise<Technique[]> => {
       
       const tags = tagRows.map((tagRow: any) => tagRow.tag_name);
       
+      // Get links for this technique
+      const linkRows = await database.getAllAsync(
+        'SELECT * FROM technique_links WHERE technique_id = ? ORDER BY timestamp DESC',
+        [row.id]
+      );
+      
+      const links = linkRows.map((linkRow: any) => ({
+        id: linkRow.id,
+        url: linkRow.url,
+        title: linkRow.title,
+        timestamp: new Date(linkRow.timestamp)
+      }));
+      
       result.push({
         id: row.id,
         name: row.name,
         category: row.category,
         tags,
         notes: row.notes,
+        links: links.length > 0 ? links : undefined,
         timestamp: new Date(row.timestamp),
         sessionId: row.session_id
       });
@@ -363,12 +423,26 @@ export const getTechniquesBySessionFromDb = async (sessionId: string): Promise<T
       
       const tags = tagRows.map((tagRow: any) => tagRow.tag_name);
       
+      // Get links for this technique
+      const linkRows = await database.getAllAsync(
+        'SELECT * FROM technique_links WHERE technique_id = ? ORDER BY timestamp DESC',
+        [row.id]
+      );
+      
+      const links = linkRows.map((linkRow: any) => ({
+        id: linkRow.id,
+        url: linkRow.url,
+        title: linkRow.title,
+        timestamp: new Date(linkRow.timestamp)
+      }));
+      
       result.push({
         id: row.id,
         name: row.name,
         category: row.category,
         tags,
         notes: row.notes,
+        links: links.length > 0 ? links : undefined,
         timestamp: new Date(row.timestamp),
         sessionId: row.session_id
       });
@@ -540,12 +614,26 @@ export const getRecentTechniquesFromDb = async (limit: number = 10): Promise<Tec
       
       const tags = tagRows.map((tagRow: any) => tagRow.tag_name);
       
+      // Get links for this technique
+      const linkRows = await database.getAllAsync(
+        'SELECT * FROM technique_links WHERE technique_id = ? ORDER BY timestamp DESC',
+        [row.id]
+      );
+      
+      const links = linkRows.map((linkRow: any) => ({
+        id: linkRow.id,
+        url: linkRow.url,
+        title: linkRow.title,
+        timestamp: new Date(linkRow.timestamp)
+      }));
+      
       result.push({
         id: row.id,
         name: row.name,
         category: row.category,
         tags,
         notes: row.notes,
+        links: links.length > 0 ? links : undefined,
         timestamp: new Date(row.timestamp),
         sessionId: row.session_id
       });
