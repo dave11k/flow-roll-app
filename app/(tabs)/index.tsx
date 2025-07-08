@@ -13,9 +13,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Search, X, Plus, BookOpen } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Technique, TechniqueCategory } from '@/types/technique';
-import { getTechniques, deleteTechnique, saveTechnique } from '@/services/storage';
 import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import TagSelectionModal from '@/components/TagSelectionModal';
@@ -27,6 +25,7 @@ import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
+import { useData } from '@/contexts/DataContext';
 
 const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
   'Submission': '#ef4444',
@@ -40,12 +39,20 @@ const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
 
 export default function TechniquesPage() {
   const { showSuccess, showError } = useToast();
-  const [techniques, setTechniques] = useState<Technique[]>([]);
+  const { 
+    techniques, 
+    isInitialLoading, 
+    updateTechnique, 
+    removeTechnique, 
+    refreshTechniques,
+    error,
+    clearError
+  } = useData();
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [filteredTechniques, setFilteredTechniques] = useState<Technique[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [editingTechnique, setEditingTechnique] = useState<Technique | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -56,16 +63,20 @@ export default function TechniquesPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const justSelectedSuggestion = useRef(false);
 
+  // Handle errors from data context
   useEffect(() => {
-    loadTechniques();
-  }, []);
+    if (error) {
+      showError(error);
+      clearError();
+    }
+  }, [error, showError, clearError]);
 
-  // Refresh techniques when the screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadTechniques();
-    }, [])
-  );
+  // Track when we've loaded data at least once
+  useEffect(() => {
+    if (techniques.length > 0 || (!isInitialLoading && techniques.length === 0)) {
+      setHasLoadedOnce(true);
+    }
+  }, [techniques.length, isInitialLoading]);
 
   const filterTechniques = React.useCallback(() => {
     let filtered = [...techniques];
@@ -114,17 +125,6 @@ export default function TechniquesPage() {
     }
   }, [searchQuery]);
 
-  const loadTechniques = async () => {
-    try {
-      setIsLoading(true);
-      const techniquesData = await getTechniques();
-      setTechniques(techniquesData);
-    } catch (error) {
-      console.error('Error loading techniques:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCategorySelect = (category: TechniqueCategory) => {
     setSelectedCategory(category);
@@ -156,11 +156,7 @@ export default function TechniquesPage() {
 
   const handleSaveTechnique = async (updatedTechnique: Technique) => {
     try {
-      // Use the saveTechnique function which now handles updates
-      await saveTechnique(updatedTechnique);
-      
-      // Reload techniques
-      await loadTechniques();
+      await updateTechnique(updatedTechnique);
       setShowEditModal(false);
       setEditingTechnique(null);
       showSuccess(`"${updatedTechnique.name}" updated successfully!`);
@@ -180,8 +176,7 @@ export default function TechniquesPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteTechnique(technique.id);
-              await loadTechniques();
+              await removeTechnique(technique.id);
               showSuccess(`"${technique.name}" deleted successfully!`);
             } catch {
               showError('Failed to delete technique. Please try again.');
@@ -341,7 +336,7 @@ export default function TechniquesPage() {
 
       {/* Techniques List */}
       <View style={styles.listContainer}>
-        {isLoading ? (
+        {(isInitialLoading && !hasLoadedOnce) ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading techniques...</Text>
           </View>
@@ -391,7 +386,7 @@ export default function TechniquesPage() {
       {/* Add Technique Modal */}
       <AddTechniqueModal
         visible={showAddModal}
-        onSave={loadTechniques}
+        onSave={refreshTechniques}
         onClose={() => setShowAddModal(false)}
       />
 

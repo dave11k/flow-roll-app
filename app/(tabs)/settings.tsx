@@ -27,6 +27,12 @@ import {
   Globe,
   Volume2
 } from 'lucide-react-native';
+import { useData } from '@/contexts/DataContext';
+import { useToast } from '@/contexts/ToastContext';
+import ProfileModal from '@/components/ProfileModal';
+import PrivacyPolicyModal from '@/components/PrivacyPolicyModal';
+import ContactSupportModal from '@/components/ContactSupportModal';
+import { UserProfile } from '@/types/profile';
 
 interface SettingItem {
   id: string;
@@ -40,9 +46,16 @@ interface SettingItem {
 }
 
 export default function SettingsPage() {
+  const { profile, updateProfile } = useData();
+  const { showSuccess, showError } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Modal states
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const handleExportData = () => {
     Alert.alert(
@@ -81,20 +94,26 @@ export default function SettingsPage() {
     );
   };
 
-  const handleContactSupport = () => {
-    Alert.alert(
-      'Contact Support',
-      'Need help? Send us an email at support@flowroll.app',
-      [
-        { text: 'OK' }
-      ]
-    );
+  const handleProfileSave = async (newProfile: UserProfile) => {
+    try {
+      await updateProfile(newProfile);
+      showSuccess('Profile updated successfully!');
+    } catch {
+      showError('Failed to update profile. Please try again.');
+    }
+  };
+
+  const getProfileSubtitle = () => {
+    if (profile) {
+      return `${profile.name} - ${profile.beltRank} belt`;
+    }
+    return 'Set up your profile';
   };
 
   const handleAbout = () => {
     Alert.alert(
       'About Flow Roll',
-      'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.\n\nBuilt with ❤️ for the BJJ community.',
+      'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.',
       [
         { text: 'OK' }
       ]
@@ -106,10 +125,10 @@ export default function SettingsPage() {
     {
       id: 'profile',
       title: 'Profile',
-      subtitle: 'Edit your profile and belt rank',
+      subtitle: getProfileSubtitle(),
       icon: <User size={20} color="#3b82f6" />,
       type: 'navigate',
-      onPress: () => console.log('Navigate to profile')
+      onPress: () => setShowProfileModal(true)
     },
 
     // Notifications
@@ -184,7 +203,7 @@ export default function SettingsPage() {
       subtitle: 'View our privacy policy',
       icon: <Shield size={20} color="#dc2626" />,
       type: 'navigate',
-      onPress: () => console.log('Navigate to privacy policy')
+      onPress: () => setShowPrivacyModal(true)
     },
 
     // Support
@@ -194,7 +213,7 @@ export default function SettingsPage() {
       subtitle: 'Get help and report issues',
       icon: <HelpCircle size={20} color="#ea580c" />,
       type: 'action',
-      onPress: handleContactSupport
+      onPress: () => setShowContactModal(true)
     },
     {
       id: 'about',
@@ -306,13 +325,29 @@ export default function SettingsPage() {
         
         <View style={styles.footer}>
           <Text style={styles.footerText}>Flow Roll v1.0.0</Text>
-          <Text style={styles.footerSubtext}>
-            Made with ❤️ for the BJJ community
-          </Text>
+          
         </View>
           </ScrollView>
         </View>
       </TouchableWithoutFeedback>
+      
+      {/* Modals */}
+      <ProfileModal
+        visible={showProfileModal}
+        profile={profile}
+        onSave={handleProfileSave}
+        onClose={() => setShowProfileModal(false)}
+      />
+      
+      <PrivacyPolicyModal
+        visible={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
+      
+      <ContactSupportModal
+        visible={showContactModal}
+        onClose={() => setShowContactModal(false)}
+      />
     </SafeAreaView>
   );
 }

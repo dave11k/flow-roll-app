@@ -1,5 +1,6 @@
 import { Technique } from '@/types/technique';
 import { TrainingSession } from '@/types/session';
+import { UserProfile } from '@/types/profile';
 import { 
   initializeDatabase,
   saveTechniqueToDb,
@@ -12,6 +13,7 @@ import {
   getRecentTechniquesFromDb
 } from './database';
 import { runMigration } from './migration';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Initialize database and run migration on first import
 let initialized = false;
@@ -139,5 +141,39 @@ export const getRecentTechniques = async (limit: number = 10): Promise<Technique
   } catch (error) {
     console.error('Error loading recent techniques:', error);
     return [];
+  }
+};
+
+// Profile Storage
+const PROFILE_STORAGE_KEY = 'flow_roll_user_profile';
+
+export const saveProfile = async (profile: UserProfile): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  } catch (error) {
+    console.error('Error saving profile:', error);
+    throw new Error('Failed to save profile');
+  }
+};
+
+export const getProfile = async (): Promise<UserProfile | null> => {
+  try {
+    const profileJson = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+    if (profileJson) {
+      return JSON.parse(profileJson) as UserProfile;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    return null;
+  }
+};
+
+export const deleteProfile = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+  } catch (error) {
+    console.error('Error deleting profile:', error);
+    throw new Error('Failed to delete profile');
   }
 };

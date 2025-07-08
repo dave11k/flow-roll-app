@@ -11,10 +11,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Calendar, Plus, MapPin, Clock, Pencil, Trash2, Filter } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
-import { getSessions, saveSession, deleteSession } from '@/services/storage';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
 import SessionDetailModal from '@/components/SessionDetailModal';
@@ -22,6 +20,7 @@ import SessionFilterModal from '@/components/SessionFilterModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
+import { useData } from '@/contexts/DataContext';
 
 interface SessionFilters {
   dateRange: {
@@ -36,7 +35,18 @@ interface SessionFilters {
 
 export default function Sessions() {
   const { showSuccess, showError } = useToast();
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const {
+    sessions,
+    isInitialLoading,
+    isLoading,
+    refreshSessions,
+    createSession,
+    updateSession,
+    removeSession,
+    error,
+    clearError
+  } = useData();
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [filteredSessions, setFilteredSessions] = useState<TrainingSession[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -54,30 +64,27 @@ export default function Sessions() {
   });
   const [lastLocation, setLastLocation] = useState('');
 
+  // Handle errors from data context
   useEffect(() => {
-    loadData();
-  }, []);
-
-  // Refresh data when the screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  const loadData = async () => {
-    try {
-      const sessionsData = await getSessions();
-      setSessions(sessionsData);
-      
-      // Set last location for modal default
-      if (sessionsData.length > 0 && sessionsData[0].location) {
-        setLastLocation(sessionsData[0].location);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
+    if (error) {
+      showError(error);
+      clearError();
     }
-  };
+  }, [error, showError, clearError]);
+
+  // Track when we've loaded data at least once
+  useEffect(() => {
+    if (sessions.length > 0 || (!isInitialLoading && sessions.length === 0)) {
+      setHasLoadedOnce(true);
+    }
+  }, [sessions.length, isInitialLoading]);
+
+  // Update last location when sessions change
+  useEffect(() => {
+    if (sessions.length > 0 && sessions[0].location) {
+      setLastLocation(sessions[0].location);
+    }
+  }, [sessions]);
 
   const applyFilters = React.useCallback((sessions: TrainingSession[], filters: SessionFilters) => {
     let filtered = [...sessions];
@@ -133,14 +140,13 @@ export default function Sessions() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadData();
+    await refreshSessions();
     setIsRefreshing(false);
   };
 
   const handleCreateSession = async (session: TrainingSession) => {
     try {
-      await saveSession(session);
-      await loadData();
+      await createSession(session);
       setShowCreateModal(false);
       
       // Update last location
@@ -167,8 +173,7 @@ export default function Sessions() {
 
   const handleUpdateSession = async (updatedSession: TrainingSession) => {
     try {
-      await saveSession(updatedSession);
-      await loadData();
+      await updateSession(updatedSession);
       setShowEditModal(false);
       setEditingSession(null);
       
@@ -193,9 +198,8 @@ export default function Sessions() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteSession(session.id);
-              await loadData();
-              showError('Session deleted successfully!');
+              await removeSession(session.id);
+              showSuccess('Session deleted successfully!');
             } catch {
               showError('Failed to delete session. Please try again.');
             }
@@ -270,13 +274,18 @@ export default function Sessions() {
           <ScrollView 
             style={styles.content}
             refreshControl={
-              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+              <RefreshControl refreshing={isRefreshing || isLoading} onRefresh={handleRefresh} />
             }
             keyboardShouldPersistTaps="handled"
           >
 
         {/* Sessions List */}
-        {filteredSessions.length === 0 ? (
+        {(isInitialLoading && !hasLoadedOnce) ? (
+          <View style={styles.emptyState}>
+            <Calendar size={64} color="#9ca3af" />
+            <Text style={styles.emptyTitle}>Loading sessions...</Text>
+          </View>
+        ) : filteredSessions.length === 0 ? (
           <View style={styles.emptyState}>
             <Calendar size={64} color="#9ca3af" />
             <Text style={styles.emptyTitle}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   LineChart,
   BarChart,
@@ -20,7 +19,7 @@ import {
 import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import { Technique } from '@/types/technique';
-import { getSessions, getTechniques } from '@/services/storage';
+import { useData } from '@/contexts/DataContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 50; // Increased padding to prevent overflow
@@ -88,37 +87,7 @@ const chartConfig = {
   },
 };
 
-export default function Analytics() {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadData = React.useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [sessionsData, techniquesData] = await Promise.all([
-        getSessions(),
-        getTechniques()
-      ]);
-      calculateAnalytics(sessionsData, techniquesData);
-    } catch (error) {
-      console.error('Error loading analytics data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
-
-  const calculateAnalytics = (sessions: TrainingSession[], techniques: Technique[]) => {
+const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Technique[]): AnalyticsData => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now);
@@ -245,7 +214,7 @@ export default function Analytics() {
     });
     longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
 
-    setAnalyticsData({
+    return {
       totalSessions,
       totalTechniques,
       averageSatisfaction,
@@ -258,8 +227,33 @@ export default function Analytics() {
       monthlyProgress,
       satisfactionTrend,
       streakData: { current: currentStreak, longest: longestStreak },
-    });
-  };
+    };
+};
+
+export default function Analytics() {
+  const { sessions, techniques, isInitialLoading } = useData();
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  // Memoize analytics calculation to prevent unnecessary recalculations
+  const memoizedAnalyticsData = useMemo(() => {
+    if (sessions.length > 0 || techniques.length > 0) {
+      return calculateAnalyticsData(sessions, techniques);
+    }
+    return null;
+  }, [sessions, techniques]);
+
+  // Update analytics data and loaded state when memoized data changes
+  useEffect(() => {
+    if (memoizedAnalyticsData) {
+      setAnalyticsData(memoizedAnalyticsData);
+      setHasLoadedOnce(true);
+    } else if (!isInitialLoading && hasLoadedOnce) {
+      // Only set empty analytics if we're not loading and have loaded before
+      setAnalyticsData(null);
+    }
+  }, [memoizedAnalyticsData, isInitialLoading, hasLoadedOnce]);
 
   const renderStatCard = (
     icon: React.ReactNode,
@@ -315,7 +309,8 @@ export default function Analytics() {
     );
   };
 
-  if (isLoading || !analyticsData) {
+  // Only show loading state on the very first load, not when switching tabs
+  if ((isInitialLoading && !hasLoadedOnce) || (!analyticsData && !hasLoadedOnce)) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -324,6 +319,21 @@ export default function Analytics() {
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
           <Text style={styles.loadingText}>Loading analytics...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // If we have loaded before but don't have data, show empty state instead of loading
+  if (!analyticsData && hasLoadedOnce) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Analytics</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Activity size={48} color="#9ca3af" />
+          <Text style={styles.loadingText}>No data available for analytics</Text>
         </View>
       </SafeAreaView>
     );
