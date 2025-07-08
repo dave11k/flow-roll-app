@@ -16,7 +16,7 @@ import {
   BarChart,
   PieChart,
 } from 'react-native-chart-kit';
-import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon } from 'lucide-react-native';
+import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon, ChevronDown } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import { Technique } from '@/types/technique';
 import { useData } from '@/contexts/DataContext';
@@ -235,6 +235,7 @@ export default function Analytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
 
   // Memoize analytics calculation to prevent unnecessary recalculations
   const memoizedAnalyticsData = useMemo(() => {
@@ -343,28 +344,50 @@ export default function Analytics() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Analytics</Text>
-        <View style={styles.timeframeSelector}>
-          {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
-            <TouchableOpacity
-              key={timeframe}
-              style={[
-                styles.timeframeButton,
-                selectedTimeframe === timeframe && styles.timeframeButtonActive
-              ]}
-              onPress={() => setSelectedTimeframe(timeframe)}
-            >
-              <Text style={[
-                styles.timeframeButtonText,
-                selectedTimeframe === timeframe && styles.timeframeButtonTextActive
-              ]}>
-                {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.timeframeSelectorContainer}>
+          <TouchableOpacity
+            style={styles.timeframeDropdown}
+            onPress={() => setShowTimeframeDropdown(!showTimeframeDropdown)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.timeframeDropdownText}>
+              {selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1)}
+            </Text>
+            <ChevronDown size={16} color="#fff" />
+          </TouchableOpacity>
+          
+          {showTimeframeDropdown && (
+            <View style={styles.timeframeDropdownMenu}>
+              {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
+                <TouchableOpacity
+                  key={timeframe}
+                  style={[
+                    styles.timeframeDropdownItem,
+                    selectedTimeframe === timeframe && styles.timeframeDropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    setSelectedTimeframe(timeframe);
+                    setShowTimeframeDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.timeframeDropdownItemText,
+                    selectedTimeframe === timeframe && styles.timeframeDropdownItemTextSelected
+                  ]}>
+                    {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </View>
 
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback onPress={() => {
+        Keyboard.dismiss();
+        setShowTimeframeDropdown(false);
+      }}>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Overview Stats */}
         <View style={styles.section}>
@@ -374,53 +397,33 @@ export default function Analytics() {
               <Trophy size={20} color="#f59e0b" />,
               'Total Sessions',
               analyticsData.totalSessions,
-              `${analyticsData.sessionsThisMonth} this month`,
+              undefined, // Removed subtitle
               '#f59e0b'
             )}
             {renderStatCard(
               <Zap size={20} color="#3b82f6" />,
               'Techniques Learned',
               analyticsData.totalTechniques,
-              `${analyticsData.techniquesThisMonth} this month`,
+              undefined, // Removed subtitle
               '#3b82f6'
             )}
             {renderStatCard(
               <Target size={20} color="#10b981" />,
               'Avg Satisfaction',
               analyticsData.averageSatisfaction.toFixed(1),
-              'out of 5.0',
+              'out of 5.0', // Kept subtitle for average satisfaction
               '#10b981'
             )}
             {renderStatCard(
               <Award size={20} color="#ef4444" />,
               'Total Submissions',
               analyticsData.totalSubmissions,
-              'across all sessions',
+              undefined, // Removed subtitle
               '#ef4444'
             )}
           </View>
         </View>
 
-        {/* Streak Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Training Streaks</Text>
-          <View style={styles.streakContainer}>
-            <View style={styles.streakCard}>
-              <View style={styles.streakIcon}>
-                <Activity size={24} color="#10b981" />
-              </View>
-              <Text style={styles.streakValue}>{analyticsData.streakData.current}</Text>
-              <Text style={styles.streakLabel}>Current Streak</Text>
-            </View>
-            <View style={styles.streakCard}>
-              <View style={styles.streakIcon}>
-                <Trophy size={24} color="#f59e0b" />
-              </View>
-              <Text style={styles.streakValue}>{analyticsData.streakData.longest}</Text>
-              <Text style={styles.streakLabel}>Longest Streak</Text>
-            </View>
-          </View>
-        </View>
 
             {/* TODO: Add monthly progress chart */}
         {/* Monthly Progress Chart
@@ -503,6 +506,27 @@ export default function Analytics() {
           {renderPieChart(analyticsData.sessionTypeDistribution, 'Session Types')}
         </View>
 
+        {/* Streak Stats */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Training Streaks</Text>
+          <View style={styles.streakContainer}>
+            <View style={styles.streakCard}>
+              <View style={styles.streakIcon}>
+                <Activity size={24} color="#10b981" />
+              </View>
+              <Text style={styles.streakValue}>{analyticsData.streakData.current}</Text>
+              <Text style={styles.streakLabel}>Current Streak</Text>
+            </View>
+            <View style={styles.streakCard}>
+              <View style={styles.streakIcon}>
+                <Trophy size={24} color="#f59e0b" />
+              </View>
+              <Text style={styles.streakValue}>{analyticsData.streakData.longest}</Text>
+              <Text style={styles.streakLabel}>Longest Streak</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
         </ScrollView>
@@ -538,27 +562,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  timeframeSelector: {
+  timeframeSelectorContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  timeframeDropdown: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    padding: 2,
-  },
-  timeframeButton: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 8,
+    gap: 6,
+    minWidth: 80,
   },
-  timeframeButtonActive: {
-    backgroundColor: '#fff',
-  },
-  timeframeButtonText: {
-    fontSize: 12,
+  timeframeDropdownText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
   },
-  timeframeButtonTextActive: {
+  timeframeDropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1001,
+    minWidth: 100,
+  },
+  timeframeDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  timeframeDropdownItemSelected: {
+    backgroundColor: '#f0f9ff',
+  },
+  timeframeDropdownItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  timeframeDropdownItemTextSelected: {
     color: '#1e3a2e',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
