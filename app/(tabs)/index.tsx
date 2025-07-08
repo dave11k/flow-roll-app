@@ -61,7 +61,6 @@ export default function TechniquesPage() {
   const [showTagFilterModal, setShowTagFilterModal] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const justSelectedSuggestion = useRef(false);
 
   // Handle errors from data context
   useEffect(() => {
@@ -122,6 +121,7 @@ export default function TechniquesPage() {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
+      setSuggestions([]);
     }
   }, [searchQuery]);
 
@@ -195,15 +195,21 @@ export default function TechniquesPage() {
   };
 
   const handleSuggestionPress = (suggestion: string) => {
-    justSelectedSuggestion.current = true;
-    setSearchQuery(suggestion);
+    // Immediately clear suggestions to prevent double-tap issue
     setShowSuggestions(false);
-    setSuggestions([]); // Clear suggestions array
+    setSuggestions([]);
+
+    // Dismiss keyboard
     Keyboard.dismiss();
-    // Reset the flag after a longer delay to ensure blur event completes
+    // Set the search query
+    setSearchQuery(suggestion);
+    
+    // Fallback to clear suggestions to prevent double-tap issue
     setTimeout(() => {
-      justSelectedSuggestion.current = false;
-    }, 500);
+      setShowSuggestions(true);
+      setSuggestions([]);
+    }, 50);
+    
   };
 
   const handleSearchFocus = () => {
@@ -213,11 +219,7 @@ export default function TechniquesPage() {
   };
 
   const handleSearchBlur = () => {
-    if (!justSelectedSuggestion.current) {
-      setTimeout(() => {
-        setShowSuggestions(false);
-      }, 150);
-    }
+    // Don't hide suggestions on blur - let user interaction handle it
   };
 
   const hasActiveFilters = searchQuery.trim() || selectedCategory || selectedTags.length > 0;
@@ -249,7 +251,12 @@ export default function TechniquesPage() {
       </View>
 
       {/* Search Bar */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback onPress={() => {
+        Keyboard.dismiss();
+        setShowSuggestions(false);
+        setSuggestions([]);
+        
+      }}>
         <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <Search size={20} color="#9ca3af" />
@@ -276,7 +283,7 @@ export default function TechniquesPage() {
         {/* Auto-suggestions */}
         {showSuggestions && suggestions.length > 0 && (
           <View style={styles.suggestionsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {suggestions.map((suggestion, index) => (
                 <TouchableOpacity
                   key={`${suggestion}-${index}`}

@@ -52,7 +52,6 @@ export default function AddTechniqueModal({
   const [suggestions, setSuggestions] = useState<TechniqueSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const justSelectedSuggestion = useRef(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showAddLinkInput, setShowAddLinkInput] = useState(false);
@@ -137,6 +136,7 @@ export default function AddTechniqueModal({
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
+      setSuggestions([]);
     }
   }, [techniqueName]);
 
@@ -193,16 +193,21 @@ export default function AddTechniqueModal({
   };
 
   const handleSuggestionPress = (suggestion: TechniqueSuggestion) => {
-    justSelectedSuggestion.current = true;
+    // Immediately clear suggestions to prevent double-tap issue
+    setShowSuggestions(false);
+    setSuggestions([]);
+    
+    // Dismiss keyboard
+    Keyboard.dismiss();
+    // Set the technique name and category
     setTechniqueName(suggestion.name);
     setSelectedCategory(suggestion.category);
-    setShowSuggestions(false);
-    setSuggestions([]); // Clear suggestions array
-    Keyboard.dismiss();
-    // Reset the flag after a longer delay to ensure blur event completes
+    
+    // Fallback to clear suggestions to prevent double-tap issue
     setTimeout(() => {
-      justSelectedSuggestion.current = false;
-    }, 500);
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }, 50);
   };
 
   const handleNotesPress = () => {
@@ -219,11 +224,7 @@ export default function AddTechniqueModal({
   };
 
   const handleTechniqueNameBlur = () => {
-    if (!justSelectedSuggestion.current) {
-      setTimeout(() => {
-        setShowSuggestions(false);
-      }, 150);
-    }
+    // Don't hide suggestions on blur - let user interaction handle it
   };
 
   const handleTechniqueNameFocus = () => {
@@ -233,6 +234,7 @@ export default function AddTechniqueModal({
   };
 
   const handleClose = () => {
+    setShowSuggestions(false);
     onClose();
   };
 
@@ -318,7 +320,10 @@ export default function AddTechniqueModal({
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <TouchableWithoutFeedback onPress={() => {
+                Keyboard.dismiss();
+                setShowSuggestions(false);
+              }}>
                 <View>
               {/* Technique Name Section */}
               <View style={styles.section}>
@@ -349,7 +354,7 @@ export default function AddTechniqueModal({
                 {/* Auto-suggestions */}
                 {showSuggestions && suggestions.length > 0 && (
                   <View style={styles.suggestionsContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                       {suggestions.map((suggestion, index) => (
                         <TouchableOpacity
                           key={`${suggestion.name}-${index}`}

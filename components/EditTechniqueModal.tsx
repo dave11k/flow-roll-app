@@ -8,8 +8,6 @@ import {
   Modal,
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   ScrollView,
   Keyboard,
@@ -51,7 +49,6 @@ export default function EditTechniqueModal({
   const [showAddLinkInput, setShowAddLinkInput] = useState(false);
   const [suggestions, setSuggestions] = useState<TechniqueSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const justSelectedSuggestion = useRef(false);
   const notesInputRef = useRef<View>(null);
   const linkInputRef = useRef<TextInput>(null);
 
@@ -80,6 +77,7 @@ export default function EditTechniqueModal({
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
+      setSuggestions([]);
     }
   }, [name]);
 
@@ -141,24 +139,25 @@ export default function EditTechniqueModal({
     setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
   };
   const handleSuggestionPress = (suggestion: TechniqueSuggestion) => {
-    justSelectedSuggestion.current = true;
+    // Immediately clear suggestions to prevent double-tap issue
+    setShowSuggestions(false);
+    setSuggestions([]);
+    
+    // Dismiss keyboard
+    Keyboard.dismiss();
+    // Set the name and category
     setName(suggestion.name);
     setSelectedCategory(suggestion.category);
-    setShowSuggestions(false);
-    setSuggestions([]); // Clear suggestions array
-    Keyboard.dismiss();
-    // Reset the flag after a longer delay to ensure blur event completes
+    
+    // Fallback to clear suggestions to prevent double-tap issue
     setTimeout(() => {
-      justSelectedSuggestion.current = false;
-    }, 500);
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }, 50);
   };
 
   const handleNameBlur = () => {
-    if (!justSelectedSuggestion.current) {
-      setTimeout(() => {
-        setShowSuggestions(false);
-      }, 150);
-    }
+    // Don't hide suggestions on blur - let user interaction handle it
   };
 
   const handleNameFocus = () => {
@@ -185,6 +184,7 @@ export default function EditTechniqueModal({
   };
 
   const handleClose = () => {
+    setShowSuggestions(false);
     onClose();
   };
 
@@ -227,10 +227,7 @@ export default function EditTechniqueModal({
       animationType="none"
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View style={styles.container}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.backdrop}>
             <Animated.View
@@ -271,7 +268,10 @@ export default function EditTechniqueModal({
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <TouchableWithoutFeedback onPress={() => {
+                Keyboard.dismiss();
+                setShowSuggestions(false);
+              }}>
                 <View>
               {/* Name Input */}
               <View style={styles.section}>
@@ -301,7 +301,7 @@ export default function EditTechniqueModal({
                 {/* Auto-suggestions */}
                 {showSuggestions && suggestions.length > 0 && (
                   <View style={styles.suggestionsContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                       {suggestions.map((suggestion, index) => (
                         <TouchableOpacity
                           key={`${suggestion.name}-${index}`}
@@ -487,7 +487,7 @@ export default function EditTechniqueModal({
             </View>
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
 
       <NotesModal
         visible={showNotesModal}
