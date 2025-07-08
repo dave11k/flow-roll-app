@@ -180,29 +180,6 @@ export default function TechniqueDetailModal({
               
               <View style={styles.headerWithClose}>
                 <Text style={styles.headerTitle}>{technique.name}</Text>
-              </View>
-            </Animated.View>
-          </PanGestureHandler>
-
-          <ScrollView 
-            style={styles.content} 
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            scrollEventThrottle={16}
-          >
-
-            {/* Category and Action Buttons */}
-            <View style={styles.section}>
-              <View style={styles.categoryRow}>
-                <View style={styles.badgesContainer}>
-                  <View style={[
-                    styles.categoryBadge,
-                    { backgroundColor: CATEGORY_COLORS[technique.category] || '#6b7280' }
-                  ]}>
-                    <Text style={styles.badgeText}>{technique.category}</Text>
-                  </View>
-                </View>
-                
                 <View style={styles.actionButtons}>
                   {onEdit && (
                     <TouchableOpacity
@@ -215,7 +192,7 @@ export default function TechniqueDetailModal({
                       activeOpacity={0.7}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Pencil size={12} color="#3b82f6" />
+                      <Pencil size={20} color="#3b82f6" />
                     </TouchableOpacity>
                   )}
                   {onDelete && (
@@ -229,9 +206,29 @@ export default function TechniqueDetailModal({
                       activeOpacity={0.7}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Trash2 size={12} color="#ef4444" />
+                      <Trash2 size={20} color="#ef4444" />
                     </TouchableOpacity>
                   )}
+                </View>
+              </View>
+            </Animated.View>
+          </PanGestureHandler>
+
+          <ScrollView 
+            style={styles.content} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            scrollEventThrottle={16}
+          >
+
+            {/* Category */}
+            <View style={styles.section}>
+              <View style={styles.categoryContainer}>
+                <View style={[
+                  styles.categoryBadge,
+                  { backgroundColor: CATEGORY_COLORS[technique.category] || '#6b7280' }
+                ]}>
+                  <Text style={styles.badgeText}>{technique.category}</Text>
                 </View>
               </View>
               
@@ -252,6 +249,10 @@ export default function TechniqueDetailModal({
 
             {/* Date Added */}
             <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Calendar size={20} color="#1e3a2e" />
+                <Text style={styles.sectionTitle}>Date Added</Text>
+              </View>
               <Text style={styles.dateText}>{formatDate(technique.timestamp)}</Text>
               <Text style={styles.timeText}>{formatTime(technique.timestamp)}</Text>
             </View>
@@ -358,6 +359,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerWithClose: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -367,7 +371,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
-    textAlign: 'center',
   },
   categoryRow: {
     flexDirection: 'row',
@@ -376,12 +379,12 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   actionButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
@@ -412,11 +415,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
   },
-  techniqueName: {
+  techniqueNameText: {
     fontSize: 24,
     fontWeight: '700',
     color: '#1f2937',
-    textAlign: 'center',
+    marginBottom: 12,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
   },
   badgesContainer: {
     flexDirection: 'row',
@@ -449,13 +457,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tagPill: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#1e3a2e',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   tagText: {
-    color: '#6b7280',
+    color: '#fff',
     fontSize: 14,
     fontWeight: '500',
   },
