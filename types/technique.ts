@@ -70,6 +70,7 @@ export const PREDEFINED_TAGS = {
     'Traditional',
     'Modern',
     'Berimbolo',
+    'Judo',
     'Leg-Locks',
     'Pressure',
     'Flow',

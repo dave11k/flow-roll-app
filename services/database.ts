@@ -10,28 +10,36 @@ const DB_VERSION = 1;
 let db: SQLite.SQLiteDatabase | null = null;
 
 export const initializeDatabase = async (): Promise<void> => {
-  if (db) return;
+  if (db) {
+    console.log('Database already initialized');
+    return;
+  }
 
   try {
+    console.log('Opening database...');
     db = await SQLite.openDatabaseAsync(DB_NAME);
     
-    // Enable foreign key constraints
+    console.log('Enabling foreign key constraints...');
     await db.execAsync('PRAGMA foreign_keys = ON;');
     
-    // Create tables
+    console.log('Creating tables...');
     await createTables();
     
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
-    throw new Error('Failed to initialize database');
+    console.error('Database initialization error details:', error.message, error.stack);
+    db = null; // Reset db on failure
+    throw new Error(`Failed to initialize database: ${error.message}`);
   }
 };
 
 const createTables = async (): Promise<void> => {
   if (!db) throw new Error('Database not initialized');
 
-  const createTablesSQL = `
+  try {
+    console.log('Executing table creation SQL...');
+    const createTablesSQL = `
     -- Techniques table
     CREATE TABLE IF NOT EXISTS techniques (
       id TEXT PRIMARY KEY,
@@ -115,17 +123,68 @@ const createTables = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_technique_tags_tag ON technique_tags (tag_name);
   `;
 
-  await db.execAsync(createTablesSQL);
-  
-  // Handle schema migrations for existing databases
-  try {
-    // Add count column to submissions table if it doesn't exist
-    await db.execAsync(`
-      ALTER TABLE submissions ADD COLUMN count INTEGER DEFAULT 1;
-    `);
+    await db.execAsync(createTablesSQL);
+    console.log('Tables created successfully');
+    
+    // Handle schema migrations for existing databases
+    try {
+      console.log('Checking for schema migrations...');
+      
+      // Check if the old position column exists and remove it
+      const tableInfo = await db.getAllAsync('PRAGMA table_info(techniques)');
+      const hasPositionColumn = tableInfo.some((col: any) => col.name === 'position');
+      
+      if (hasPositionColumn) {
+        console.log('Found old position column, migrating techniques table...');
+        
+        // Create new table without position column
+        await db.execAsync(`
+          CREATE TABLE techniques_new (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            notes TEXT,
+            timestamp INTEGER NOT NULL,
+            session_id TEXT,
+            FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE SET NULL
+          );
+        `);
+        
+        // Copy data from old table (excluding position column)
+        await db.execAsync(`
+          INSERT INTO techniques_new (id, name, category, notes, timestamp, session_id)
+          SELECT id, name, category, notes, timestamp, session_id FROM techniques;
+        `);
+        
+        // Drop old table and rename new one
+        await db.execAsync('DROP TABLE techniques;');
+        await db.execAsync('ALTER TABLE techniques_new RENAME TO techniques;');
+        
+        // Recreate indexes
+        await db.execAsync(`
+          CREATE INDEX IF NOT EXISTS idx_techniques_category ON techniques (category);
+          CREATE INDEX IF NOT EXISTS idx_techniques_timestamp ON techniques (timestamp);
+          CREATE INDEX IF NOT EXISTS idx_techniques_session_id ON techniques (session_id);
+        `);
+        
+        console.log('Techniques table migration completed');
+      }
+      
+      // Add count column to submissions table if it doesn't exist
+      await db.execAsync(`
+        ALTER TABLE submissions ADD COLUMN count INTEGER DEFAULT 1;
+      `);
+      console.log('Schema migration completed');
+    } catch (error) {
+      // Column already exists or other error - this is expected for new databases
+      console.log('Schema migrations completed or not needed:', error.message);
+    }
+    
+    console.log('All table operations completed successfully');
   } catch (error) {
-    // Column already exists or other error - this is expected for new databases
-    console.log('Count column already exists or migration not needed');
+    console.error('Error creating tables:', error);
+    console.error('Table creation error details:', error.message, error.stack);
+    throw new Error(`Failed to create tables: ${error.message}`);
   }
 };
 
@@ -136,18 +195,19 @@ export const getDatabase = (): SQLite.SQLiteDatabase => {
 
 // Technique operations
 export const saveTechniqueToDb = async (technique: Technique): Promise<void> => {
-  const database = getDatabase();
-  
   try {
+    const database = getDatabase();
+    
     // Validate input
     if (!technique.id || !technique.name || !technique.category) {
+      console.error('Invalid technique data:', technique);
       throw new Error('Missing required technique fields');
     }
 
     // Ensure tags is an array
     const tags = Array.isArray(technique.tags) ? technique.tags : [];
 
-    console.log('Saving technique with tags:', tags);
+    console.log('Saving technique:', technique.name, 'with tags:', tags);
 
     await database.withTransactionAsync(async () => {
       // Insert or replace technique
@@ -181,30 +241,35 @@ export const saveTechniqueToDb = async (technique: Technique): Promise<void> => 
 
           const cleanTagName = tagName.trim();
 
-          // Ensure the tag exists in the tags table
-          await database.runAsync(
-            `INSERT OR IGNORE INTO tags (id, name, category, created_at, is_custom) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [
-              cleanTagName.toLowerCase().replace(/\s+/g, '-'),
-              cleanTagName,
-              'custom',
-              Date.now(),
-              1
-            ]
-          );
+          try {
+            // Ensure the tag exists in the tags table
+            await database.runAsync(
+              `INSERT OR IGNORE INTO tags (id, name, category, created_at, is_custom) 
+               VALUES (?, ?, ?, ?, ?)`,
+              [
+                cleanTagName.toLowerCase().replace(/\s+/g, '-'),
+                cleanTagName,
+                'custom',
+                Date.now(),
+                1
+              ]
+            );
 
-          // Create technique-tag association
-          await database.runAsync(
-            'INSERT INTO technique_tags (technique_id, tag_name) VALUES (?, ?)',
-            [technique.id, cleanTagName]
-          );
+            // Create technique-tag association
+            await database.runAsync(
+              'INSERT INTO technique_tags (technique_id, tag_name) VALUES (?, ?)',
+              [technique.id, cleanTagName]
+            );
 
-          // Update tag usage count
-          await database.runAsync(
-            'UPDATE tags SET usage_count = usage_count + 1 WHERE name = ?',
-            [cleanTagName]
-          );
+            // Update tag usage count
+            await database.runAsync(
+              'UPDATE tags SET usage_count = usage_count + 1 WHERE name = ?',
+              [cleanTagName]
+            );
+          } catch (tagError) {
+            console.error('Error processing tag:', cleanTagName, tagError);
+            // Continue with other tags even if one fails
+          }
         }
       }
     });
@@ -212,8 +277,8 @@ export const saveTechniqueToDb = async (technique: Technique): Promise<void> => 
     console.log('Technique saved successfully with', tags.length, 'tags');
   } catch (error) {
     console.error('Error saving technique to database:', error);
-    console.error('Technique data:', technique);
-    throw new Error('Failed to save technique');
+    console.error('Technique data:', JSON.stringify(technique, null, 2));
+    throw new Error(`Failed to save technique: ${error.message}`);
   }
 };
 
@@ -263,10 +328,13 @@ export const deleteTechniqueFromDb = async (techniqueId: string): Promise<void> 
     await database.withTransactionAsync(async () => {
       // Delete technique (cascade will handle technique_tags)
       await database.runAsync('DELETE FROM techniques WHERE id = ?', [techniqueId]);
-      
-      // Optionally decrease usage count for tags that are no longer associated
-      // (This is handled by the foreign key cascade, but we could add cleanup logic here)
     });
+    
+    // Clean up unused custom tags after deletion
+    const cleanedTags = await cleanupUnusedCustomTags();
+    if (cleanedTags > 0) {
+      console.log(`Cleaned up ${cleanedTags} unused custom tags after deleting technique`);
+    }
   } catch (error) {
     console.error('Error deleting technique from database:', error);
     throw new Error('Failed to delete technique');
@@ -635,6 +703,45 @@ export const initializePredefinedTagsInDb = async (tags: { name: string; categor
   } catch (error) {
     console.error('Error initializing predefined tags in database:', error);
     throw new Error('Failed to initialize predefined tags');
+  }
+};
+
+// Cleanup unused custom tags
+export const cleanupUnusedCustomTags = async (): Promise<number> => {
+  const database = getDatabase();
+  
+  try {
+    // Find custom tags that are not used by any technique
+    const unusedTags = await database.getAllAsync(`
+      SELECT t.name 
+      FROM tags t
+      WHERE t.is_custom = 1
+      AND NOT EXISTS (
+        SELECT 1 
+        FROM technique_tags tt 
+        WHERE tt.tag_name = t.name
+      )
+    `);
+    
+    if (unusedTags.length === 0) {
+      return 0;
+    }
+    
+    // Delete unused custom tags
+    await database.withTransactionAsync(async () => {
+      for (const tag of unusedTags) {
+        await database.runAsync(
+          'DELETE FROM tags WHERE name = ? AND is_custom = 1',
+          [(tag as any).name]
+        );
+      }
+    });
+    
+    console.log(`Cleaned up ${unusedTags.length} unused custom tags`);
+    return unusedTags.length;
+  } catch (error) {
+    console.error('Error cleaning up unused custom tags:', error);
+    return 0;
   }
 };
 

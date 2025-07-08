@@ -20,7 +20,7 @@ import { X, Save, Plus } from 'lucide-react-native';
 import { Technique, TechniqueCategory } from '@/types/technique';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { saveTechnique } from '@/services/storage';
-import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
+import { searchTechniqueSuggestions, TechniqueSuggestion } from '@/data/techniqueSuggestions';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import TagSelectionModal from '@/components/TagSelectionModal';
 import TagChip from '@/components/TagChip';
@@ -44,10 +44,10 @@ export default function AddTechniqueModal({
 }: AddTechniqueModalProps) {
   const { showSuccess, showError } = useToast();
   const [techniqueName, setTechniqueName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>('Submission');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<TechniqueSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const justSelectedSuggestion = useRef(false);
@@ -69,7 +69,7 @@ export default function AddTechniqueModal({
     if (visible) {
       // Reset form
       setTechniqueName('');
-      setSelectedCategory(null);
+      setSelectedCategory('Submission');
       setSelectedTags([]);
       setNotes('');
       setShowSuggestions(false);
@@ -162,7 +162,7 @@ export default function AddTechniqueModal({
       // Close immediately like session modal
       onSave();
       onClose();
-      showSuccess('Technique added successfully!');
+      showSuccess(`"${newTechnique.name}" added successfully!`);
       
     } catch {
       showError('Failed to save technique. Please try again.');
@@ -184,15 +184,17 @@ export default function AddTechniqueModal({
     setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleSuggestionPress = (suggestion: string) => {
+  const handleSuggestionPress = (suggestion: TechniqueSuggestion) => {
     justSelectedSuggestion.current = true;
-    setTechniqueName(suggestion);
+    setTechniqueName(suggestion.name);
+    setSelectedCategory(suggestion.category);
     setShowSuggestions(false);
+    setSuggestions([]); // Clear suggestions array
     Keyboard.dismiss();
-    // Reset the flag after a short delay
+    // Reset the flag after a longer delay to ensure blur event completes
     setTimeout(() => {
       justSelectedSuggestion.current = false;
-    }, 100);
+    }, 500);
   };
 
   const handleNotesPress = () => {
@@ -235,10 +237,7 @@ export default function AddTechniqueModal({
       animationType="none"
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View style={styles.container}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.backdrop}>
             <Animated.View
@@ -304,13 +303,13 @@ export default function AddTechniqueModal({
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
                       {suggestions.map((suggestion, index) => (
                         <TouchableOpacity
-                          key={`${suggestion}-${index}`}
+                          key={`${suggestion.name}-${index}`}
                           style={styles.suggestionPill}
                           onPress={() => handleSuggestionPress(suggestion)}
                           delayPressIn={0}
                           activeOpacity={0.7}
                         >
-                          <Text style={styles.suggestionText}>{suggestion}</Text>
+                          <Text style={styles.suggestionText}>{suggestion.name}</Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
@@ -325,6 +324,7 @@ export default function AddTechniqueModal({
                   selectedCategory={selectedCategory}
                   onCategorySelect={handleCategorySelect}
                   placeholder="Select category"
+                  showAllOption={false}
                 />
               </View>
 
@@ -432,7 +432,7 @@ export default function AddTechniqueModal({
           </View>
         </Animated.View>
         <KeyboardDismissButton />
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: screenWidth - 40,
-    maxHeight: screenHeight * 0.9,
+    maxHeight: screenHeight * 0.75,
     justifyContent: 'center',
   },
   modal: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
-    maxHeight: screenHeight * 0.9,
+    maxHeight: screenHeight * 0.75,
   },
   header: {
     flexDirection: 'row',

@@ -14,7 +14,7 @@ export default function TechniqueItem({
   categoryColor,
   noMargin = false
 }: TechniqueItemProps) {
-  const MAX_VISIBLE_TAGS = 3;
+  const MAX_VISIBLE_TAGS = 2;
   const visibleTags = technique.tags.slice(0, MAX_VISIBLE_TAGS);
   const hiddenTagsCount = technique.tags.length - MAX_VISIBLE_TAGS;
 
@@ -22,6 +22,15 @@ export default function TechniqueItem({
     <View style={[styles.container, noMargin && styles.noMargin]}>
       <View style={styles.header}>
         <Text style={styles.name}>{technique.name}</Text>
+        <Text style={styles.timestamp}>
+          {technique.timestamp.toLocaleDateString([], { 
+            month: 'short', 
+            day: 'numeric' 
+          })} {technique.timestamp.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </Text>
       </View>
       <View style={styles.content}>
         <View style={styles.tagsSection}>
@@ -32,7 +41,7 @@ export default function TechniqueItem({
           
           {/* Tags */}
           {technique.tags.length > 0 && (
-            <View style={styles.tagsContainer}>
+            <>
               {visibleTags.map((tag) => (
                 <TagChip
                   key={tag}
@@ -46,19 +55,9 @@ export default function TechniqueItem({
                   <Text style={styles.moreTagsText}>+{hiddenTagsCount}</Text>
                 </View>
               )}
-            </View>
+            </>
           )}
         </View>
-        
-        <Text style={styles.timestamp}>
-          {technique.timestamp.toLocaleDateString([], { 
-            month: 'short', 
-            day: 'numeric' 
-          })} {technique.timestamp.toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
-        </Text>
       </View>
     </View>
   );
@@ -78,13 +77,14 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   header: {
-    marginBottom: 12,
-  },
-  content: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 12,
+    marginBottom: 8,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
     fontSize: 16,
@@ -93,28 +93,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tagsSection: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
     gap: 6,
+    flexWrap: 'nowrap',
   },
   categoryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    marginRight: 2,
   },
   categoryText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#fff',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    flex: 1,
   },
   moreTagsIndicator: {
     backgroundColor: '#e5e7eb',
@@ -130,9 +122,7 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: '#6b7280',
-    marginTop: 2,
-    textAlign: 'right',
-    minWidth: 80,
+    marginLeft: 8,
   },
   noMargin: {
     marginBottom: 0,

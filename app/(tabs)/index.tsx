@@ -107,7 +107,7 @@ export default function TechniquesPage() {
   useEffect(() => {
     if (searchQuery.length > 0) {
       const filtered = searchTechniqueSuggestions(searchQuery, 6);
-      setSuggestions(filtered);
+      setSuggestions(filtered.map(s => s.name));
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -163,7 +163,7 @@ export default function TechniquesPage() {
       await loadTechniques();
       setShowEditModal(false);
       setEditingTechnique(null);
-      showSuccess('Technique updated successfully!');
+      showSuccess(`"${updatedTechnique.name}" updated successfully!`);
     } catch {
       showError('Failed to update technique. Please try again.');
     }
@@ -182,7 +182,7 @@ export default function TechniquesPage() {
             try {
               await deleteTechnique(technique.id);
               await loadTechniques();
-              showError('Technique deleted successfully!');
+              showSuccess(`"${technique.name}" deleted successfully!`);
             } catch {
               showError('Failed to delete technique. Please try again.');
             }
@@ -203,11 +203,12 @@ export default function TechniquesPage() {
     justSelectedSuggestion.current = true;
     setSearchQuery(suggestion);
     setShowSuggestions(false);
+    setSuggestions([]); // Clear suggestions array
     Keyboard.dismiss();
-    // Reset the flag after a short delay
+    // Reset the flag after a longer delay to ensure blur event completes
     setTimeout(() => {
       justSelectedSuggestion.current = false;
-    }, 100);
+    }, 500);
   };
 
   const handleSearchFocus = () => {
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   addTagButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#22c55e',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

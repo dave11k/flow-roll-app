@@ -22,6 +22,7 @@ import CategoryDropdown from '@/components/CategoryDropdown';
 import TagSelectionModal from '@/components/TagSelectionModal';
 import TagChip from '@/components/TagChip';
 import NotesModal from '@/components/NotesModal';
+import { searchTechniqueSuggestions, TechniqueSuggestion } from '@/data/techniqueSuggestions';
 
 interface EditTechniqueModalProps {
   visible: boolean;
@@ -45,6 +46,9 @@ export default function EditTechniqueModal({
   const [notes, setNotes] = useState('');
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
+  const [suggestions, setSuggestions] = useState<TechniqueSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const justSelectedSuggestion = useRef(false);
   const notesInputRef = useRef<View>(null);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -57,8 +61,20 @@ export default function EditTechniqueModal({
       setSelectedCategory(technique.category);
       setSelectedTags(technique.tags || []);
       setNotes(technique.notes || '');
+      setShowSuggestions(false);
     }
   }, [visible, technique]);
+
+  // Filter suggestions based on input
+  useEffect(() => {
+    if (name.length > 0) {
+      const filtered = searchTechniqueSuggestions(name, 8);
+      setSuggestions(filtered);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [name]);
 
   useEffect(() => {
     if (visible) {
@@ -117,6 +133,33 @@ export default function EditTechniqueModal({
   const handleRemoveTag = (tagToRemove: string) => {
     setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
   };
+  const handleSuggestionPress = (suggestion: TechniqueSuggestion) => {
+    justSelectedSuggestion.current = true;
+    setName(suggestion.name);
+    setSelectedCategory(suggestion.category);
+    setShowSuggestions(false);
+    setSuggestions([]); // Clear suggestions array
+    Keyboard.dismiss();
+    // Reset the flag after a longer delay to ensure blur event completes
+    setTimeout(() => {
+      justSelectedSuggestion.current = false;
+    }, 500);
+  };
+
+  const handleNameBlur = () => {
+    if (!justSelectedSuggestion.current) {
+      setTimeout(() => {
+        setShowSuggestions(false);
+      }, 150);
+    }
+  };
+
+  const handleNameFocus = () => {
+    if (name.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
   const handleSave = () => {
     if (!name.trim() || !selectedCategory) {
       return;
@@ -146,10 +189,7 @@ export default function EditTechniqueModal({
       animationType="none"
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View style={styles.container}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.backdrop}>
             <Animated.View
@@ -201,8 +241,29 @@ export default function EditTechniqueModal({
                   placeholderTextColor="#9ca3af"
                   value={name}
                   onChangeText={setName}
+                  onFocus={handleNameFocus}
+                  onBlur={handleNameBlur}
                   maxLength={100}
                 />
+
+                {/* Auto-suggestions */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
+                      {suggestions.map((suggestion, index) => (
+                        <TouchableOpacity
+                          key={`${suggestion.name}-${index}`}
+                          style={styles.suggestionPill}
+                          onPress={() => handleSuggestionPress(suggestion)}
+                          delayPressIn={0}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.suggestionText}>{suggestion.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
 
               {/* Category Selection */}
@@ -212,6 +273,7 @@ export default function EditTechniqueModal({
                   selectedCategory={selectedCategory}
                   onCategorySelect={handleCategorySelect}
                   placeholder="Select category"
+                  showAllOption={false}
                 />
               </View>
 
@@ -299,7 +361,7 @@ export default function EditTechniqueModal({
             </View>
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
 
       <NotesModal
         visible={showNotesModal}
@@ -335,7 +397,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: screenWidth - 40,
-    maxHeight: screenHeight * 0.95,
+    maxHeight: screenHeight * 0.75,
     justifyContent: 'center',
   },
   modal: {
@@ -349,7 +411,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
-    maxHeight: screenHeight * 0.95,
+    maxHeight: screenHeight * 0.75,
   },
   header: {
     flexDirection: 'row',
@@ -398,6 +460,21 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: '#1f2937',
+  },
+  suggestionsContainer: {
+    marginTop: 12,
+  },
+  suggestionPill: {
+    backgroundColor: '#e0e7ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  suggestionText: {
+    color: '#1e40af',
+    fontSize: 14,
+    fontWeight: '500',
   },
   tagsHeader: {
     flexDirection: 'row',

@@ -19,6 +19,7 @@ import { BlurView } from 'expo-blur';
 import { X, Search, Plus, Tag as TagIcon } from 'lucide-react-native';
 import { PREDEFINED_TAGS, TAG_VALIDATION } from '@/types/technique';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
+import TagService from '@/services/tagService';
 
 interface TagSelectionModalProps {
   visible: boolean;
@@ -29,7 +30,7 @@ interface TagSelectionModalProps {
 
 interface TagSection {
   title: string;
-  data: string[];
+  data: readonly string[];
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -44,32 +45,77 @@ export default function TagSelectionModal({
   const [filteredSections, setFilteredSections] = useState<TagSection[]>([]);
   const [newTagName, setNewTagName] = useState('');
   const [showCreateNew, setShowCreateNew] = useState(false);
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const backgroundOpacityAnim = useRef(new Animated.Value(0)).current;
 
   // Create sections for the tag list
-  const allSections: TagSection[] = [
+  const [allSections, setAllSections] = useState<TagSection[]>([
     {
       title: 'Positions',
-      data: [...PREDEFINED_TAGS.POSITIONS],
+      data: PREDEFINED_TAGS.POSITIONS,
     },
     {
       title: 'Attributes',
-      data: [...PREDEFINED_TAGS.ATTRIBUTES],
+      data: PREDEFINED_TAGS.ATTRIBUTES,
     },
     {
       title: 'Styles',
-      data: [...PREDEFINED_TAGS.STYLES],
+      data: PREDEFINED_TAGS.STYLES,
     },
-  ];
+  ]);
+
+  // Load custom tags from database
+  const loadCustomTags = async () => {
+    setIsLoadingTags(true);
+    try {
+      const allTags = await TagService.getAllTags();
+      const customTagsList = allTags
+        .filter(tag => tag.isCustom)
+        .map(tag => tag.name);
+      
+      setCustomTags(customTagsList);
+      
+      // Update sections with custom tags
+      const baseSections: TagSection[] = [
+        {
+          title: 'Positions',
+          data: PREDEFINED_TAGS.POSITIONS,
+        },
+        {
+          title: 'Attributes',
+          data: PREDEFINED_TAGS.ATTRIBUTES,
+        },
+        {
+          title: 'Styles',
+          data: PREDEFINED_TAGS.STYLES,
+        },
+      ];
+      
+      if (customTagsList.length > 0) {
+        baseSections.push({
+          title: 'Custom Tags',
+          data: customTagsList as readonly string[],
+        });
+      }
+      
+      setAllSections(baseSections);
+    } catch (error) {
+      console.error('Error loading custom tags:', error);
+    } finally {
+      setIsLoadingTags(false);
+    }
+  };
 
   useEffect(() => {
     if (visible) {
       setSearchQuery('');
       setNewTagName('');
       setShowCreateNew(false);
+      loadCustomTags();
     }
   }, [visible]);
 
@@ -142,7 +188,7 @@ export default function TagSelectionModal({
       setShowCreateNew(!hasExactMatch && isValidNewTag(searchQuery));
       setNewTagName(searchQuery);
     }
-  }, [searchQuery, selectedTags]);
+  }, [searchQuery, selectedTags, allSections]);
 
   const isValidNewTag = (tagName: string): boolean => {
     const trimmed = tagName.trim();
@@ -170,7 +216,7 @@ export default function TagSelectionModal({
     }
   };
 
-  const handleCreateNewTag = () => {
+  const handleCreateNewTag = async () => {
     const trimmed = newTagName.trim();
     if (!isValidNewTag(trimmed)) {
       return;
@@ -184,11 +230,20 @@ export default function TagSelectionModal({
       return;
     }
 
-    onTagsChange([...selectedTags, trimmed]);
-    setSearchQuery('');
-    setNewTagName('');
-    setShowCreateNew(false);
-    Keyboard.dismiss();
+    // Create the custom tag in the database
+    const success = await TagService.createCustomTag(trimmed);
+    if (success) {
+      onTagsChange([...selectedTags, trimmed]);
+      setSearchQuery('');
+      setNewTagName('');
+      setShowCreateNew(false);
+      Keyboard.dismiss();
+      
+      // Reload custom tags to include the new one
+      await loadCustomTags();
+    } else {
+      Alert.alert('Error', 'Failed to create custom tag. Please try again.');
+    }
   };
 
   const handleClose = () => {

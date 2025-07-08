@@ -46,11 +46,15 @@ const ensureInitialized = async () => {
 // Technique Storage
 export const saveTechnique = async (technique: Technique): Promise<void> => {
   try {
+    console.log('Storage: Starting to save technique:', technique.name);
     await ensureInitialized();
+    console.log('Storage: Database initialized, calling saveTechniqueToDb');
     await saveTechniqueToDb(technique);
+    console.log('Storage: Technique saved successfully');
   } catch (error) {
-    console.error('Error saving technique:', error);
-    throw new Error('Failed to save technique');
+    console.error('Error saving technique in storage layer:', error);
+    console.error('Storage error details:', error.message, error.stack);
+    throw new Error(`Failed to save technique: ${error.message}`);
   }
 };
 

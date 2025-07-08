@@ -19,6 +19,7 @@ interface CategoryDropdownProps {
   onClearCategory?: () => void;
   placeholder?: string;
   disabled?: boolean;
+  showAllOption?: boolean;
 }
 
 const CATEGORIES: TechniqueCategory[] = [
@@ -50,6 +51,7 @@ export default function CategoryDropdown({
   onClearCategory,
   placeholder = 'All categories',
   disabled = false,
+  showAllOption = true,
 }: CategoryDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -196,27 +198,29 @@ export default function CategoryDropdown({
                 showsVerticalScrollIndicator={false}
               >
                 {/* All Categories Option */}
-                <TouchableOpacity
-                  style={[
-                    styles.dropdownItem,
-                    !selectedCategory && styles.dropdownItemSelected,
-                  ]}
-                  onPress={handleAllPress}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.categoryItemContent}>
-                    <View style={[styles.colorIndicator, { backgroundColor: CATEGORY_COLORS['All'] }]} />
-                    <Text style={[
-                      styles.dropdownItemText,
-                      !selectedCategory && styles.dropdownItemTextSelected,
-                    ]}>
-                      All
-                    </Text>
-                  </View>
-                  {!selectedCategory && (
-                    <Check size={20} color="#1e3a2e" />
-                  )}
-                </TouchableOpacity>
+                {showAllOption && (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownItem,
+                      !selectedCategory && styles.dropdownItemSelected,
+                    ]}
+                    onPress={handleAllPress}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.categoryItemContent}>
+                      <View style={[styles.colorIndicator, { backgroundColor: CATEGORY_COLORS['All'] }]} />
+                      <Text style={[
+                        styles.dropdownItemText,
+                        !selectedCategory && styles.dropdownItemTextSelected,
+                      ]}>
+                        All
+                      </Text>
+                    </View>
+                    {!selectedCategory && (
+                      <Check size={20} color="#1e3a2e" />
+                    )}
+                  </TouchableOpacity>
+                )}
                 
                 {CATEGORIES.map(renderCategoryItem)}
               </ScrollView>
