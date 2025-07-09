@@ -453,9 +453,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#5271ff',
+    backgroundColor: '#000000',
     borderBottomWidth: 1,
-    borderBottomColor: '#3d5cff',
+    borderBottomColor: '#333333',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   addTagButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#5271ff',
+    backgroundColor: '#000000',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   createTechniqueButton: {
-    backgroundColor: '#5271ff',
+    backgroundColor: '#000000',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   clearFiltersButtonLarge: {
-    backgroundColor: '#5271ff',
+    backgroundColor: '#000000',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
