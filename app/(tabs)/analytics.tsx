@@ -10,16 +10,16 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Image,
 } from 'react-native';
 import {
-  LineChart,
-  BarChart,
   PieChart,
 } from 'react-native-chart-kit';
-import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon, ChevronDown } from 'lucide-react-native';
+import { Target, Award, Zap, Trophy, Activity, ChartPie as PieChartIcon, ChevronDown, User, Filter } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import { Technique } from '@/types/technique';
 import { useData } from '@/contexts/DataContext';
+import ProfileModal from '@/components/ProfileModal';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 50; // Increased padding to prevent overflow
@@ -236,6 +236,7 @@ export default function Analytics() {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Memoize analytics calculation to prevent unnecessary recalculations
   const memoizedAnalyticsData = useMemo(() => {
@@ -315,7 +316,18 @@ export default function Analytics() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
+          <Image 
+            source={require('@/assets/images/FlowRoll.png')} 
+            style={styles.logo}
+          />
           <Text style={styles.title}>Analytics</Text>
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => setShowProfileModal(true)}
+            activeOpacity={0.7}
+          >
+            <User size={24} color="#000000" />
+          </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
@@ -330,7 +342,18 @@ export default function Analytics() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
+          <Image 
+            source={require('@/assets/images/FlowRoll.png')} 
+            style={styles.logo}
+          />
           <Text style={styles.title}>Analytics</Text>
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => setShowProfileModal(true)}
+            activeOpacity={0.7}
+          >
+            <User size={24} color="#000000" />
+          </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
@@ -343,17 +366,33 @@ export default function Analytics() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <Image 
+          source={require('@/assets/images/FlowRoll.png')} 
+          style={styles.logo}
+        />
         <Text style={styles.title}>Analytics</Text>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => setShowProfileModal(true)}
+          activeOpacity={0.7}
+        >
+          <User size={24} color="#000000" />
+        </TouchableOpacity>
+      </View>
+      
+      {/* Timeframe Filter Section */}
+      <View style={styles.timeframeSection}>
         <View style={styles.timeframeSelectorContainer}>
           <TouchableOpacity
             style={styles.timeframeDropdown}
             onPress={() => setShowTimeframeDropdown(!showTimeframeDropdown)}
             activeOpacity={0.7}
           >
+            <Filter size={16} color="#5271ff" />
             <Text style={styles.timeframeDropdownText}>
               {selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1)}
             </Text>
-            <ChevronDown size={16} color="#fff" />
+            <ChevronDown size={16} color="#5271ff" />
           </TouchableOpacity>
           
           {showTimeframeDropdown && (
@@ -531,6 +570,14 @@ export default function Analytics() {
         <View style={styles.bottomSpacing} />
         </ScrollView>
       </TouchableWithoutFeedback>
+      
+      {/* Profile Modal */}
+      <ProfileModal
+        visible={showProfileModal}
+        profile={null}
+        onSave={() => {}}
+        onClose={() => setShowProfileModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -547,29 +594,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    minHeight: 64, // Match techniques/sessions header height
+    height: 64,
+  },
+  logo: {
+    width: 38,
+    height: 38,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#000000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeframeSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   timeframeSelectorContainer: {
     position: 'relative',
     zIndex: 1000,
+    alignItems: 'flex-end',
   },
   timeframeDropdown: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -579,7 +649,7 @@ const styles = StyleSheet.create({
   timeframeDropdownText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: '#5271ff',
   },
   timeframeDropdownMenu: {
     position: 'absolute',

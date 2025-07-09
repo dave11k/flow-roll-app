@@ -11,8 +11,9 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   TextInput,
+  Image,
 } from 'react-native';
-import { Calendar, Plus, MapPin, Clock, Filter, Search, X } from 'lucide-react-native';
+import { Calendar, Plus, MapPin, Clock, Filter, Search, X, User } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
@@ -20,6 +21,7 @@ import SessionDetailModal from '@/components/SessionDetailModal';
 import SessionFilterModal from '@/components/SessionFilterModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
+import ProfileModal from '@/components/ProfileModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
 import { StatusBar } from 'expo-status-bar';
@@ -66,6 +68,7 @@ export default function Sessions() {
     satisfaction: null,
   });
   const [lastLocation, setLastLocation] = useState('');
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Handle errors from data context
   useEffect(() => {
@@ -282,7 +285,18 @@ export default function Sessions() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.title}>Training Sessions ({sessions.length})</Text>
+        <Image 
+          source={require('@/assets/images/FlowRoll.png')} 
+          style={styles.logo}
+        />
+        <Text style={styles.title}>Sessions</Text>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => setShowProfileModal(true)}
+          activeOpacity={0.7}
+        >
+          <User size={24} color="#000000" />
+        </TouchableOpacity>
       </View>
       
       {/* Search and Filter Row */}
@@ -369,7 +383,7 @@ export default function Sessions() {
               <Text style={styles.sessionsTitle}>
                 {hasActiveFilters() 
                   ? `Filtered Sessions (${filteredSessions.length})`
-                  : 'Sessions'
+                  : `Sessions (${sessions.length})`
                 }
               </Text>
             </View>
@@ -476,6 +490,14 @@ export default function Sessions() {
         onClose={() => setShowFilterModal(false)}
       />
 
+      {/* Profile Modal */}
+      <ProfileModal
+        visible={showProfileModal}
+        profile={null}
+        onSave={() => {}}
+        onClose={() => setShowProfileModal(false)}
+      />
+
       {/* Floating Add Button */}
       <FloatingAddButton
         onPress={() => {
@@ -499,19 +521,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    height: 64,
+  },
+  logo: {
+    width: 38,
+    height: 38,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#000000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
@@ -552,13 +590,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sessionsList: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   sessionsHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sessionsTitle: {
     fontSize: 18,
@@ -576,7 +615,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   filterButtonActive: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#f3f4f6',
   },
   filterButtonText: {
     fontSize: 14,

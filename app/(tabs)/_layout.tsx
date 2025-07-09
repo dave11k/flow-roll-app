@@ -1,10 +1,13 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { ChartBar as BarChart3, BookOpen, TrendingUp, Settings } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
 
 export default function TabLayout() {
   return (
-    <Tabs
+    <>
+      <StatusBar style="dark" backgroundColor="#ffffff" translucent={true} />
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#000000',
@@ -56,5 +59,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }

@@ -236,12 +236,13 @@ export default function TechniqueFilterModal({
             </Animated.View>
           </PanGestureHandler>
 
-          <TouchableWithoutFeedback onPress={() => {
-            setShowCategoryDropdown(false);
-          }}>
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-              {/* Category Filter */}
-              <View style={styles.section}>
+          <View style={styles.contentWrapper}>
+            <TouchableWithoutFeedback onPress={() => {
+              setShowCategoryDropdown(false);
+            }}>
+              <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Category Filter */}
+                <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Category</Text>
                     <TouchableOpacity
                       style={styles.dropdown}
@@ -320,19 +321,30 @@ export default function TechniqueFilterModal({
                     </View>
                 </View>
               
-              {/* Invisible spacer to ensure full scrollability */}
-              <View style={styles.scrollSpacer} />
-            </ScrollView>
-          </TouchableWithoutFeedback>
+                {/* Invisible spacer to ensure full scrollability */}
+                <View style={styles.scrollSpacer} />
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </View>
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.resetButton}
+              style={styles.clearButton}
               onPress={handleResetFilters}
               activeOpacity={0.7}
             >
               <RotateCcw size={16} color="#6b7280" />
-              <Text style={styles.resetButtonText}>Reset All</Text>
+              <Text style={styles.clearButtonText}>Clear Filters</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={() => {
+                onApplyFilters(localFilters);
+                animateClose();
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -397,6 +409,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   content: {
     flex: 1,
@@ -519,21 +534,38 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   footer: {
+    flexDirection: 'row',
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
+    gap: 12,
+    backgroundColor: '#fff',
   },
-  resetButton: {
+  clearButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f3f4f6',
     paddingVertical: 12,
     borderRadius: 8,
+    backgroundColor: '#f3f4f6',
     gap: 6,
   },
-  resetButtonText: {
+  clearButtonText: {
     color: '#6b7280',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  applyButton: {
+    flex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#5271ff',
+  },
+  applyButtonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

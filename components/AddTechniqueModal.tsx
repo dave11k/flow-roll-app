@@ -405,6 +405,7 @@ export default function AddTechniqueModal({
                           key={tag}
                           tag={tag}
                           variant="removable"
+                          size="small"
                           onRemove={() => handleRemoveTag(tag)}
                         />
                       );

@@ -10,8 +10,9 @@ import {
   FlatList,
   Keyboard,
   TouchableWithoutFeedback,
+  Image,
 } from 'react-native';
-import { Search, X, Plus, BookOpen, Filter } from 'lucide-react-native';
+import { Search, X, Plus, BookOpen, Filter, User } from 'lucide-react-native';
 import { Technique, TechniqueCategory } from '@/types/technique';
 import TechniqueFilterModal from '@/components/TechniqueFilterModal';
 import TechniqueItem from '@/components/TechniqueItem';
@@ -20,6 +21,7 @@ import AddTechniqueModal from '@/components/AddTechniqueModal';
 import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
+import ProfileModal from '@/components/ProfileModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
 
@@ -57,6 +59,7 @@ export default function TechniquesPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Handle errors from data context
   useEffect(() => {
@@ -196,7 +199,18 @@ export default function TechniquesPage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Techniques ({techniques.length})</Text>
+        <Image 
+          source={require('@/assets/images/FlowRoll.png')} 
+          style={styles.logo}
+        />
+        <Text style={styles.title}>Techniques</Text>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => setShowProfileModal(true)}
+          activeOpacity={0.7}
+        >
+          <User size={24} color="#000000" />
+        </TouchableOpacity>
       </View>
 
       {/* Search and Filter Row */}
@@ -233,11 +247,45 @@ export default function TechniquesPage() {
               }}
               activeOpacity={0.7}
             >
-              <Filter size={20} color="#000000" />
+              <Filter size={20} color="#5271ff" />
               <Text style={styles.filterButtonText}>Filter</Text>
               {hasActiveFilters() && <View style={styles.filterIndicator} />}
             </TouchableOpacity>
           </View>
+          {/* Active Filters Row */}
+          {hasActiveFilters() && (
+            <View style={styles.activeFiltersRow}>
+              {filters.category && (
+                <TouchableOpacity
+                  style={[styles.activeFilterPill, { backgroundColor: CATEGORY_COLORS[filters.category] }]}
+                  onPress={() => setFilters(prev => ({ ...prev, category: null }))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.activeFilterText}>{filters.category}</Text>
+                  <X size={12} color="#fff" />
+                </TouchableOpacity>
+              )}
+              {filters.tags.slice(0, 3).map((tag, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.activeTagPill}
+                  onPress={() => setFilters(prev => ({ 
+                    ...prev, 
+                    tags: prev.tags.filter(t => t !== tag) 
+                  }))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.activeTagText}>{tag}</Text>
+                  <X size={12} color="#5271ff" />
+                </TouchableOpacity>
+              ))}
+              {filters.tags.length > 3 && (
+                <View style={styles.morePill}>
+                  <Text style={styles.moreText}>+{filters.tags.length - 3} more</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </TouchableWithoutFeedback>
 
@@ -280,13 +328,25 @@ export default function TechniquesPage() {
             )}
           </View>
         ) : (
-          <FlatList
-            data={filteredTechniques}
-            renderItem={renderTechniqueItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-          />
+          <View style={styles.techniquesList}>
+            <FlatList
+              data={filteredTechniques}
+              renderItem={renderTechniqueItem}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              ListHeaderComponent={
+                <View style={styles.techniquesHeader}>
+                  <Text style={styles.techniquesTitle}>
+                    {hasActiveFilters() 
+                      ? `Filtered Techniques (${filteredTechniques.length})`
+                      : `Techniques (${techniques.length})`
+                    }
+                  </Text>
+                </View>
+              }
+            />
+          </View>
         )}
       </View>
 
@@ -330,6 +390,14 @@ export default function TechniquesPage() {
         onClose={() => setShowFilterModal(false)}
       />
 
+      {/* Profile Modal */}
+      <ProfileModal
+        visible={showProfileModal}
+        profile={null}
+        onSave={() => {}}
+        onClose={() => setShowProfileModal(false)}
+      />
+
       {/* Floating Add Button */}
       <FloatingAddButton
         onPress={() => {
@@ -353,19 +421,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    height: 64,
+  },
+  logo: {
+    width: 38,
+    height: 38,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#000000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchSection: {
     padding: 20,
@@ -396,36 +480,79 @@ const styles = StyleSheet.create({
   clearSearchButton: {
     padding: 4,
   },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  activeFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  activeFilterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  activeTagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#5271ff',
+    gap: 4,
+  },
+  activeTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5271ff',
+  },
+  morePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+  },
+  moreText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
     gap: 6,
-    minHeight: 36,
     position: 'relative',
   },
   filterButtonActive: {
-    backgroundColor: '#f0f9ff',
-    borderColor: '#3b82f6',
+    backgroundColor: '#f3f4f6',
   },
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#5271ff',
   },
   filterIndicator: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: -2,
+    right: -2,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#ef4444',
   },
   clearFiltersButton: {
     flexDirection: 'row',
@@ -502,8 +629,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  techniquesList: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  techniquesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  techniquesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+  },
   listContent: {
-    padding: 20,
+    paddingBottom: 20,
   },
   techniqueItemContainer: {
     position: 'relative',

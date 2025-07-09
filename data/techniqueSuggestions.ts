@@ -75,7 +75,9 @@ export const TECHNIQUE_SUGGESTIONS: TechniqueSuggestion[] = [
   { name: 'Foot Sweep', category: 'Takedown' },
   { name: 'Outside Leg Trip', category: 'Takedown' },
   { name: 'Inside Leg Trip', category: 'Takedown' },
-  
+  { name: 'Guillotine Takedown', category: 'Takedown' },
+  { name: 'Harai Goshi', category: 'Takedown' },
+  { name: 'Uchi Mata', category: 'Takedown' },
 ];
 
 // Helper function to determine category for advanced techniques
@@ -231,9 +233,6 @@ const advancedTechniques: TechniqueSuggestion[] = [
   'Closed Guard Break',
   'Butterfly Guard Pass',
   'Open Guard Pass',
-  'Guillotine Takedown',
-  'Harai Goshi',
-  'Uchi Mata',
   'Seoi Nage',
   'Tani Otoshi',
   'Sasae Tsuri Komi Ashi',

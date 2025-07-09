@@ -10,9 +10,9 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Keyboard,
+  Image,
 } from 'react-native';
 import { 
-  Settings, 
   User, 
   Bell, 
   Database, 
@@ -302,13 +302,18 @@ export default function SettingsPage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Settings size={24} color="#fff" />
-          <Text style={styles.title}>Settings</Text>
-        </View>
-        <View style={styles.headerRight}>
-          {/* Empty space to match other headers */}
-        </View>
+        <Image 
+          source={require('@/assets/images/FlowRoll.png')} 
+          style={styles.logo}
+        />
+        <Text style={styles.title}>Settings</Text>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => setShowProfileModal(true)}
+          activeOpacity={0.7}
+        >
+          <User size={24} color="#000000" />
+        </TouchableOpacity>
       </View>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -364,28 +369,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    minHeight: 64, // Match techniques/sessions header height
+    height: 64,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerRight: {
-    // Empty space for consistency
+  logo: {
+    width: 38,
+    height: 38,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#000000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,

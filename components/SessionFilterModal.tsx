@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -303,11 +304,12 @@ export default function SessionFilterModal({
             </Animated.View>
           </PanGestureHandler>
 
-          <TouchableWithoutFeedback onPress={() => {
-            setShowLocationDropdown(false);
-            setShowSubmissionDropdown(false);
-          }}>
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.contentWrapper}>
+            <TouchableWithoutFeedback onPress={() => {
+              setShowLocationDropdown(false);
+              setShowSubmissionDropdown(false);
+            }}>
+              <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Date Range */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -340,10 +342,12 @@ export default function SessionFilterModal({
                 <DateTimePicker
                   value={localFilters.dateRange.startDate || new Date()}
                   mode="date"
-                  display="default"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
                   onChange={(event, selectedDate) => {
-                    setShowStartDatePicker(false);
-                    if (selectedDate) {
+                    if (Platform.OS === 'android') {
+                      setShowStartDatePicker(false);
+                    }
+                    if (event.type === 'set' && selectedDate) {
                       setLocalFilters(prev => ({
                         ...prev,
                         dateRange: {
@@ -351,6 +355,11 @@ export default function SessionFilterModal({
                           startDate: selectedDate
                         }
                       }));
+                      if (Platform.OS === 'ios') {
+                        setShowStartDatePicker(false);
+                      }
+                    } else if (event.type === 'dismissed') {
+                      setShowStartDatePicker(false);
                     }
                   }}
                 />
@@ -360,10 +369,12 @@ export default function SessionFilterModal({
                 <DateTimePicker
                   value={localFilters.dateRange.endDate || new Date()}
                   mode="date"
-                  display="default"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
                   onChange={(event, selectedDate) => {
-                    setShowEndDatePicker(false);
-                    if (selectedDate) {
+                    if (Platform.OS === 'android') {
+                      setShowEndDatePicker(false);
+                    }
+                    if (event.type === 'set' && selectedDate) {
                       setLocalFilters(prev => ({
                         ...prev,
                         dateRange: {
@@ -371,6 +382,11 @@ export default function SessionFilterModal({
                           endDate: selectedDate
                         }
                       }));
+                      if (Platform.OS === 'ios') {
+                        setShowEndDatePicker(false);
+                      }
+                    } else if (event.type === 'dismissed') {
+                      setShowEndDatePicker(false);
                     }
                   }}
                 />
@@ -508,8 +524,9 @@ export default function SessionFilterModal({
             
             {/* Invisible spacer to ensure full scrollability */}
             <View style={styles.scrollSpacer} />
-            </ScrollView>
-          </TouchableWithoutFeedback>
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </View>
 
           <View style={styles.footer}>
             <TouchableOpacity
@@ -518,7 +535,7 @@ export default function SessionFilterModal({
               activeOpacity={0.7}
             >
               <RotateCcw size={16} color="#6b7280" />
-              <Text style={styles.clearButtonText}>Clear All</Text>
+              <Text style={styles.clearButtonText}>Clear Filters</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.applyButton}
@@ -591,6 +608,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   content: {
     flex: 1,

@@ -350,6 +350,7 @@ export default function EditTechniqueModal({
                         key={tag}
                         tag={tag}
                         variant="removable"
+                        size="small"
                         onRemove={() => handleRemoveTag(tag)}
                       />
                     ))}

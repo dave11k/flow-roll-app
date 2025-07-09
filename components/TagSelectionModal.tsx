@@ -577,19 +577,19 @@ const styles = StyleSheet.create({
   },
   tagButton: {
     backgroundColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: 'transparent',
   },
   tagButtonSelected: {
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#eff6ff',
     borderColor: '#5271ff',
   },
   tagButtonText: {
     color: '#6b7280',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
   },
   tagButtonTextSelected: {
