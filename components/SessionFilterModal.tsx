@@ -311,7 +311,7 @@ export default function SessionFilterModal({
             {/* Date Range */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#1e3a2e" />
+                <Calendar size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Date Range</Text>
               </View>
               <View style={styles.dateRangeContainer}>
@@ -380,7 +380,7 @@ export default function SessionFilterModal({
             {/* Location */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <MapPin size={20} color="#1e3a2e" />
+                <MapPin size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Location</Text>
               </View>
               <View style={styles.dropdownContainer}>
@@ -460,7 +460,7 @@ export default function SessionFilterModal({
             {/* Session Type */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Target size={20} color="#1e3a2e" />
+                <Target size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Session Type</Text>
               </View>
               <View style={styles.sessionTypesContainer}>
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
   },
   applyButtonText: {
     color: '#fff',

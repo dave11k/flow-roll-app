@@ -78,7 +78,7 @@ const chartConfig = {
   propsForDots: {
     r: '6',
     strokeWidth: '2',
-    stroke: '#1e3a2e',
+    stroke: '#5271ff',
   },
   propsForBackgroundLines: {
     strokeDasharray: '',
@@ -119,7 +119,7 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
         name,
         count,
         color: [
-          '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
+          '#ef4444', '#f97316', '#eab308', '#5271ff', '#3b82f6', 
           '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1'
         ][index % 10],
       }));
@@ -261,7 +261,7 @@ export default function Analytics() {
     title: string,
     value: string | number,
     subtitle?: string,
-    color: string = '#1e3a2e'
+    color: string = '#5271ff'
   ) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
       <View style={styles.statHeader}>
@@ -289,7 +289,7 @@ export default function Analytics() {
     return (
       <View style={styles.chartContainer}>
         <View style={styles.chartHeader}>
-          <PieChartIcon size={20} color="#1e3a2e" />
+          <PieChartIcon size={20} color="#5271ff" />
           <Text style={styles.chartTitle}>{title}</Text>
         </View>
         <PieChart
@@ -396,28 +396,28 @@ export default function Analytics() {
             {renderStatCard(
               <Trophy size={20} color="#f59e0b" />,
               'Total Sessions',
-              analyticsData.totalSessions,
+              analyticsData?.totalSessions ?? 0,
               undefined, // Removed subtitle
               '#f59e0b'
             )}
             {renderStatCard(
               <Zap size={20} color="#3b82f6" />,
               'Techniques Learned',
-              analyticsData.totalTechniques,
+              analyticsData?.totalTechniques ?? 0,
               undefined, // Removed subtitle
               '#3b82f6'
             )}
             {renderStatCard(
               <Target size={20} color="#10b981" />,
               'Avg Satisfaction',
-              analyticsData.averageSatisfaction.toFixed(1),
+              analyticsData?.averageSatisfaction?.toFixed(1) ?? '0.0',
               'out of 5.0', // Kept subtitle for average satisfaction
               '#10b981'
             )}
             {renderStatCard(
               <Award size={20} color="#ef4444" />,
               'Total Submissions',
-              analyticsData.totalSubmissions,
+              analyticsData?.totalSubmissions ?? 0,
               undefined, // Removed subtitle
               '#ef4444'
             )}
@@ -430,7 +430,7 @@ export default function Analytics() {
         {analyticsData.monthlyProgress.some(d => d.sessions > 0 || d.techniques > 0) && (
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
-              <TrendingUp size={20} color="#1e3a2e" />
+              <TrendingUp size={20} color="#5271ff" />
               <Text style={styles.chartTitle}>Monthly Progress</Text>
             </View>
             <LineChart
@@ -471,7 +471,7 @@ export default function Analytics() {
         {/* {analyticsData.satisfactionTrend.length > 0 && (
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
-              <TrendingUp size={20} color="#1e3a2e" />
+              <TrendingUp size={20} color="#5271ff" />
               <Text style={styles.chartTitle}>Satisfaction Trend</Text>
             </View>
             <LineChart
@@ -502,8 +502,8 @@ export default function Analytics() {
 
         {/* Distribution Charts */}
         <View style={styles.distributionContainer}>
-          {renderPieChart(analyticsData.submissionDistribution, 'Submissions')}
-          {renderPieChart(analyticsData.sessionTypeDistribution, 'Session Types')}
+          {renderPieChart(analyticsData?.submissionDistribution ?? [], 'Submissions')}
+          {renderPieChart(analyticsData?.sessionTypeDistribution ?? [], 'Session Types')}
         </View>
 
         {/* Streak Stats */}
@@ -514,14 +514,14 @@ export default function Analytics() {
               <View style={styles.streakIcon}>
                 <Activity size={24} color="#10b981" />
               </View>
-              <Text style={styles.streakValue}>{analyticsData.streakData.current}</Text>
+              <Text style={styles.streakValue}>{analyticsData?.streakData?.current ?? 0}</Text>
               <Text style={styles.streakLabel}>Current Streak</Text>
             </View>
             <View style={styles.streakCard}>
               <View style={styles.streakIcon}>
                 <Trophy size={24} color="#f59e0b" />
               </View>
-              <Text style={styles.streakValue}>{analyticsData.streakData.longest}</Text>
+              <Text style={styles.streakValue}>{analyticsData?.streakData?.longest ?? 0}</Text>
               <Text style={styles.streakLabel}>Longest Streak</Text>
             </View>
           </View>
@@ -547,9 +547,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
+    borderBottomColor: '#3d5cff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   timeframeDropdownItemTextSelected: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontWeight: '600',
   },
   content: {

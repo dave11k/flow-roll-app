@@ -319,7 +319,7 @@ export default function TagSelectionModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <TagIcon size={24} color="#1e3a2e" />
+                <TagIcon size={24} color="#5271ff" />
                 <Text style={styles.headerTitle}>Select Tags</Text>
               </View>
               <TouchableOpacity
@@ -384,7 +384,7 @@ export default function TagSelectionModal({
                   onPress={handleCreateNewTag}
                   activeOpacity={0.7}
                 >
-                  <Plus size={20} color="#1e3a2e" />
+                  <Plus size={20} color="#5271ff" />
                   <Text style={styles.createNewText}>Create &quot;{newTagName}&quot;</Text>
                 </TouchableOpacity>
               )}
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   selectedTag: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f9ff',
     borderWidth: 1,
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createNewText: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   tagButtonSelected: {
     backgroundColor: '#e0f2fe',
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
   },
   tagButtonText: {
     color: '#6b7280',
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tagButtonTextSelected: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontWeight: '600',
   },
   emptyContainer: {
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
   },
   doneButton: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

@@ -64,7 +64,7 @@ export default function ContactSupportModal({ visible, onClose }: ContactSupport
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.welcomeSection}>
-            <HelpCircle size={48} color="#1e3a2e" />
+            <HelpCircle size={48} color="#5271ff" />
             <Text style={styles.welcomeTitle}>How can we help?</Text>
             <Text style={styles.welcomeText}>
               Get in touch with the Flow Roll team for support, feedback, or questions about the app.
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   contactSubtitle: {
     fontSize: 14,
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontWeight: '500',
     marginBottom: 8,
   },

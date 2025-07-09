@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
   chipSelected: {
     backgroundColor: '#e0f2fe',
     borderWidth: 1,
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
   },
   chipRemovable: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
   },
   text: {
     color: '#6b7280',
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   textSelected: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontWeight: '600',
   },
   textRemovable: {

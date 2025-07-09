@@ -14,12 +14,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <DataProvider>
         <ToastProvider>
-          <View style={{ flex: 1, backgroundColor: '#1e3a2e' }}>
+          <View style={{ flex: 1, backgroundColor: '#5271ff' }}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="+not-found" />
             </Stack>
-            <StatusBar style="light" backgroundColor="#1e3a2e" />
+            <StatusBar style="light" backgroundColor="#5271ff" />
             <KeyboardDismissButton />
           </View>
         </ToastProvider>

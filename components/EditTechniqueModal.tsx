@@ -255,7 +255,7 @@ export default function EditTechniqueModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Pencil size={24} color="#1e3a2e" />
+                <Pencil size={24} color="#5271ff" />
                 <Text style={styles.headerTitle}>Edit Technique</Text>
               </View>
               <TouchableOpacity
@@ -338,7 +338,7 @@ export default function EditTechniqueModal({
                     onPress={() => setShowTagModal(true)}
                     activeOpacity={0.7}
                   >
-                    <Plus size={16} color="#1e3a2e" />
+                    <Plus size={16} color="#5271ff" />
                     <Text style={styles.addTagText}>Edit Tags</Text>
                   </TouchableOpacity>
                 </View>
@@ -400,7 +400,7 @@ export default function EditTechniqueModal({
                       }}
                       activeOpacity={0.7}
                     >
-                      <Plus size={16} color="#1e3a2e" />
+                      <Plus size={16} color="#5271ff" />
                       <Text style={styles.addLinkText}>Add Link</Text>
                     </TouchableOpacity>
                   )}
@@ -613,14 +613,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f9ff',
     borderWidth: 1,
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
   },
   addTagText: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     gap: 8,
   },
   saveButtonDisabled: {
@@ -736,14 +736,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f9ff',
     borderWidth: 1,
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
   },
   addLinkText: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   addLinkConfirmButton: {
     width: 40,
     height: 40,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',

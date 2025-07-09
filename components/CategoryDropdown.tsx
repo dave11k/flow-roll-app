@@ -132,7 +132,7 @@ export default function CategoryDropdown({
           </Text>
         </View>
         {isSelected && (
-          <Check size={20} color="#1e3a2e" />
+          <Check size={20} color="#5271ff" />
         )}
       </TouchableOpacity>
     );
@@ -163,7 +163,7 @@ export default function CategoryDropdown({
             </Text>
           </View>
           <ChevronDown
-            size={20}
+            size={16}
             color={disabled ? '#9ca3af' : '#6b7280'}
             style={[
               styles.chevron,
@@ -217,7 +217,7 @@ export default function CategoryDropdown({
                       </Text>
                     </View>
                     {!selectedCategory && (
-                      <Check size={20} color="#1e3a2e" />
+                      <Check size={20} color="#5271ff" />
                     )}
                   </TouchableOpacity>
                 )}
@@ -237,18 +237,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     borderWidth: 2,
     borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    minHeight: 40,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 36,
   },
   triggerDisabled: {
     backgroundColor: '#f3f4f6',
     borderColor: '#e5e7eb',
   },
   triggerSelected: {
-    borderColor: '#1e3a2e',
-    backgroundColor: '#f8fffe',
+    borderColor: '#5271ff',
+    backgroundColor: '#f0f2ff',
   },
   triggerContent: {
     flexDirection: 'row',
@@ -258,22 +258,22 @@ const styles = StyleSheet.create({
   selectedCategoryContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
   selectedColorIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   selectedText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1f2937',
     flex: 1,
   },
   placeholderText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#9ca3af',
     flex: 1,
   },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownItemTextSelected: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontWeight: '600',
   },
 });

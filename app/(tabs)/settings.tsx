@@ -258,7 +258,7 @@ export default function SettingsPage() {
           <Switch
             value={item.value}
             onValueChange={item.onToggle}
-            trackColor={{ false: '#e5e7eb', true: '#1e3a2e' }}
+            trackColor={{ false: '#e5e7eb', true: '#5271ff' }}
             thumbColor={item.value ? '#fff' : '#f4f3f4'}
           />
         ) : (
@@ -364,9 +364,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
+    borderBottomColor: '#3d5cff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

@@ -29,7 +29,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Submission': '#ef4444',
   'Sweep': '#f97316',
   'Escape': '#eab308',
-  'Guard Pass': '#22c55e',
+  'Guard Pass': '#5271ff',
   'Takedown': '#3b82f6',
   'Defense': '#8b5cf6',
   'Other': '#6b7280',
@@ -250,7 +250,7 @@ export default function TechniqueDetailModal({
             {/* Date Added */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#1e3a2e" />
+                <Calendar size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Date Added</Text>
               </View>
               <Text style={styles.dateText}>{formatDate(technique.timestamp)}</Text>
@@ -261,7 +261,7 @@ export default function TechniqueDetailModal({
             {technique.notes && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <FileText size={20} color="#1e3a2e" />
+                  <FileText size={20} color="#5271ff" />
                   <Text style={styles.sectionTitle}>Notes</Text>
                 </View>
                 <Text style={styles.notesText}>{technique.notes}</Text>
@@ -272,7 +272,7 @@ export default function TechniqueDetailModal({
             {technique.links && technique.links.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Link2 size={20} color="#1e3a2e" />
+                  <Link2 size={20} color="#5271ff" />
                   <Text style={styles.sectionTitle}>Links & References</Text>
                 </View>
                 <View style={styles.linksContainer}>
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tagPill: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,

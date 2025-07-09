@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontFamily: 'monospace',
     backgroundColor: '#f3f4f6',
     padding: 12,

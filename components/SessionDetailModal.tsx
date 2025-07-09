@@ -248,7 +248,7 @@ export default function SessionDetailModal({
             {/* Date and Time */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#1e3a2e" />
+                <Calendar size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Date</Text>
               </View>
               <Text style={styles.dateText}>{formatDate(session.date)}</Text>
@@ -262,7 +262,7 @@ export default function SessionDetailModal({
             {session.location && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <MapPin size={20} color="#1e3a2e" />
+                  <MapPin size={20} color="#5271ff" />
                   <Text style={styles.sectionTitle}>Location</Text>
                 </View>
                 <Text style={styles.locationText}>{session.location}</Text>
@@ -272,7 +272,7 @@ export default function SessionDetailModal({
             {/* Session Type */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Target size={20} color="#1e3a2e" />
+                <Target size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Session Type</Text>
               </View>
               <View style={[

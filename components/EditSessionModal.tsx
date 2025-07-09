@@ -341,7 +341,7 @@ export default function EditSessionModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Pencil size={24} color="#1e3a2e" />
+                <Pencil size={24} color="#5271ff" />
                 <Text style={styles.headerTitle}>Edit Session</Text>
               </View>
               <TouchableOpacity
@@ -521,7 +521,7 @@ export default function EditSessionModal({
                   onPress={() => setShowAddTechniqueModal(true)}
                   activeOpacity={0.7}
                 >
-                  <Zap size={20} color="#1e3a2e" />
+                  <Zap size={20} color="#5271ff" />
                   <Text style={styles.addTechniqueButtonText}>Add Technique</Text>
                 </TouchableOpacity>
               </View>
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     gap: 8,
   },
   saveButtonDisabled: {
@@ -873,14 +873,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f0f9ff',
     borderWidth: 2,
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
     borderStyle: 'dashed',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
   },
   addTechniqueButtonText: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontSize: 16,
     fontWeight: '600',
   },

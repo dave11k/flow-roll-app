@@ -396,8 +396,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stripeButtonActive: {
-    backgroundColor: '#1e3a2e',
-    borderColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
+    borderColor: '#5271ff',
   },
   stripeButtonText: {
     fontSize: 16,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   saveButton: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

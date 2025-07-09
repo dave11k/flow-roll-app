@@ -67,3 +67,5 @@ CLAUDE.md
 .cache/
 .parcel-cache/
 .claude/settings.local.json
+.claude/commands/ui/extract-design-system.md
+.claude/commands/ui/iterate-design.md

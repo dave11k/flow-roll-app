@@ -322,7 +322,7 @@ export default function Sessions() {
                 }}
                 activeOpacity={0.7}
               >
-                <Filter size={20} color="#1e3a2e" />
+                <Filter size={20} color="#5271ff" />
                 <Text style={styles.filterButtonText}>Filter</Text>
                 {hasActiveFilters() && <View style={styles.filterIndicatorMain} />}
               </TouchableOpacity>
@@ -453,9 +453,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
+    borderBottomColor: '#3d5cff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   createSessionButton: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e3a2e',
+    color: '#5271ff',
   },
   filterIndicatorMain: {
     position: 'absolute',
