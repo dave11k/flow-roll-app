@@ -10,8 +10,9 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Keyboard,
+  TextInput,
 } from 'react-native';
-import { Calendar, Plus, MapPin, Clock, Pencil, Trash2, Filter } from 'lucide-react-native';
+import { Calendar, Plus, MapPin, Clock, Filter, Search, X } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
@@ -21,6 +22,7 @@ import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
+import { StatusBar } from 'expo-status-bar';
 
 interface SessionFilters {
   dateRange: {
@@ -55,6 +57,7 @@ export default function Sessions() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<SessionFilters>({
     dateRange: { startDate: null, endDate: null },
     location: '',
@@ -86,8 +89,19 @@ export default function Sessions() {
     }
   }, [sessions]);
 
-  const applyFilters = React.useCallback((sessions: TrainingSession[], filters: SessionFilters) => {
+  const applyFilters = React.useCallback((sessions: TrainingSession[], filters: SessionFilters, searchQuery: string) => {
     let filtered = [...sessions];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(session =>
+        session.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        session.submissions.some(submission => 
+          submission.toLowerCase().includes(searchQuery.toLowerCase())
+        ) ||
+        session.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
     // Filter by date range
     if (filters.dateRange.startDate) {
@@ -132,11 +146,11 @@ export default function Sessions() {
     return filtered;
   }, []);
 
-  // Apply filters whenever sessions or filters change
+  // Apply filters whenever sessions, filters, or search query change
   useEffect(() => {
-    const filtered = applyFilters(sessions, filters);
+    const filtered = applyFilters(sessions, filters, searchQuery);
     setFilteredSessions(filtered);
-  }, [sessions, filters, applyFilters]);
+  }, [sessions, filters, searchQuery, applyFilters]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -255,7 +269,8 @@ export default function Sessions() {
 
 
   const hasActiveFilters = () => {
-    return filters.dateRange.startDate !== null ||
+    return searchQuery.trim() !== '' ||
+           filters.dateRange.startDate !== null ||
            filters.dateRange.endDate !== null ||
            filters.location.trim() !== '' ||
            filters.sessionTypes.length > 0 ||
@@ -265,9 +280,52 @@ export default function Sessions() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       <View style={styles.header}>
         <Text style={styles.title}>Training Sessions ({sessions.length})</Text>
       </View>
+      
+      {/* Search and Filter Row */}
+      <TouchableWithoutFeedback onPress={() => {
+        Keyboard.dismiss();
+      }}>
+        <View style={styles.searchSection}>
+          <View style={styles.searchAndFilterRow}>
+            <View style={styles.searchContainer}>
+              <Search size={20} color="#9ca3af" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search"
+                placeholderTextColor="#9ca3af"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearSearchButton}
+                >
+                  <X size={16} color="#9ca3af" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.filterButtonMain, hasActiveFilters() && styles.filterButtonActive]}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowFilterModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Filter size={20} color="#5271ff" />
+              <Text style={styles.filterButtonText}>Filter</Text>
+              {hasActiveFilters() && <View style={styles.filterIndicatorMain} />}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.content}>
@@ -314,18 +372,6 @@ export default function Sessions() {
                   : 'Sessions'
                 }
               </Text>
-              <TouchableOpacity 
-                style={[styles.filterButtonMain, hasActiveFilters() && styles.filterButtonActive]}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  setShowFilterModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Filter size={20} color="#5271ff" />
-                <Text style={styles.filterButtonText}>Filter</Text>
-                {hasActiveFilters() && <View style={styles.filterIndicatorMain} />}
-              </TouchableOpacity>
             </View>
             {filteredSessions.map((session) => (
               <View key={session.id} style={styles.sessionItemContainer}>
@@ -510,7 +556,7 @@ const styles = StyleSheet.create({
   },
   sessionsHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -655,5 +701,34 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontStyle: 'italic',
     lineHeight: 20,
+  },
+  searchSection: {
+    padding: 20,
+    backgroundColor: '#fff',
+    paddingBottom: 16,
+  },
+  searchAndFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 10,
+    minHeight: 36,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1f2937',
+  },
+  clearSearchButton: {
+    padding: 4,
   },
 });

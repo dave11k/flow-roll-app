@@ -411,7 +411,7 @@ export default function EditTechniqueModal({
                     <TextInput
                       ref={linkInputRef}
                       style={styles.linkInput}
-                      placeholder="Enter YouTube or Reddit link..."
+                      placeholder="Enter reference link..."
                       placeholderTextColor="#9ca3af"
                       value={newLinkUrl}
                       onChangeText={setNewLinkUrl}
