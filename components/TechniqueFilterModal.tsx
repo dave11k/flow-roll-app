@@ -372,7 +372,7 @@ export default function TechniqueFilterModal({
                 activeOpacity={0.7}
               >
                 <RotateCcw size={16} color="#6b7280" />
-                <Text style={styles.clearButtonText}>Clear Filters</Text>
+                <Text style={styles.clearButtonText}>Clear</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.applyButton}
@@ -579,6 +579,10 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
     gap: 12,
     backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 82,
+    left: 0,
+    right: 0,
   },
   clearButton: {
     flex: 1,
