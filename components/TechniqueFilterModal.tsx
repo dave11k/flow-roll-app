@@ -457,7 +457,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   section: {
-    marginVertical: 16,
+    marginTop: 16,
+    marginBottom: 8,
     position: 'relative',
   },
   sectionHeader: {
@@ -556,8 +557,8 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   activeTag: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#3b82f6',
+    backgroundColor: '#5271ff',
+    borderColor: '#5271ff',
   },
   tagText: {
     fontSize: 14,
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTagText: {
-    color: '#2563eb',
+    color: '#fff',
   },
   noTagsText: {
     fontSize: 14,

@@ -235,7 +235,6 @@ export default function TechniqueDetailModal({
               {/* Tags */}
               {technique.tags && technique.tags.length > 0 && (
                 <View style={styles.tagsContainer}>
-                  <Text style={styles.tagsTitle}>Tags</Text>
                   <View style={styles.tagsList}>
                     {technique.tags.map((tag) => (
                       <View key={tag} style={styles.tagPill}>

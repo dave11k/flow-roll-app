@@ -83,7 +83,6 @@ export default function TechniquesPage() {
     if (searchQuery.trim()) {
       filtered = filtered.filter(technique =>
         technique.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (technique.notes && technique.notes.toLowerCase().includes(searchQuery.toLowerCase())) ||
         technique.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
@@ -266,7 +265,7 @@ export default function TechniquesPage() {
                 </TouchableOpacity>
               )}
               {(() => {
-                const maxTagsToShow = filters.category ? 2 : 3;
+                const maxTagsToShow = 5;
                 const visibleTags = filters.tags.slice(0, maxTagsToShow);
                 const hiddenTagsCount = filters.tags.length - maxTagsToShow;
                 
@@ -283,7 +282,7 @@ export default function TechniquesPage() {
                         activeOpacity={0.7}
                       >
                         <Text style={styles.activeTagText}>{tag}</Text>
-                        <X size={12} color="#5271ff" />
+                        <X size={12} color="#fff" />
                       </TouchableOpacity>
                     ))}
                     {hiddenTagsCount > 0 && (
@@ -478,14 +477,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    height: 44,
     gap: 10,
-    height: 36,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#1f2937',
+    paddingVertical: 12,
   },
   clearSearchButton: {
     padding: 4,
@@ -516,15 +515,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#5271ff',
+    backgroundColor: '#5271ff',
     gap: 4,
   },
   activeTagText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#5271ff',
+    color: '#fff',
   },
   morePill: {
     paddingHorizontal: 8,

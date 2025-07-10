@@ -312,13 +312,6 @@ export default function SessionDetailModal({
               <View style={styles.starsContainer}>
                 {renderStars(session.satisfaction)}
               </View>
-              <Text style={styles.satisfactionLabel}>
-                {session.satisfaction === 1 && 'Poor'}
-                {session.satisfaction === 2 && 'Fair'}
-                {session.satisfaction === 3 && 'Good'}
-                {session.satisfaction === 4 && 'Great'}
-                {session.satisfaction === 5 && 'Excellent'}
-              </Text>
             </View>
 
             {/* Notes */}
@@ -417,7 +410,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   section: {
-    marginVertical: 16,
+    marginVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -466,7 +459,6 @@ const styles = StyleSheet.create({
   starsContainer: {
     flexDirection: 'row',
     gap: 4,
-    marginBottom: 8,
   },
   satisfactionLabel: {
     fontSize: 16,

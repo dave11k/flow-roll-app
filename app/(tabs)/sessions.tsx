@@ -758,14 +758,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    height: 44,
     gap: 10,
-    height: 36,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#1f2937',
+    paddingVertical: 12,
   },
   clearSearchButton: {
     padding: 4,

@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   tagButtonSelected: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#5271ff',
     borderColor: '#5271ff',
   },
   tagButtonText: {
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tagButtonTextSelected: {
-    color: '#5271ff',
+    color: '#fff',
     fontWeight: '600',
   },
   emptyContainer: {

@@ -13,7 +13,6 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, Calendar, MapPin, Target, Star, RotateCcw, ChevronDown } from 'lucide-react-native';
 import { SessionType } from '@/types/session';
@@ -57,8 +56,6 @@ export default function SessionFilterModal({
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [isVisible, setIsVisible] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showSubmissionDropdown, setShowSubmissionDropdown] = useState(false);
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
@@ -66,6 +63,8 @@ export default function SessionFilterModal({
   const [filteredSubmissions, setFilteredSubmissions] = useState<string[]>([]);
   const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const submissionInputRef = useRef<View>(null);
 
   useEffect(() => {
     if (visible) {
@@ -219,12 +218,11 @@ export default function SessionFilterModal({
   };
 
   const formatDate = (date: Date | null) => {
-    if (!date) return 'Select date';
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    if (!date) return '';
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
   };
 
   const renderStars = () => {
@@ -308,7 +306,7 @@ export default function SessionFilterModal({
                 setShowLocationDropdown(false);
                 setShowSubmissionDropdown(false);
               }}>
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
               {/* Date Range */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -316,84 +314,67 @@ export default function SessionFilterModal({
                   <Text style={styles.sectionTitle}>Date Range</Text>
                 </View>
                 <View style={styles.dateRangeContainer}>
-                  <TouchableOpacity 
-                    style={styles.dateButton}
-                    onPress={() => setShowStartDatePicker(true)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.dateButtonText}>
-                      {formatDate(localFilters.dateRange.startDate)}
-                    </Text>
-                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="Start date"
+                    placeholderTextColor="#9ca3af"
+                    value={localFilters.dateRange.startDate ? formatDate(localFilters.dateRange.startDate) : ''}
+                    onChangeText={(text) => {
+                      // Parse date in MM/DD/YYYY format
+                      const parts = text.split('/');
+                      if (parts.length === 3) {
+                        const month = parseInt(parts[0], 10);
+                        const day = parseInt(parts[1], 10);
+                        const year = parseInt(parts[2], 10);
+                        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                          const date = new Date(year, month - 1, day);
+                          if (date.getTime()) {
+                            setLocalFilters(prev => ({
+                              ...prev,
+                              dateRange: {
+                                ...prev.dateRange,
+                                startDate: date
+                              }
+                            }));
+                          }
+                        }
+                      }
+                    }}
+                  />
                   <Text style={styles.dateSeparator}>to</Text>
-                  <TouchableOpacity 
-                    style={styles.dateButton}
-                    onPress={() => setShowEndDatePicker(true)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.dateButtonText}>
-                      {formatDate(localFilters.dateRange.endDate)}
-                    </Text>
-                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="End date"
+                    placeholderTextColor="#9ca3af"
+                    value={localFilters.dateRange.endDate ? formatDate(localFilters.dateRange.endDate) : ''}
+                    onChangeText={(text) => {
+                      // Parse date in MM/DD/YYYY format
+                      const parts = text.split('/');
+                      if (parts.length === 3) {
+                        const month = parseInt(parts[0], 10);
+                        const day = parseInt(parts[1], 10);
+                        const year = parseInt(parts[2], 10);
+                        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                          const date = new Date(year, month - 1, day);
+                          if (date.getTime()) {
+                            setLocalFilters(prev => ({
+                              ...prev,
+                              dateRange: {
+                                ...prev.dateRange,
+                                endDate: date
+                              }
+                            }));
+                          }
+                        }
+                      }
+                    }}
+                  />
                 </View>
-                
-                {showStartDatePicker && (
-                  <DateTimePicker
-                    value={localFilters.dateRange.startDate || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                    onChange={(event, selectedDate) => {
-                      if (Platform.OS === 'android') {
-                        setShowStartDatePicker(false);
-                      }
-                      if (event.type === 'set' && selectedDate) {
-                        setLocalFilters(prev => ({
-                          ...prev,
-                          dateRange: {
-                            ...prev.dateRange,
-                            startDate: selectedDate
-                          }
-                        }));
-                        if (Platform.OS === 'ios') {
-                          setShowStartDatePicker(false);
-                        }
-                      } else if (event.type === 'dismissed') {
-                        setShowStartDatePicker(false);
-                      }
-                    }}
-                  />
-                )}
-                
-                {showEndDatePicker && (
-                  <DateTimePicker
-                    value={localFilters.dateRange.endDate || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                    onChange={(event, selectedDate) => {
-                      if (Platform.OS === 'android') {
-                        setShowEndDatePicker(false);
-                      }
-                      if (event.type === 'set' && selectedDate) {
-                        setLocalFilters(prev => ({
-                          ...prev,
-                          dateRange: {
-                            ...prev.dateRange,
-                            endDate: selectedDate
-                          }
-                        }));
-                        if (Platform.OS === 'ios') {
-                          setShowEndDatePicker(false);
-                        }
-                      } else if (event.type === 'dismissed') {
-                        setShowEndDatePicker(false);
-                      }
-                    }}
-                  />
-                )}
+                <Text style={styles.dateHint}>Format: MM/DD/YYYY</Text>
               </View>
 
               {/* Location */}
-              <View style={styles.section}>
+              <View style={[styles.section, { zIndex: 2000 }]}>
                 <View style={styles.sectionHeader}>
                   <MapPin size={20} color="#5271ff" />
                   <Text style={styles.sectionTitle}>Location</Text>
@@ -436,7 +417,7 @@ export default function SessionFilterModal({
               </View>
 
               {/* Submission */}
-              <View style={styles.section}>
+              <View style={[styles.section, { zIndex: 1000 }]} ref={submissionInputRef}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Submission</Text>
                 </View>
@@ -451,6 +432,16 @@ export default function SessionFilterModal({
                       if (filteredSubmissions.length > 0) {
                         setShowSubmissionDropdown(true);
                       }
+                      // Scroll to show the input and dropdown
+                      setTimeout(() => {
+                        submissionInputRef.current?.measureLayout(
+                          scrollViewRef.current?.getInnerViewNode(),
+                          (x, y) => {
+                            scrollViewRef.current?.scrollTo({ y: y - 50, animated: true });
+                          },
+                          () => {}
+                        );
+                      }, 100);
                     }}
                   />
                   {showSubmissionDropdown && filteredSubmissions.length > 0 && (
@@ -617,7 +608,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   section: {
-    marginVertical: 16,
+    marginVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -635,7 +626,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  dateButton: {
+  dateInput: {
     flex: 1,
     backgroundColor: '#f9fafb',
     borderWidth: 1,
@@ -643,10 +634,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
-  },
-  dateButtonText: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 16,
+    color: '#1f2937',
     textAlign: 'center',
   },
   dateSeparator: {
@@ -785,7 +774,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1f2937',
   },
+  dateHint: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 4,
+    textAlign: 'center',
+  },
   scrollSpacer: {
-    height: 100,
+    height: 200,
   },
 });
