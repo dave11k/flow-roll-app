@@ -33,6 +33,7 @@ import ProfileModal from '@/components/ProfileModal';
 import PrivacyPolicyModal from '@/components/PrivacyPolicyModal';
 import ContactSupportModal from '@/components/ContactSupportModal';
 import { UserProfile } from '@/types/profile';
+import { loadTestData } from '@/services/testData';
 
 interface SettingItem {
   id: string;
@@ -46,7 +47,7 @@ interface SettingItem {
 }
 
 export default function SettingsPage() {
-  const { profile, updateProfile } = useData();
+  const { profile, updateProfile, refreshData } = useData();
   const { showSuccess, showError } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -117,6 +118,29 @@ export default function SettingsPage() {
       'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.',
       [
         { text: 'OK' }
+      ]
+    );
+  };
+
+  const handleLoadTestData = () => {
+    Alert.alert(
+      'Load Test Data',
+      'This will add 20 sample techniques and 20 training sessions spread over the past year. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Load Test Data', 
+          onPress: async () => {
+            try {
+              await loadTestData(true);
+              await refreshData();
+              showSuccess('Test data loaded successfully!');
+            } catch (error) {
+              showError('Failed to load test data');
+              console.error('Error loading test data:', error);
+            }
+          }
+        }
       ]
     );
   };
@@ -233,6 +257,14 @@ export default function SettingsPage() {
       icon: <Trash2 size={20} color="#ef4444" />,
       type: 'action',
       onPress: handleClearData
+    },
+    {
+      id: 'loadtest',
+      title: 'Load Test Data',
+      subtitle: 'Add sample techniques and sessions',
+      icon: <Database size={20} color="#5271ff" />,
+      type: 'action',
+      onPress: handleLoadTestData
     }
   ];
 
@@ -296,7 +328,7 @@ export default function SettingsPage() {
     },
     {
       title: 'Danger Zone',
-      items: settings.filter(s => ['clear'].includes(s.id))
+      items: settings.filter(s => ['clear', 'loadtest'].includes(s.id))
     }
   ];
 

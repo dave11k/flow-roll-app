@@ -34,7 +34,7 @@ export default function PrivacyPolicyModal({ visible, onClose }: PrivacyPolicyMo
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={styles.lastUpdated}>Last updated: January 2025</Text>
+          <Text style={styles.lastUpdated}>Last updated: July 2025</Text>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Introduction</Text>
