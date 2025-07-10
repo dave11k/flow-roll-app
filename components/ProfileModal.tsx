@@ -101,7 +101,7 @@ export default function ProfileModal({ visible, profile, onSave, onClose }: Prof
   const renderStripesSelector = () => {
     return (
       <View style={styles.stripesSelector}>
-        <Text style={styles.stripesLabel}>Stripes</Text>
+        <Text style={styles.label}>Stripes</Text>
         <View style={styles.stripesButtons}>
           {Array.from({ length: MAX_STRIPES + 1 }, (_, index) => (
             <TouchableOpacity
@@ -162,7 +162,7 @@ export default function ProfileModal({ visible, profile, onSave, onClose }: Prof
             </View>
 
             {/* Belt Rank Dropdown */}
-            <View style={styles.section}>
+            <View style={[styles.section, { zIndex: 1000, position: 'relative' }]}>
               <Text style={styles.label}>Belt Rank</Text>
               <TouchableOpacity
                 style={styles.dropdown}
@@ -178,7 +178,7 @@ export default function ProfileModal({ visible, profile, onSave, onClose }: Prof
               </TouchableOpacity>
 
               {showBeltDropdown && (
-                <View style={styles.dropdownMenu}>
+                <View style={styles.dropdownMenuAbove}>
                   {BELT_RANKS.map((belt) => (
                     <TouchableOpacity
                       key={belt.value}
@@ -353,6 +353,22 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  dropdownMenuAbove: {
+    position: 'absolute',
+    bottom: 48,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1001,
+  },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -373,7 +389,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   stripesSelector: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   stripesLabel: {
     fontSize: 16,
