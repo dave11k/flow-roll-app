@@ -208,7 +208,7 @@ export default function TechniquesPage() {
           onPress={() => setShowProfileModal(true)}
           activeOpacity={0.7}
         >
-          <User size={24} color="#000000" />
+          <User size={20} color="#000000" />
         </TouchableOpacity>
       </View>
 
@@ -428,8 +428,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 9,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -438,11 +438,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    height: 64,
+    height: 48,
   },
   logo: {
-    width: 38,
-    height: 38,
+    width: 28,
+    height: 28,
     resizeMode: 'contain',
   },
   title: {
@@ -453,17 +453,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   searchSection: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
     backgroundColor: '#fff',
-    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 10,
   },
   searchAndFilterRow: {
     flexDirection: 'row',
@@ -537,8 +544,9 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    height: 44,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     gap: 6,
@@ -548,7 +556,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#5271ff',
   },
@@ -653,7 +661,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
   techniqueItemContainer: {
     position: 'relative',

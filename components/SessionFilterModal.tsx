@@ -18,6 +18,7 @@ import { X, Calendar, MapPin, Target, Star, RotateCcw, ChevronDown } from 'lucid
 import { SessionType } from '@/types/session';
 import { getLocationsFromDb, getUniqueSubmissionsFromDb } from '@/services/database';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
+import SimpleDatePicker from '@/components/SimpleDatePicker';
 
 interface SessionFilters {
   dateRange: {
@@ -198,7 +199,7 @@ export default function SessionFilterModal({
         submission.toLowerCase().includes(text.toLowerCase())
       );
       setFilteredSubmissions(filtered);
-      setShowSubmissionDropdown(filtered.length > 0);
+      setShowSubmissionDropdown(text.length > 0 && filtered.length > 0);
     } else {
       setFilteredSubmissions(availableSubmissions);
       setShowSubmissionDropdown(false);
@@ -217,13 +218,6 @@ export default function SessionFilterModal({
     setShowLocationDropdown(false);
   };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return '';
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
 
   const renderStars = () => {
     return Array.from({ length: 5 }, (_, i) => {
@@ -314,63 +308,34 @@ export default function SessionFilterModal({
                   <Text style={styles.sectionTitle}>Date Range</Text>
                 </View>
                 <View style={styles.dateRangeContainer}>
-                  <TextInput
-                    style={styles.dateInput}
-                    placeholder="Start date"
-                    placeholderTextColor="#9ca3af"
-                    value={localFilters.dateRange.startDate ? formatDate(localFilters.dateRange.startDate) : ''}
-                    onChangeText={(text) => {
-                      // Parse date in MM/DD/YYYY format
-                      const parts = text.split('/');
-                      if (parts.length === 3) {
-                        const month = parseInt(parts[0], 10);
-                        const day = parseInt(parts[1], 10);
-                        const year = parseInt(parts[2], 10);
-                        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-                          const date = new Date(year, month - 1, day);
-                          if (date.getTime()) {
-                            setLocalFilters(prev => ({
-                              ...prev,
-                              dateRange: {
-                                ...prev.dateRange,
-                                startDate: date
-                              }
-                            }));
-                          }
+                  <SimpleDatePicker
+                    value={localFilters.dateRange.startDate}
+                    onChange={(date) => {
+                      setLocalFilters(prev => ({
+                        ...prev,
+                        dateRange: {
+                          ...prev.dateRange,
+                          startDate: date
                         }
-                      }
+                      }));
                     }}
+                    placeholder="Start date"
                   />
                   <Text style={styles.dateSeparator}>to</Text>
-                  <TextInput
-                    style={styles.dateInput}
-                    placeholder="End date"
-                    placeholderTextColor="#9ca3af"
-                    value={localFilters.dateRange.endDate ? formatDate(localFilters.dateRange.endDate) : ''}
-                    onChangeText={(text) => {
-                      // Parse date in MM/DD/YYYY format
-                      const parts = text.split('/');
-                      if (parts.length === 3) {
-                        const month = parseInt(parts[0], 10);
-                        const day = parseInt(parts[1], 10);
-                        const year = parseInt(parts[2], 10);
-                        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-                          const date = new Date(year, month - 1, day);
-                          if (date.getTime()) {
-                            setLocalFilters(prev => ({
-                              ...prev,
-                              dateRange: {
-                                ...prev.dateRange,
-                                endDate: date
-                              }
-                            }));
-                          }
+                  <SimpleDatePicker
+                    value={localFilters.dateRange.endDate}
+                    onChange={(date) => {
+                      setLocalFilters(prev => ({
+                        ...prev,
+                        dateRange: {
+                          ...prev.dateRange,
+                          endDate: date
                         }
-                      }
+                      }));
                     }}
+                    placeholder="End date"
                   />
                 </View>
-                <Text style={styles.dateHint}>Format: MM/DD/YYYY</Text>
               </View>
 
               {/* Location */}
@@ -422,28 +387,47 @@ export default function SessionFilterModal({
                   <Text style={styles.sectionTitle}>Submission</Text>
                 </View>
                 <View style={styles.dropdownContainer}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Search for specific submissions..."
-                    placeholderTextColor="#9ca3af"
-                    value={localFilters.submission}
-                    onChangeText={handleSubmissionInputChange}
-                    onFocus={() => {
-                      if (filteredSubmissions.length > 0) {
-                        setShowSubmissionDropdown(true);
-                      }
-                      // Scroll to show the input and dropdown
-                      setTimeout(() => {
-                        submissionInputRef.current?.measureLayout(
-                          scrollViewRef.current?.getInnerViewNode(),
-                          (x, y) => {
-                            scrollViewRef.current?.scrollTo({ y: y - 50, animated: true });
-                          },
-                          () => {}
-                        );
-                      }, 100);
-                    }}
-                  />
+                  <View style={styles.submissionInputContainer}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Search for specific submissions..."
+                      placeholderTextColor="#9ca3af"
+                      value={localFilters.submission}
+                      onChangeText={handleSubmissionInputChange}
+                      onFocus={() => {
+                        if (localFilters.submission.trim() && filteredSubmissions.length > 0) {
+                          setShowSubmissionDropdown(true);
+                        }
+                        // Scroll to show the input and dropdown
+                        setTimeout(() => {
+                          if (submissionInputRef.current && scrollViewRef.current) {
+                            submissionInputRef.current.measureInWindow((x, y, width, height) => {
+                              // Calculate position relative to modal
+                              const modalTop = screenHeight * 0.1;
+                              const relativeY = y - modalTop;
+                              // Scroll to position the input field in view with some padding
+                              scrollViewRef.current?.scrollTo({ 
+                                y: relativeY - 100, 
+                                animated: true 
+                              });
+                            });
+                          }
+                        }, 100);
+                      }}
+                    />
+                    {localFilters.submission.length > 0 && (
+                      <TouchableOpacity
+                        style={styles.clearSubmissionButton}
+                        onPress={() => {
+                          setLocalFilters(prev => ({ ...prev, submission: '' }));
+                          setShowSubmissionDropdown(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <X size={16} color="#6b7280" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   {showSubmissionDropdown && filteredSubmissions.length > 0 && (
                     <View style={styles.dropdownList}>
                       <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
@@ -626,21 +610,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  dateInput: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1f2937',
-    textAlign: 'center',
-  },
   dateSeparator: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  submissionInputContainer: {
+    position: 'relative',
   },
   textInput: {
     backgroundColor: '#f9fafb',
@@ -649,8 +624,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
+    paddingRight: 40,
     fontSize: 16,
     color: '#1f2937',
+  },
+  clearSubmissionButton: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 32,
   },
   sessionTypesContainer: {
     flexDirection: 'row',
@@ -683,12 +668,13 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 20,
+    paddingBottom: 120,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     gap: 12,
     backgroundColor: '#fff',
     position: 'absolute',
-    bottom: 82,
+    bottom: 0,
     left: 0,
     right: 0,
   },
@@ -773,12 +759,6 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 16,
     color: '#1f2937',
-  },
-  dateHint: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 4,
-    textAlign: 'center',
   },
   scrollSpacer: {
     height: 200,

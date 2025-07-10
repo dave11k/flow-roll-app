@@ -313,7 +313,7 @@ export default function SettingsPage() {
           onPress={() => setShowProfileModal(true)}
           activeOpacity={0.7}
         >
-          <User size={24} color="#000000" />
+          <User size={20} color="#000000" />
         </TouchableOpacity>
       </View>
       
@@ -368,8 +368,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 9,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -378,11 +378,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    height: 64,
+    height: 48,
   },
   logo: {
-    width: 38,
-    height: 38,
+    width: 28,
+    height: 28,
     resizeMode: 'contain',
   },
   title: {
@@ -393,9 +393,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',

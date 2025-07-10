@@ -323,6 +323,18 @@ export default function TechniqueFilterModal({
                             value={tagSearchQuery}
                             onChangeText={handleTagSearch}
                           />
+                          {tagSearchQuery.length > 0 && (
+                            <TouchableOpacity
+                              style={styles.clearSearchButton}
+                              onPress={() => {
+                                setTagSearchQuery('');
+                                setFilteredTags(availableTags);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <X size={16} color="#6b7280" />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       )}
                       <View style={styles.tagsContainer}>
@@ -576,12 +588,13 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 20,
+    paddingBottom: 120,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     gap: 12,
     backgroundColor: '#fff',
     position: 'absolute',
-    bottom: 82,
+    bottom: 0,
     left: 0,
     right: 0,
   },
@@ -614,14 +627,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scrollSpacer: {
-    height: 100,
+    height: 200,
   },
   tagSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 12,
@@ -634,5 +645,9 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
     color: '#1f2937',
+    paddingVertical: 8,
+  },
+  clearSearchButton: {
+    padding: 4,
   },
 });
