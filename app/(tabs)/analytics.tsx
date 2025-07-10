@@ -411,8 +411,6 @@ export default function Analytics() {
           <User size={24} color="#000000" />
         </TouchableOpacity>
       </View>
-      
-      
 
       <TouchableWithoutFeedback onPress={() => {
         Keyboard.dismiss();
@@ -662,13 +660,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timeframeSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
   timeframeSelectorContainer: {
     position: 'relative',
     zIndex: 1000,
@@ -690,7 +681,7 @@ const styles = StyleSheet.create({
   },
   timeframeDropdownMenu: {
     position: 'absolute',
-    top: 40,
+    top: 36,
     right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,

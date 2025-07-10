@@ -176,9 +176,6 @@ export default function NotesModal({
                 autoFocus
                 textAlignVertical="top"
                 maxLength={2000}
-                returnKeyType="done"
-                onSubmitEditing={handleClose}
-                blurOnSubmit={true}
               />
               <View style={styles.characterCountContainer}>
                 <Text style={styles.characterCount}>

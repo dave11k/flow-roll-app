@@ -9,9 +9,10 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { X, RotateCcw, ChevronDown } from 'lucide-react-native';
+import { X, RotateCcw, ChevronDown, Search } from 'lucide-react-native';
 import { TechniqueCategory } from '@/types/technique';
 import { getAllTagsFromDb } from '@/services/database';
 
@@ -61,6 +62,8 @@ export default function TechniqueFilterModal({
   const [isVisible, setIsVisible] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [filteredTags, setFilteredTags] = useState<string[]>([]);
   const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
 
@@ -105,10 +108,13 @@ export default function TechniqueFilterModal({
       const tags = await getAllTagsFromDb();
       // Filter to only show tags that are actually used in techniques
       const usedTags = tags.filter(tag => tag.usageCount > 0);
-      setAvailableTags(usedTags.map(tag => tag.name));
+      const tagNames = usedTags.map(tag => tag.name);
+      setAvailableTags(tagNames);
+      setFilteredTags(tagNames);
     } catch (error) {
       console.error('Failed to load tags:', error);
       setAvailableTags([]);
+      setFilteredTags([]);
     }
   };
 
@@ -155,19 +161,15 @@ export default function TechniqueFilterModal({
 
 
   const handleCategorySelect = (category: TechniqueCategory | null) => {
-    const newFilters = { ...localFilters, category };
-    setLocalFilters(newFilters);
+    setLocalFilters({ ...localFilters, category });
     setShowCategoryDropdown(false);
-    onApplyFilters(newFilters);
   };
 
   const handleTagToggle = (tag: string) => {
     const newTags = localFilters.tags.includes(tag)
       ? localFilters.tags.filter(t => t !== tag)
       : [...localFilters.tags, tag];
-    const newFilters = { ...localFilters, tags: newTags };
-    setLocalFilters(newFilters);
-    onApplyFilters(newFilters);
+    setLocalFilters({ ...localFilters, tags: newTags });
   };
 
   const handleResetFilters = () => {
@@ -176,8 +178,20 @@ export default function TechniqueFilterModal({
       tags: [],
     };
     setLocalFilters(resetFilters);
-    onApplyFilters(resetFilters);
-    animateClose();
+    setTagSearchQuery('');
+    setFilteredTags(availableTags);
+  };
+
+  const handleTagSearch = (query: string) => {
+    setTagSearchQuery(query);
+    if (query.trim()) {
+      const filtered = availableTags.filter(tag => 
+        tag.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredTags(filtered);
+    } else {
+      setFilteredTags(availableTags);
+    }
   };
 
   if (!isVisible) return null;
@@ -189,166 +203,191 @@ export default function TechniqueFilterModal({
       animationType="none"
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={animateClose}>
-        <View style={styles.backdrop}>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        {/* Backdrop */}
+        <TouchableWithoutFeedback onPress={animateClose}>
           <Animated.View
             style={[
               styles.backdrop,
               {
                 opacity: opacityAnim,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 1,
               },
             ]}
           />
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
 
-      <Animated.View
-        style={[
-          styles.modalContainer,
-          {
-            transform: [
-              { translateY: slideAnim },
-              { translateY: dragY }
-            ],
-          },
-        ]}
-      >
-        <View style={styles.modal}>
-          <PanGestureHandler
-            onGestureEvent={handlePanGesture}
-            onHandlerStateChange={handlePanStateChange}
-          >
-            <Animated.View>
-              <View style={styles.header}>
-                <View style={styles.dragHandle} />
-                <View style={styles.headerContent}>
-                  <Text style={styles.headerTitle}>Filter Techniques</Text>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={animateClose}
-                    activeOpacity={0.7}
-                  >
-                    <X size={24} color="#6b7280" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Animated.View>
-          </PanGestureHandler>
-
-          <View style={styles.contentWrapper}>
-            <TouchableWithoutFeedback onPress={() => {
-              setShowCategoryDropdown(false);
-            }}>
-              <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Category Filter */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Category</Text>
+        {/* Modal Container */}
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            {
+              transform: [
+                { translateY: slideAnim },
+                { translateY: dragY }
+              ],
+              zIndex: 2,
+            },
+          ]}
+        >
+          <View style={styles.modal}>
+            <PanGestureHandler
+              onGestureEvent={handlePanGesture}
+              onHandlerStateChange={handlePanStateChange}
+            >
+              <Animated.View>
+                <View style={styles.header}>
+                  <View style={styles.dragHandle} />
+                  <View style={styles.headerContent}>
+                    <Text style={styles.headerTitle}>Filter Techniques</Text>
                     <TouchableOpacity
-                      style={styles.dropdown}
-                      onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                      style={styles.closeButton}
+                      onPress={animateClose}
+                      activeOpacity={0.7}
                     >
-                      <View style={styles.dropdownContent}>
-                        {localFilters.category ? (
-                          <View style={styles.selectedCategory}>
-                            <View style={[
-                              styles.categoryDot,
-                              { backgroundColor: CATEGORY_COLORS[localFilters.category] }
-                            ]} />
-                            <Text style={styles.selectedText}>{localFilters.category}</Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.placeholderText}>All Categories</Text>
-                        )}
-                      </View>
-                      <ChevronDown size={20} color="#6b7280" />
+                      <X size={24} color="#6b7280" />
                     </TouchableOpacity>
-
-                    {showCategoryDropdown && (
-                      <View style={styles.dropdownList}>
-                        <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                          <TouchableOpacity
-                            style={[styles.dropdownItem, !localFilters.category && styles.activeItem]}
-                            onPress={() => handleCategorySelect(null)}
-                          >
-                            <Text style={styles.dropdownItemText}>All Categories</Text>
-                          </TouchableOpacity>
-                          {CATEGORIES.map((category) => (
-                            <TouchableOpacity
-                              key={category}
-                              style={[styles.dropdownItem, localFilters.category === category && styles.activeItem]}
-                              onPress={() => handleCategorySelect(category)}
-                            >
-                              <View style={styles.categoryOption}>
-                                <View style={[
-                                  styles.categoryDot,
-                                  { backgroundColor: CATEGORY_COLORS[category] }
-                                ]} />
-                                <Text style={styles.dropdownItemText}>{category}</Text>
-                              </View>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </View>
-                    )}
                   </View>
+                </View>
+              </Animated.View>
+            </PanGestureHandler>
 
-                  {/* Tags Filter - Always visible */}
+            <View style={styles.contentWrapper}>
+              <TouchableWithoutFeedback onPress={() => {
+                setShowCategoryDropdown(false);
+              }}>
+                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                  {/* Category Filter */}
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Tags</Text>
-                    <View style={styles.tagsContainer}>
-                      {availableTags.length > 0 ? (
-                        availableTags.map((tag) => (
-                          <TouchableOpacity
-                            key={tag}
-                            style={[
-                              styles.tagChip,
-                              localFilters.tags.includes(tag) && styles.activeTag
-                            ]}
-                            onPress={() => handleTagToggle(tag)}
-                          >
-                            <Text style={[
-                              styles.tagText,
-                              localFilters.tags.includes(tag) && styles.activeTagText
-                            ]}>
-                              {tag}
-                            </Text>
-                          </TouchableOpacity>
-                        ))
-                      ) : (
-                        <Text style={styles.noTagsText}>No tags available</Text>
+                      <Text style={styles.sectionTitle}>Category</Text>
+                      <TouchableOpacity
+                        style={styles.dropdown}
+                        onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                      >
+                        <View style={styles.dropdownContent}>
+                          {localFilters.category ? (
+                            <View style={styles.selectedCategory}>
+                              <View style={[
+                                styles.categoryDot,
+                                { backgroundColor: CATEGORY_COLORS[localFilters.category] }
+                              ]} />
+                              <Text style={styles.selectedText}>{localFilters.category}</Text>
+                            </View>
+                          ) : (
+                            <Text style={styles.placeholderText}>All Categories</Text>
+                          )}
+                        </View>
+                        <ChevronDown size={20} color="#6b7280" />
+                      </TouchableOpacity>
+
+                      {showCategoryDropdown && (
+                        <View style={styles.dropdownList}>
+                          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                            <TouchableOpacity
+                              style={[styles.dropdownItem, !localFilters.category && styles.activeItem]}
+                              onPress={() => handleCategorySelect(null)}
+                            >
+                              <Text style={styles.dropdownItemText}>All Categories</Text>
+                            </TouchableOpacity>
+                            {CATEGORIES.map((category) => (
+                              <TouchableOpacity
+                                key={category}
+                                style={[styles.dropdownItem, localFilters.category === category && styles.activeItem]}
+                                onPress={() => handleCategorySelect(category)}
+                              >
+                                <View style={styles.categoryOption}>
+                                  <View style={[
+                                    styles.categoryDot,
+                                    { backgroundColor: CATEGORY_COLORS[category] }
+                                  ]} />
+                                  <Text style={styles.dropdownItemText}>{category}</Text>
+                                </View>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
                       )}
                     </View>
-                </View>
-              
-                {/* Invisible spacer to ensure full scrollability */}
-                <View style={styles.scrollSpacer} />
-              </ScrollView>
-            </TouchableWithoutFeedback>
-          </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={handleResetFilters}
-              activeOpacity={0.7}
-            >
-              <RotateCcw size={16} color="#6b7280" />
-              <Text style={styles.clearButtonText}>Clear Filters</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.applyButton}
-              onPress={() => {
-                onApplyFilters(localFilters);
-                animateClose();
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
+                    {/* Tags Filter - Always visible */}
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Tags</Text>
+                      {availableTags.length >= 20 && (
+                        <View style={styles.tagSearchContainer}>
+                          <Search size={20} color="#9ca3af" style={styles.searchIcon} />
+                          <TextInput
+                            style={styles.tagSearchInput}
+                            placeholder="Search tags..."
+                            placeholderTextColor="#9ca3af"
+                            value={tagSearchQuery}
+                            onChangeText={handleTagSearch}
+                          />
+                        </View>
+                      )}
+                      <View style={styles.tagsContainer}>
+                        {filteredTags.length > 0 ? (
+                          <>
+                            {filteredTags.slice(0, 20).map((tag) => (
+                              <TouchableOpacity
+                                key={tag}
+                                style={[
+                                  styles.tagChip,
+                                  localFilters.tags.includes(tag) && styles.activeTag
+                                ]}
+                                onPress={() => handleTagToggle(tag)}
+                              >
+                                <Text style={[
+                                  styles.tagText,
+                                  localFilters.tags.includes(tag) && styles.activeTagText
+                                ]}>
+                                  {tag}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                            {filteredTags.length > 20 && (
+                              <View style={styles.tagChip}>
+                                <Text style={styles.tagText}>+{filteredTags.length - 20}</Text>
+                              </View>
+                            )}
+                          </>
+                        ) : (
+                          <Text style={styles.noTagsText}>
+                            {tagSearchQuery ? 'No matching tags' : 'No tags available'}
+                          </Text>
+                        )}
+                      </View>
+                  </View>
+                
+                  {/* Invisible spacer to ensure full scrollability */}
+                  <View style={styles.scrollSpacer} />
+                </ScrollView>
+              </TouchableWithoutFeedback>
+            </View>
+
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleResetFilters}
+                activeOpacity={0.7}
+              >
+                <RotateCcw size={16} color="#6b7280" />
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => {
+                  onApplyFilters(localFilters);
+                  animateClose();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -418,7 +457,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   section: {
-    marginVertical: 16,
+    marginTop: 16,
+    marginBottom: 8,
     position: 'relative',
   },
   sectionHeader: {
@@ -517,8 +557,8 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   activeTag: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#3b82f6',
+    backgroundColor: '#5271ff',
+    borderColor: '#5271ff',
   },
   tagText: {
     fontSize: 14,
@@ -526,7 +566,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTagText: {
-    color: '#2563eb',
+    color: '#fff',
   },
   noTagsText: {
     fontSize: 14,
@@ -540,6 +580,10 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
     gap: 12,
     backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 82,
+    left: 0,
+    right: 0,
   },
   clearButton: {
     flex: 1,
@@ -571,5 +615,24 @@ const styles = StyleSheet.create({
   },
   scrollSpacer: {
     height: 100,
+  },
+  tagSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  tagSearchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: '#1f2937',
   },
 });

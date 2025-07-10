@@ -655,8 +655,8 @@ const styles = StyleSheet.create({
     maxHeight: screenHeight * 0.6,
   },
   section: {
-    padding: 20,
-    paddingBottom: 12,
+    padding: 14,
+    paddingBottom: 4,
   },
   tagsHeader: {
     flexDirection: 'row',

@@ -13,7 +13,6 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, Calendar, MapPin, Target, Star, RotateCcw, ChevronDown } from 'lucide-react-native';
 import { SessionType } from '@/types/session';
@@ -57,8 +56,6 @@ export default function SessionFilterModal({
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [isVisible, setIsVisible] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showSubmissionDropdown, setShowSubmissionDropdown] = useState(false);
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
@@ -66,6 +63,8 @@ export default function SessionFilterModal({
   const [filteredSubmissions, setFilteredSubmissions] = useState<string[]>([]);
   const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const submissionInputRef = useRef<View>(null);
 
   useEffect(() => {
     if (visible) {
@@ -131,8 +130,6 @@ export default function SessionFilterModal({
       }),
     ]).start(() => {
       dragY.setValue(0);
-      // Apply filters before closing
-      onApplyFilters(localFilters);
       onClose();
     });
   };
@@ -221,12 +218,11 @@ export default function SessionFilterModal({
   };
 
   const formatDate = (date: Date | null) => {
-    if (!date) return 'Select date';
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    if (!date) return '';
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
   };
 
   const renderStars = () => {
@@ -257,296 +253,291 @@ export default function SessionFilterModal({
       animationType="none"
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={animateClose}>
-        <View style={styles.backdrop}>
-          <Animated.View
-            style={[
-              styles.backdrop,
-              {
-                opacity: opacityAnim,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              },
-            ]}
-          />
-        </View>
-      </TouchableWithoutFeedback>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <TouchableWithoutFeedback onPress={animateClose}>
+          <View style={styles.backdrop}>
+            <Animated.View
+              style={[
+                styles.backdrop,
+                {
+                  opacity: opacityAnim,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                },
+              ]}
+            />
+          </View>
+        </TouchableWithoutFeedback>
 
-      <Animated.View
-        style={[
-          styles.modalContainer,
-          {
-            transform: [
-              { translateY: slideAnim },
-              { translateY: dragY }
-            ],
-          },
-        ]}
-      >
-        <View style={styles.modal}>
-          <PanGestureHandler
-            onGestureEvent={handlePanGesture}
-            onHandlerStateChange={handlePanStateChange}
-          >
-            <Animated.View>
-              <View style={styles.header}>
-                <View style={styles.dragHandle} />
-                <View style={styles.headerContent}>
-                  <Text style={styles.headerTitle}>Filter Sessions</Text>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={animateClose}
-                    activeOpacity={0.7}
-                  >
-                    <X size={24} color="#6b7280" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Animated.View>
-          </PanGestureHandler>
-
-          <View style={styles.contentWrapper}>
-            <TouchableWithoutFeedback onPress={() => {
-              setShowLocationDropdown(false);
-              setShowSubmissionDropdown(false);
-            }}>
-              <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Date Range */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#5271ff" />
-                <Text style={styles.sectionTitle}>Date Range</Text>
-              </View>
-              <View style={styles.dateRangeContainer}>
-                <TouchableOpacity 
-                  style={styles.dateButton}
-                  onPress={() => setShowStartDatePicker(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.dateButtonText}>
-                    {formatDate(localFilters.dateRange.startDate)}
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.dateSeparator}>to</Text>
-                <TouchableOpacity 
-                  style={styles.dateButton}
-                  onPress={() => setShowEndDatePicker(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.dateButtonText}>
-                    {formatDate(localFilters.dateRange.endDate)}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              
-              {showStartDatePicker && (
-                <DateTimePicker
-                  value={localFilters.dateRange.startDate || new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                  onChange={(event, selectedDate) => {
-                    if (Platform.OS === 'android') {
-                      setShowStartDatePicker(false);
-                    }
-                    if (event.type === 'set' && selectedDate) {
-                      setLocalFilters(prev => ({
-                        ...prev,
-                        dateRange: {
-                          ...prev.dateRange,
-                          startDate: selectedDate
-                        }
-                      }));
-                      if (Platform.OS === 'ios') {
-                        setShowStartDatePicker(false);
-                      }
-                    } else if (event.type === 'dismissed') {
-                      setShowStartDatePicker(false);
-                    }
-                  }}
-                />
-              )}
-              
-              {showEndDatePicker && (
-                <DateTimePicker
-                  value={localFilters.dateRange.endDate || new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                  onChange={(event, selectedDate) => {
-                    if (Platform.OS === 'android') {
-                      setShowEndDatePicker(false);
-                    }
-                    if (event.type === 'set' && selectedDate) {
-                      setLocalFilters(prev => ({
-                        ...prev,
-                        dateRange: {
-                          ...prev.dateRange,
-                          endDate: selectedDate
-                        }
-                      }));
-                      if (Platform.OS === 'ios') {
-                        setShowEndDatePicker(false);
-                      }
-                    } else if (event.type === 'dismissed') {
-                      setShowEndDatePicker(false);
-                    }
-                  }}
-                />
-              )}
-            </View>
-
-            {/* Location */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MapPin size={20} color="#5271ff" />
-                <Text style={styles.sectionTitle}>Location</Text>
-              </View>
-              <View style={styles.dropdownContainer}>
-                <TouchableOpacity
-                  style={styles.dropdownButton}
-                  onPress={() => setShowLocationDropdown(!showLocationDropdown)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.dropdownButtonText, localFilters.location ? styles.dropdownButtonTextSelected : null]}>
-                    {localFilters.location || 'Select location...'}
-                  </Text>
-                  <ChevronDown size={20} color="#6b7280" />
-                </TouchableOpacity>
-                {showLocationDropdown && (
-                  <View style={styles.dropdownList}>
-                    <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                      <TouchableOpacity
-                        style={styles.dropdownItem}
-                        onPress={() => handleLocationSelect('')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.dropdownItemText}>All locations</Text>
-                      </TouchableOpacity>
-                      {availableLocations.map((location, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          style={styles.dropdownItem}
-                          onPress={() => handleLocationSelect(location)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.dropdownItemText}>{location}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Submission */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Submission</Text>
-              </View>
-              <View style={styles.dropdownContainer}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Search for specific submissions..."
-                  placeholderTextColor="#9ca3af"
-                  value={localFilters.submission}
-                  onChangeText={handleSubmissionInputChange}
-                  onFocus={() => {
-                    if (filteredSubmissions.length > 0) {
-                      setShowSubmissionDropdown(true);
-                    }
-                  }}
-                />
-                {showSubmissionDropdown && filteredSubmissions.length > 0 && (
-                  <View style={styles.dropdownList}>
-                    <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                      {filteredSubmissions.map((submission, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          style={styles.dropdownItem}
-                          onPress={() => handleSubmissionSelect(submission)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.dropdownItemText}>{submission}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Session Type */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Target size={20} color="#5271ff" />
-                <Text style={styles.sectionTitle}>Session Type</Text>
-              </View>
-              <View style={styles.sessionTypesContainer}>
-                {SESSION_TYPES.map((sessionType) => {
-                  const isSelected = localFilters.sessionTypes.includes(sessionType.type);
-                  return (
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            {
+              transform: [
+                { translateY: slideAnim },
+                { translateY: dragY }
+              ],
+            },
+          ]}
+        >
+          <View style={styles.modal}>
+            <PanGestureHandler
+              onGestureEvent={handlePanGesture}
+              onHandlerStateChange={handlePanStateChange}
+            >
+              <Animated.View>
+                <View style={styles.header}>
+                  <View style={styles.dragHandle} />
+                  <View style={styles.headerContent}>
+                    <Text style={styles.headerTitle}>Filter Sessions</Text>
                     <TouchableOpacity
-                      key={sessionType.type}
-                      style={[
-                        styles.sessionTypeChip,
-                        {
-                          backgroundColor: isSelected ? sessionType.color : '#f3f4f6',
-                          borderColor: sessionType.color,
-                        }
-                      ]}
-                      onPress={() => handleSessionTypeToggle(sessionType.type)}
+                      style={styles.closeButton}
+                      onPress={animateClose}
                       activeOpacity={0.7}
                     >
-                      <Text style={[
-                        styles.sessionTypeText,
-                        { color: isSelected ? '#fff' : sessionType.color }
-                      ]}>
-                        {sessionType.label}
-                      </Text>
+                      <X size={24} color="#6b7280" />
                     </TouchableOpacity>
-                  );
-                })}
+                  </View>
+                </View>
+              </Animated.View>
+            </PanGestureHandler>
+
+            <View style={styles.contentWrapper}>
+              <TouchableWithoutFeedback onPress={() => {
+                setShowLocationDropdown(false);
+                setShowSubmissionDropdown(false);
+              }}>
+                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
+              {/* Date Range */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Calendar size={20} color="#5271ff" />
+                  <Text style={styles.sectionTitle}>Date Range</Text>
+                </View>
+                <View style={styles.dateRangeContainer}>
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="Start date"
+                    placeholderTextColor="#9ca3af"
+                    value={localFilters.dateRange.startDate ? formatDate(localFilters.dateRange.startDate) : ''}
+                    onChangeText={(text) => {
+                      // Parse date in MM/DD/YYYY format
+                      const parts = text.split('/');
+                      if (parts.length === 3) {
+                        const month = parseInt(parts[0], 10);
+                        const day = parseInt(parts[1], 10);
+                        const year = parseInt(parts[2], 10);
+                        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                          const date = new Date(year, month - 1, day);
+                          if (date.getTime()) {
+                            setLocalFilters(prev => ({
+                              ...prev,
+                              dateRange: {
+                                ...prev.dateRange,
+                                startDate: date
+                              }
+                            }));
+                          }
+                        }
+                      }
+                    }}
+                  />
+                  <Text style={styles.dateSeparator}>to</Text>
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="End date"
+                    placeholderTextColor="#9ca3af"
+                    value={localFilters.dateRange.endDate ? formatDate(localFilters.dateRange.endDate) : ''}
+                    onChangeText={(text) => {
+                      // Parse date in MM/DD/YYYY format
+                      const parts = text.split('/');
+                      if (parts.length === 3) {
+                        const month = parseInt(parts[0], 10);
+                        const day = parseInt(parts[1], 10);
+                        const year = parseInt(parts[2], 10);
+                        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                          const date = new Date(year, month - 1, day);
+                          if (date.getTime()) {
+                            setLocalFilters(prev => ({
+                              ...prev,
+                              dateRange: {
+                                ...prev.dateRange,
+                                endDate: date
+                              }
+                            }));
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </View>
+                <Text style={styles.dateHint}>Format: MM/DD/YYYY</Text>
               </View>
+
+              {/* Location */}
+              <View style={[styles.section, { zIndex: 2000 }]}>
+                <View style={styles.sectionHeader}>
+                  <MapPin size={20} color="#5271ff" />
+                  <Text style={styles.sectionTitle}>Location</Text>
+                </View>
+                <View style={styles.dropdownContainer}>
+                  <TouchableOpacity
+                    style={styles.dropdownButton}
+                    onPress={() => setShowLocationDropdown(!showLocationDropdown)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.dropdownButtonText, localFilters.location ? styles.dropdownButtonTextSelected : null]}>
+                      {localFilters.location || 'Select location...'}
+                    </Text>
+                    <ChevronDown size={20} color="#6b7280" />
+                  </TouchableOpacity>
+                  {showLocationDropdown && (
+                    <View style={styles.dropdownList}>
+                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                        <TouchableOpacity
+                          style={styles.dropdownItem}
+                          onPress={() => handleLocationSelect('')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.dropdownItemText}>All locations</Text>
+                        </TouchableOpacity>
+                        {availableLocations.map((location, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            style={styles.dropdownItem}
+                            onPress={() => handleLocationSelect(location)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.dropdownItemText}>{location}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Submission */}
+              <View style={[styles.section, { zIndex: 1000 }]} ref={submissionInputRef}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Submission</Text>
+                </View>
+                <View style={styles.dropdownContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Search for specific submissions..."
+                    placeholderTextColor="#9ca3af"
+                    value={localFilters.submission}
+                    onChangeText={handleSubmissionInputChange}
+                    onFocus={() => {
+                      if (filteredSubmissions.length > 0) {
+                        setShowSubmissionDropdown(true);
+                      }
+                      // Scroll to show the input and dropdown
+                      setTimeout(() => {
+                        submissionInputRef.current?.measureLayout(
+                          scrollViewRef.current?.getInnerViewNode(),
+                          (x, y) => {
+                            scrollViewRef.current?.scrollTo({ y: y - 50, animated: true });
+                          },
+                          () => {}
+                        );
+                      }, 100);
+                    }}
+                  />
+                  {showSubmissionDropdown && filteredSubmissions.length > 0 && (
+                    <View style={styles.dropdownList}>
+                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                        {filteredSubmissions.map((submission, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            style={styles.dropdownItem}
+                            onPress={() => handleSubmissionSelect(submission)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.dropdownItemText}>{submission}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Session Type */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Target size={20} color="#5271ff" />
+                  <Text style={styles.sectionTitle}>Session Type</Text>
+                </View>
+                <View style={styles.sessionTypesContainer}>
+                  {SESSION_TYPES.map((sessionType) => {
+                    const isSelected = localFilters.sessionTypes.includes(sessionType.type);
+                    return (
+                      <TouchableOpacity
+                        key={sessionType.type}
+                        style={[
+                          styles.sessionTypeChip,
+                          {
+                            backgroundColor: isSelected ? sessionType.color : '#f3f4f6',
+                            borderColor: sessionType.color,
+                          }
+                        ]}
+                        onPress={() => handleSessionTypeToggle(sessionType.type)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.sessionTypeText,
+                          { color: isSelected ? '#fff' : sessionType.color }
+                        ]}>
+                          {sessionType.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Satisfaction */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Minimum Satisfaction</Text>
+                </View>
+                <View style={styles.satisfactionContainer}>
+                  {renderStars()}
+                </View>
+                {localFilters.satisfaction && (
+                  <Text style={styles.satisfactionLabel}>
+                    {localFilters.satisfaction}+ stars
+                  </Text>
+                )}
+              </View>
+              
+              {/* Invisible spacer to ensure full scrollability */}
+              <View style={styles.scrollSpacer} />
+                </ScrollView>
+              </TouchableWithoutFeedback>
             </View>
 
-            {/* Satisfaction */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Minimum Satisfaction</Text>
-              </View>
-              <View style={styles.satisfactionContainer}>
-                {renderStars()}
-              </View>
-              {localFilters.satisfaction && (
-                <Text style={styles.satisfactionLabel}>
-                  {localFilters.satisfaction}+ stars
-                </Text>
-              )}
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleClearAll}
+                activeOpacity={0.7}
+              >
+                <RotateCcw size={16} color="#6b7280" />
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={handleApply}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
             </View>
-            
-            {/* Invisible spacer to ensure full scrollability */}
-            <View style={styles.scrollSpacer} />
-              </ScrollView>
-            </TouchableWithoutFeedback>
           </View>
-
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={handleClearAll}
-              activeOpacity={0.7}
-            >
-              <RotateCcw size={16} color="#6b7280" />
-              <Text style={styles.clearButtonText}>Clear Filters</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.applyButton}
-              onPress={handleApply}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      </View>
       <KeyboardDismissButton />
     </Modal>
   );
@@ -617,7 +608,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   section: {
-    marginVertical: 16,
+    marginVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -635,7 +626,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  dateButton: {
+  dateInput: {
     flex: 1,
     backgroundColor: '#f9fafb',
     borderWidth: 1,
@@ -643,10 +634,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
-  },
-  dateButtonText: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 16,
+    color: '#1f2937',
     textAlign: 'center',
   },
   dateSeparator: {
@@ -697,6 +686,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     gap: 12,
+    backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 82,
+    left: 0,
+    right: 0,
   },
   clearButton: {
     flex: 1,
@@ -780,7 +774,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1f2937',
   },
+  dateHint: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 4,
+    textAlign: 'center',
+  },
   scrollSpacer: {
-    height: 100,
+    height: 200,
   },
 });
