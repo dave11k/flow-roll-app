@@ -380,48 +380,7 @@ export default function Analytics() {
         </TouchableOpacity>
       </View>
       
-      {/* Timeframe Filter Section */}
-      <View style={styles.timeframeSection}>
-        <View style={styles.timeframeSelectorContainer}>
-          <TouchableOpacity
-            style={styles.timeframeDropdown}
-            onPress={() => setShowTimeframeDropdown(!showTimeframeDropdown)}
-            activeOpacity={0.7}
-          >
-            <Filter size={16} color="#5271ff" />
-            <Text style={styles.timeframeDropdownText}>
-              {selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1)}
-            </Text>
-            <ChevronDown size={16} color="#5271ff" />
-          </TouchableOpacity>
-          
-          {showTimeframeDropdown && (
-            <View style={styles.timeframeDropdownMenu}>
-              {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
-                <TouchableOpacity
-                  key={timeframe}
-                  style={[
-                    styles.timeframeDropdownItem,
-                    selectedTimeframe === timeframe && styles.timeframeDropdownItemSelected
-                  ]}
-                  onPress={() => {
-                    setSelectedTimeframe(timeframe);
-                    setShowTimeframeDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.timeframeDropdownItemText,
-                    selectedTimeframe === timeframe && styles.timeframeDropdownItemTextSelected
-                  ]}>
-                    {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
+      
 
       <TouchableWithoutFeedback onPress={() => {
         Keyboard.dismiss();
@@ -430,7 +389,54 @@ export default function Analytics() {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Overview Stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Overview</Text>
+            <View style={styles.timeframeSelectorContainer}>
+              <TouchableOpacity
+                style={styles.timeframeDropdown}
+                onPress={() => setShowTimeframeDropdown(!showTimeframeDropdown)}
+                activeOpacity={0.7}
+              >
+                <Filter size={16} color="#5271ff" />
+                <Text style={styles.timeframeDropdownText}>
+                  {selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1)}
+                </Text>
+                <ChevronDown size={16} color="#5271ff" />
+              </TouchableOpacity>
+              
+              {showTimeframeDropdown && (
+                <TouchableOpacity 
+                  style={StyleSheet.absoluteFillObject} 
+                  onPress={() => setShowTimeframeDropdown(false)}
+                  activeOpacity={1}
+                >
+                  <View style={styles.timeframeDropdownMenu}>
+                    {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
+                      <TouchableOpacity
+                        key={timeframe}
+                        style={[
+                          styles.timeframeDropdownItem,
+                          selectedTimeframe === timeframe && styles.timeframeDropdownItemSelected
+                        ]}
+                        onPress={() => {
+                          setSelectedTimeframe(timeframe);
+                          setShowTimeframeDropdown(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.timeframeDropdownItemText,
+                          selectedTimeframe === timeframe && styles.timeframeDropdownItemTextSelected
+                        ]}>
+                          {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
           <View style={styles.statsGrid}>
             {renderStatCard(
               <Trophy size={20} color="#f59e0b" />,
@@ -634,7 +640,6 @@ const styles = StyleSheet.create({
   timeframeSelectorContainer: {
     position: 'relative',
     zIndex: 1000,
-    alignItems: 'flex-end',
   },
   timeframeDropdown: {
     flexDirection: 'row',
@@ -653,7 +658,7 @@ const styles = StyleSheet.create({
   },
   timeframeDropdownMenu: {
     position: 'absolute',
-    top: '100%',
+    top: 40,
     right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -700,11 +705,16 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 0,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1f2937',
-    marginBottom: 16,
   },
   statsGrid: {
     gap: 12,

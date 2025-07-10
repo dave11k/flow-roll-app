@@ -48,7 +48,7 @@ export default function FloatingAddButton({ onPress }: FloatingAddButtonProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 14, // Even closer to tab bar
+    bottom: 80, // Moved up to clear tab bar
     right: 20,
     zIndex: 1000,
   },

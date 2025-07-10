@@ -265,25 +265,35 @@ export default function TechniquesPage() {
                   <X size={12} color="#fff" />
                 </TouchableOpacity>
               )}
-              {filters.tags.slice(0, 3).map((tag, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.activeTagPill}
-                  onPress={() => setFilters(prev => ({ 
-                    ...prev, 
-                    tags: prev.tags.filter(t => t !== tag) 
-                  }))}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.activeTagText}>{tag}</Text>
-                  <X size={12} color="#5271ff" />
-                </TouchableOpacity>
-              ))}
-              {filters.tags.length > 3 && (
-                <View style={styles.morePill}>
-                  <Text style={styles.moreText}>+{filters.tags.length - 3} more</Text>
-                </View>
-              )}
+              {(() => {
+                const maxTagsToShow = filters.category ? 2 : 3;
+                const visibleTags = filters.tags.slice(0, maxTagsToShow);
+                const hiddenTagsCount = filters.tags.length - maxTagsToShow;
+                
+                return (
+                  <>
+                    {visibleTags.map((tag, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.activeTagPill}
+                        onPress={() => setFilters(prev => ({ 
+                          ...prev, 
+                          tags: prev.tags.filter(t => t !== tag) 
+                        }))}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.activeTagText}>{tag}</Text>
+                        <X size={12} color="#5271ff" />
+                      </TouchableOpacity>
+                    ))}
+                    {hiddenTagsCount > 0 && (
+                      <View style={styles.morePill}>
+                        <Text style={styles.moreText}>+{hiddenTagsCount}</Text>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
             </View>
           )}
         </View>
@@ -470,7 +480,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 10,
-    minHeight: 36,
+    height: 36,
   },
   searchInput: {
     flex: 1,

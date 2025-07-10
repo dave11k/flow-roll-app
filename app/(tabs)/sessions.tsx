@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 10,
-    minHeight: 36,
+    height: 36,
   },
   searchInput: {
     flex: 1,

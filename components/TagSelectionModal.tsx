@@ -59,12 +59,8 @@ export default function TagSelectionModal({
       data: PREDEFINED_TAGS.POSITIONS,
     },
     {
-      title: 'Attributes',
+      title: 'Common Tags',
       data: PREDEFINED_TAGS.ATTRIBUTES,
-    },
-    {
-      title: 'Styles',
-      data: PREDEFINED_TAGS.STYLES,
     },
   ]);
 
@@ -86,12 +82,8 @@ export default function TagSelectionModal({
           data: PREDEFINED_TAGS.POSITIONS,
         },
         {
-          title: 'Attributes',
+          title: 'Common Tags',
           data: PREDEFINED_TAGS.ATTRIBUTES,
-        },
-        {
-          title: 'Styles',
-          data: PREDEFINED_TAGS.STYLES,
         },
       ];
       
@@ -445,7 +437,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
-    width: screenWidth - 40,
+    width: screenWidth - 20,
     maxHeight: screenHeight * 0.85,
     justifyContent: 'center',
   },
@@ -508,14 +500,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#5271ff',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
   selectedTagText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
   },
   searchSection: {

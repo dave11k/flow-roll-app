@@ -132,8 +132,17 @@ export default function AddTechniqueModal({
   useEffect(() => {
     if (techniqueName.length > 0) {
       const filtered = searchTechniqueSuggestions(techniqueName, 8);
-      setSuggestions(filtered);
-      setShowSuggestions(true);
+      // Hide suggestions if there's an exact match
+      const hasExactMatch = filtered.some(
+        suggestion => suggestion.name.toLowerCase() === techniqueName.toLowerCase()
+      );
+      if (hasExactMatch) {
+        setShowSuggestions(false);
+        setSuggestions([]);
+      } else {
+        setSuggestions(filtered);
+        setShowSuggestions(true);
+      }
     } else {
       setShowSuggestions(false);
       setSuggestions([]);
@@ -508,7 +517,7 @@ export default function AddTechniqueModal({
                 ) : (
                   <View style={styles.noLinksContainer}>
                     <Text style={styles.noLinksText}>
-                      No links added. Add YouTube videos or Reddit posts for reference.
+                      No links added. Add YouTube videos or posts for reference.
                     </Text>
                   </View>
                 )}
@@ -580,7 +589,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
-    width: screenWidth - 40,
+    width: screenWidth - 20,
     maxHeight: screenHeight * 0.75,
     justifyContent: 'center',
   },
@@ -647,7 +656,7 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   tagsHeader: {
     flexDirection: 'row',
@@ -697,13 +706,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   techniqueInput: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    height: 56,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    height: 36,
     color: '#1f2937',
   },
   suggestionsContainer: {

@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
-    width: screenWidth - 40,
+    width: screenWidth - 20,
     maxHeight: screenHeight * 0.9,
     justifyContent: 'center',
   },

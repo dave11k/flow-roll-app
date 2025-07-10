@@ -105,7 +105,8 @@ export default function SettingsPage() {
 
   const getProfileSubtitle = () => {
     if (profile) {
-      return `${profile.name} - ${profile.beltRank} belt`;
+      const beltName = profile.beltRank.charAt(0).toUpperCase() + profile.beltRank.slice(1);
+      return `${profile.name} - ${beltName} Belt`;
     }
     return 'Set up your profile';
   };
