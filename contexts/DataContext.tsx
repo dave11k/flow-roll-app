@@ -3,6 +3,7 @@ import { Technique } from '@/types/technique';
 import { TrainingSession } from '@/types/session';
 import { UserProfile } from '@/types/profile';
 import { getTechniques, getSessions, saveTechnique, saveSession, deleteTechnique, deleteSession, getProfile, saveProfile } from '@/services/storage';
+import { loadTestData } from '@/services/testData';
 
 interface DataContextType {
   // Data
@@ -63,6 +64,9 @@ export function DataProvider({ children }: DataProviderProps) {
     try {
       setIsInitialLoading(true);
       setError(null);
+      
+      // Load test data if needed
+      await loadTestData();
       
       // Load techniques, sessions, and profile concurrently
       const [techniquesData, sessionsData, profileData] = await Promise.all([

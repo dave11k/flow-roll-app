@@ -87,27 +87,59 @@ const chartConfig = {
   },
 };
 
-const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Technique[]): AnalyticsData => {
+const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Technique[], timeframe: 'all' | 'week' | 'month' | 'year' = 'all'): AnalyticsData => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
 
-    // Basic stats
-    const totalSessions = sessions.length;
-    const totalTechniques = techniques.length;
-    const averageSatisfaction = sessions.length > 0 
-      ? sessions.reduce((sum, s) => sum + s.satisfaction, 0) / sessions.length 
+    // Filter sessions based on timeframe
+    let filteredSessions = sessions;
+    let filteredTechniques = techniques;
+    
+    if (timeframe !== 'all') {
+      let cutoffDate: Date;
+      
+      switch (timeframe) {
+        case 'week':
+          cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate = new Date();
+          cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate = new Date();
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+          break;
+        default:
+          cutoffDate = new Date(0); // Beginning of time
+      }
+      
+      filteredSessions = sessions.filter(s => new Date(s.date) >= cutoffDate);
+      filteredTechniques = techniques.filter(t => new Date(t.timestamp) >= cutoffDate);
+    }
+
+    // Basic stats (now using filtered data)
+    const totalSessions = filteredSessions.length;
+    const totalTechniques = filteredTechniques.length;
+    const averageSatisfaction = filteredSessions.length > 0 
+      ? filteredSessions.reduce((sum, s) => sum + s.satisfaction, 0) / filteredSessions.length 
       : 0;
-    const totalSubmissions = sessions.reduce((sum, s) => sum + s.submissions.length, 0);
+    const totalSubmissions = filteredSessions.reduce((sum, s) => sum + s.submissions.length, 0);
 
-    // This month stats
-    const sessionsThisMonth = sessions.filter(s => s.date >= startOfMonth).length;
-    const techniquesThisMonth = techniques.filter(t => t.timestamp >= startOfMonth).length;
+    // This month stats (use filtered data if timeframe is month or less)
+    const sessionsThisMonth = (timeframe === 'all' || timeframe === 'year') 
+      ? sessions.filter(s => new Date(s.date) >= startOfMonth).length
+      : filteredSessions.filter(s => new Date(s.date) >= startOfMonth).length;
+    const techniquesThisMonth = (timeframe === 'all' || timeframe === 'year')
+      ? techniques.filter(t => new Date(t.timestamp) >= startOfMonth).length
+      : filteredTechniques.filter(t => new Date(t.timestamp) >= startOfMonth).length;
 
-    // Submissions distribution
+    // Submissions distribution (using filtered sessions)
     const submissionCount: Record<string, number> = {};
-    sessions.forEach(s => {
+    filteredSessions.forEach(s => {
       s.submissions.forEach(submission => {
         submissionCount[submission] = (submissionCount[submission] || 0) + 1;
       });
@@ -124,9 +156,9 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
         ][index % 10],
       }));
 
-    // Session type distribution
+    // Session type distribution (using filtered sessions)
     const sessionTypeCount: Record<string, number> = {};
-    sessions.forEach(s => {
+    filteredSessions.forEach(s => {
       const typeName = s.type === 'gi' ? 'Gi' : 
                       s.type === 'nogi' ? 'No-Gi' :
                       s.type === 'open-mat' ? 'Open Mat' : 'Wrestling';
@@ -149,8 +181,8 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
 
-      const daySessions = sessions.filter(s => s.date >= dayStart && s.date <= dayEnd).length;
-      const dayTechniques = techniques.filter(t => t.timestamp >= dayStart && t.timestamp <= dayEnd).length;
+      const daySessions = filteredSessions.filter(s => new Date(s.date) >= dayStart && new Date(s.date) <= dayEnd).length;
+      const dayTechniques = filteredTechniques.filter(t => new Date(t.timestamp) >= dayStart && new Date(t.timestamp) <= dayEnd).length;
 
       weeklyActivity.push({
         day: dayNames[date.getDay()],
@@ -167,8 +199,8 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
       const monthStart = new Date(date);
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-      const monthSessions = sessions.filter(s => s.date >= monthStart && s.date <= monthEnd).length;
-      const monthTechniques = techniques.filter(t => t.timestamp >= monthStart && t.timestamp <= monthEnd).length;
+      const monthSessions = filteredSessions.filter(s => new Date(s.date) >= monthStart && new Date(s.date) <= monthEnd).length;
+      const monthTechniques = filteredTechniques.filter(t => new Date(t.timestamp) >= monthStart && new Date(t.timestamp) <= monthEnd).length;
 
       monthlyProgress.push({
         month: monthNames[date.getMonth()],
@@ -177,8 +209,8 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
       });
     }
 
-    // Satisfaction trend (last 10 sessions)
-    const satisfactionTrend = sessions
+    // Satisfaction trend (last 10 sessions from filtered data)
+    const satisfactionTrend = filteredSessions
       .slice(0, 10)
       .reverse()
       .map((session, index) => ({
@@ -186,8 +218,8 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
         satisfaction: session.satisfaction,
       }));
 
-    // Streak calculation
-    const sortedSessions = [...sessions].sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Streak calculation (using filtered sessions)
+    const sortedSessions = [...filteredSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
@@ -197,9 +229,9 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
       if (!lastDate) {
         currentStreak = 1;
         tempStreak = 1;
-        lastDate = session.date;
+        lastDate = new Date(session.date);
       } else {
-        const daysDiff = Math.floor((lastDate.getTime() - session.date.getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor((lastDate.getTime() - new Date(session.date).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff <= 7) { // Within a week
           tempStreak++;
           if (currentStreak === tempStreak - 1) {
@@ -209,7 +241,7 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
           longestStreak = Math.max(longestStreak, tempStreak);
           tempStreak = 1;
         }
-        lastDate = session.date;
+        lastDate = new Date(session.date);
       }
     });
     longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
@@ -241,10 +273,10 @@ export default function Analytics() {
   // Memoize analytics calculation to prevent unnecessary recalculations
   const memoizedAnalyticsData = useMemo(() => {
     if (sessions.length > 0 || techniques.length > 0) {
-      return calculateAnalyticsData(sessions, techniques);
+      return calculateAnalyticsData(sessions, techniques, selectedTimeframe);
     }
     return null;
-  }, [sessions, techniques]);
+  }, [sessions, techniques, selectedTimeframe]);
 
   // Update analytics data and loaded state when memoized data changes
   useEffect(() => {
