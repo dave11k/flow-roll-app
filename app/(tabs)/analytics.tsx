@@ -117,8 +117,16 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
           cutoffDate = new Date(0); // Beginning of time
       }
       
-      filteredSessions = sessions.filter(s => new Date(s.date) >= cutoffDate);
-      filteredTechniques = techniques.filter(t => new Date(t.timestamp) >= cutoffDate);
+      // Handle both Date objects and ISO strings
+      filteredSessions = sessions.filter(s => {
+        const sessionDate = s.date instanceof Date ? s.date : new Date(s.date);
+        return sessionDate >= cutoffDate;
+      });
+      
+      filteredTechniques = techniques.filter(t => {
+        const techniqueDate = t.timestamp instanceof Date ? t.timestamp : new Date(t.timestamp);
+        return techniqueDate >= cutoffDate;
+      });
     }
 
     // Basic stats (now using filtered data)
@@ -472,29 +480,29 @@ export default function Analytics() {
               <Trophy size={20} color="#f59e0b" />,
               'Total Sessions',
               analyticsData?.totalSessions ?? 0,
-              undefined, // Removed subtitle
+              undefined,
               '#f59e0b'
+            )}
+            {renderStatCard(
+              <Award size={20} color="#ef4444" />,
+              'Total Submissions',
+              analyticsData?.totalSubmissions ?? 0,
+              undefined,
+              '#ef4444'
             )}
             {renderStatCard(
               <Zap size={20} color="#3b82f6" />,
               'Techniques Learned',
               analyticsData?.totalTechniques ?? 0,
-              undefined, // Removed subtitle
+              undefined,
               '#3b82f6'
             )}
             {renderStatCard(
               <Target size={20} color="#10b981" />,
               'Avg Satisfaction',
               analyticsData?.averageSatisfaction?.toFixed(1) ?? '0.0',
-              'out of 5.0', // Kept subtitle for average satisfaction
+              'out of 5.0',
               '#10b981'
-            )}
-            {renderStatCard(
-              <Award size={20} color="#ef4444" />,
-              'Total Submissions',
-              analyticsData?.totalSubmissions ?? 0,
-              undefined, // Removed subtitle
-              '#ef4444'
             )}
           </View>
         </View>
@@ -785,6 +793,7 @@ const styles = StyleSheet.create({
   streakContainer: {
     flexDirection: 'row',
     gap: 16,
+    marginTop: 16,
   },
   streakCard: {
     flex: 1,
@@ -846,6 +855,6 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   bottomSpacing: {
-    height: 20,
+    height: 100,
   },
 });
