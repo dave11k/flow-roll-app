@@ -184,6 +184,7 @@ export default function TechniquesPage() {
         <TouchableOpacity
           onPress={() => handleShowTechniqueDetail(item)}
           activeOpacity={1}
+          style={styles.techniqueCard}
         >
           <TechniqueItem
             technique={item}
@@ -441,8 +442,8 @@ const styles = StyleSheet.create({
     height: 48,
   },
   logo: {
-    width: 28,
-    height: 28,
+    width: 38,
+    height: 38,
     resizeMode: 'contain',
   },
   title: {
@@ -666,5 +667,12 @@ const styles = StyleSheet.create({
   techniqueItemContainer: {
     position: 'relative',
     marginBottom: 12,
+  },
+  techniqueCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

@@ -175,15 +175,18 @@ export default function SessionFilterModal({
   };
 
   const handleClearAll = () => {
-    setLocalFilters({
+    const clearedFilters = {
       dateRange: { startDate: null, endDate: null },
       location: '',
       sessionTypes: [],
       submission: '',
       satisfaction: null,
-    });
+    };
+    setLocalFilters(clearedFilters);
     setShowLocationDropdown(false);
     setShowSubmissionDropdown(false);
+    onApplyFilters(clearedFilters);
+    onClose();
   };
 
   const handleApply = () => {
@@ -320,6 +323,7 @@ export default function SessionFilterModal({
                       }));
                     }}
                     placeholder="Start date"
+                    maxDate={new Date()}
                   />
                   <Text style={styles.dateSeparator}>to</Text>
                   <SimpleDatePicker
@@ -334,6 +338,7 @@ export default function SessionFilterModal({
                       }));
                     }}
                     placeholder="End date"
+                    maxDate={new Date()}
                   />
                 </View>
               </View>

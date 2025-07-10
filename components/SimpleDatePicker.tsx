@@ -12,9 +12,10 @@ interface SimpleDatePickerProps {
   value: Date | null;
   onChange: (date: Date) => void;
   placeholder?: string;
+  maxDate?: Date;
 }
 
-export default function SimpleDatePicker({ value, onChange, placeholder = 'Select date' }: SimpleDatePickerProps) {
+export default function SimpleDatePicker({ value, onChange, placeholder = 'Select date', maxDate }: SimpleDatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(value || new Date());
 
@@ -66,13 +67,25 @@ export default function SimpleDatePicker({ value, onChange, placeholder = 'Selec
         value.getMonth() === currentMonth.getMonth() &&
         value.getFullYear() === currentMonth.getFullYear();
 
+      const dateToCheck = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      const isDisabled = maxDate && dateToCheck > maxDate;
+
       days.push(
         <TouchableOpacity
           key={day}
-          style={[styles.dayCell, isSelected && styles.selectedDay]}
-          onPress={() => handleDateSelect(day)}
+          style={[
+            styles.dayCell, 
+            isSelected && styles.selectedDay,
+            isDisabled && styles.disabledDay
+          ]}
+          onPress={() => !isDisabled && handleDateSelect(day)}
+          disabled={isDisabled}
         >
-          <Text style={[styles.dayText, isSelected && styles.selectedDayText]}>{day}</Text>
+          <Text style={[
+            styles.dayText, 
+            isSelected && styles.selectedDayText,
+            isDisabled && styles.disabledDayText
+          ]}>{day}</Text>
         </TouchableOpacity>
       );
     }
@@ -233,6 +246,12 @@ const styles = StyleSheet.create({
   selectedDayText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  disabledDay: {
+    opacity: 0.3,
+  },
+  disabledDayText: {
+    color: '#d1d5db',
   },
   todayButton: {
     marginTop: 16,
