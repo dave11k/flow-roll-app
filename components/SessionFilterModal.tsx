@@ -131,8 +131,6 @@ export default function SessionFilterModal({
       }),
     ]).start(() => {
       dragY.setValue(0);
-      // Apply filters before closing
-      onApplyFilters(localFilters);
       onClose();
     });
   };
