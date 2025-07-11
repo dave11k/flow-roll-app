@@ -52,7 +52,6 @@ export default function TechniqueFilterModal({
 }: TechniqueFilterModalProps) {
   const { setIsFilterModalOpen } = useFilterModal();
   const [localFilters, setLocalFilters] = useState<TechniqueFilters>(filters);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [filteredTags, setFilteredTags] = useState<string[]>([]);
@@ -126,11 +125,6 @@ export default function TechniqueFilterModal({
     }
   };
 
-
-  const handleCategorySelect = (category: TechniqueCategory | null) => {
-    setLocalFilters({ ...localFilters, category });
-    setShowCategoryDropdown(false);
-  };
 
   const handleTagToggle = (tag: string) => {
     const newTags = localFilters.tags.includes(tag)
@@ -207,7 +201,7 @@ export default function TechniqueFilterModal({
                 <View style={styles.header}>
                   <View style={styles.dragHandle} />
                   <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Filter Techniques</Text>
+                    <Text style={styles.headerTitle}>Filter by Tags</Text>
                     <TouchableOpacity
                       style={styles.closeButton}
                       onPress={animateClose}
@@ -221,65 +215,9 @@ export default function TechniqueFilterModal({
             </PanGestureHandler>
 
             <View style={styles.contentWrapper}>
-              <TouchableWithoutFeedback onPress={() => {
-                setShowCategoryDropdown(false);
-              }}>
                 <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                  {/* Category Filter */}
-                  <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Category</Text>
-                      <TouchableOpacity
-                        style={styles.dropdown}
-                        onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                      >
-                        <View style={styles.dropdownContent}>
-                          {localFilters.category ? (
-                            <View style={styles.selectedCategory}>
-                              <View style={[
-                                styles.categoryDot,
-                                { backgroundColor: CATEGORY_COLORS[localFilters.category] }
-                              ]} />
-                              <Text style={styles.selectedText}>{localFilters.category}</Text>
-                            </View>
-                          ) : (
-                            <Text style={styles.placeholderText}>All Categories</Text>
-                          )}
-                        </View>
-                        <ChevronDown size={20} color="#6b7280" />
-                      </TouchableOpacity>
-
-                      {showCategoryDropdown && (
-                        <View style={styles.dropdownList}>
-                          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                            <TouchableOpacity
-                              style={[styles.dropdownItem, !localFilters.category && styles.activeItem]}
-                              onPress={() => handleCategorySelect(null)}
-                            >
-                              <Text style={styles.dropdownItemText}>All Categories</Text>
-                            </TouchableOpacity>
-                            {CATEGORIES.map((category) => (
-                              <TouchableOpacity
-                                key={category}
-                                style={[styles.dropdownItem, localFilters.category === category && styles.activeItem]}
-                                onPress={() => handleCategorySelect(category)}
-                              >
-                                <View style={styles.categoryOption}>
-                                  <View style={[
-                                    styles.categoryDot,
-                                    { backgroundColor: CATEGORY_COLORS[category] }
-                                  ]} />
-                                  <Text style={styles.dropdownItemText}>{category}</Text>
-                                </View>
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Tags Filter - Always visible */}
+                  {/* Tags Filter */}
                     <View ref={tagSectionRef} style={styles.section}>
-                      <Text style={styles.sectionTitle}>Tags</Text>
                       {availableTags.length >= 20 && (
                         <View style={styles.tagSearchContainer}>
                           <Search size={20} color="#9ca3af" style={styles.searchIcon} />
@@ -356,7 +294,6 @@ export default function TechniqueFilterModal({
                   {/* Invisible spacer to ensure full scrollability */}
                   <View style={styles.scrollSpacer} />
                 </ScrollView>
-              </TouchableWithoutFeedback>
             </View>
 
             <View style={styles.footer}>
@@ -376,7 +313,7 @@ export default function TechniqueFilterModal({
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.applyButtonText}>Apply Filters</Text>
+                <Text style={styles.applyButtonText}>Apply Tags</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -612,7 +549,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scrollSpacer: {
-    height: 400,
+    height: 260,
   },
   tagSearchContainer: {
     flexDirection: 'row',
@@ -620,7 +557,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 22,
   },
   searchIcon: {
     marginRight: 8,

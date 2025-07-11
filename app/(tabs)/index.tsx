@@ -20,6 +20,7 @@ import TechniqueModal from '@/components/TechniqueModal';
 import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
+import CategoryDropdown from '@/components/CategoryDropdown';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
 import { CATEGORY_COLORS } from '@/constants/colors';
@@ -91,8 +92,23 @@ export default function TechniquesPage() {
       );
     }
 
-    // Sort by most recent first
-    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Sort with priority: name matches first, then tag matches, then by date
+    filtered.sort((a, b) => {
+      const searchLower = searchQuery.toLowerCase().trim();
+      
+      // If there's a search query, prioritize name matches
+      if (searchLower) {
+        const aNameMatch = a.name.toLowerCase().includes(searchLower);
+        const bNameMatch = b.name.toLowerCase().includes(searchLower);
+        
+        // If one has name match and other doesn't, prioritize name match
+        if (aNameMatch && !bNameMatch) return -1;
+        if (!aNameMatch && bNameMatch) return 1;
+      }
+      
+      // Otherwise, sort by most recent first
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
 
     setFilteredTechniques(filtered);
   }, [techniques, searchQuery, filters]);
@@ -108,7 +124,7 @@ export default function TechniquesPage() {
   };
 
   const hasActiveFilters = () => {
-    return filters.category !== null || filters.tags.length > 0;
+    return filters.tags.length > 0;
   };
 
   const handleShowTechniqueDetail = (technique: Technique) => {
@@ -236,23 +252,13 @@ export default function TechniquesPage() {
               activeOpacity={0.7}
             >
               <Filter size={20} color="#5271ff" />
-              <Text style={styles.filterButtonText}>Filter</Text>
+              <Text style={styles.filterButtonText}>Tags</Text>
               {hasActiveFilters() && <View style={styles.filterIndicator} />}
             </TouchableOpacity>
           </View>
           {/* Active Filters Row */}
-          {hasActiveFilters() && (
+          {filters.tags.length > 0 && (
             <View style={styles.activeFiltersRow}>
-              {filters.category && (
-                <TouchableOpacity
-                  style={[styles.activeFilterPill, { backgroundColor: CATEGORY_COLORS[filters.category] }]}
-                  onPress={() => setFilters(prev => ({ ...prev, category: null }))}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.activeFilterText}>{filters.category}</Text>
-                  <X size={12} color="#fff" />
-                </TouchableOpacity>
-              )}
               {(() => {
                 const maxTagsToShow = 5;
                 const visibleTags = filters.tags.slice(0, maxTagsToShow);
@@ -346,6 +352,14 @@ export default function TechniquesPage() {
                   : `Techniques (${techniques.length})`
                 }
               </Text>
+              <View style={styles.categoryDropdownContainer}>
+                <CategoryDropdown
+                  selectedCategory={filters.category}
+                  onCategorySelect={(category) => setFilters({ ...filters, category })}
+                  onClearCategory={() => setFilters({ ...filters, category: null })}
+                  showAllOption={true}
+                />
+              </View>
             </View>
             {filteredTechniques.map((item) => (
               <View key={item.id}>
@@ -601,7 +615,7 @@ const styles = StyleSheet.create({
   },
   techniquesHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
@@ -609,6 +623,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#374151',
+    flex: 1,
+  },
+  categoryDropdownContainer: {
+    minWidth: 140,
+    maxWidth: 180,
   },
   techniqueItemContainer: {
     position: 'relative',
