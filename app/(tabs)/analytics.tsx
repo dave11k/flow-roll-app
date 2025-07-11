@@ -10,16 +10,14 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Image,
 } from 'react-native';
 import {
   PieChart,
 } from 'react-native-chart-kit';
-import { Target, Award, Zap, Trophy, Activity, ChartPie as PieChartIcon, ChevronDown, User, Filter } from 'lucide-react-native';
+import { Target, Award, Zap, Trophy, Activity, ChartPie as PieChartIcon, ChevronDown, Filter } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import { Technique } from '@/types/technique';
 import { useData } from '@/contexts/DataContext';
-import ProfileModal from '@/components/ProfileModal';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 50; // Increased padding to prevent overflow
@@ -276,7 +274,6 @@ export default function Analytics() {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Memoize analytics calculation to prevent unnecessary recalculations
   const memoizedAnalyticsData = useMemo(() => {
@@ -355,20 +352,6 @@ export default function Analytics() {
   if ((isInitialLoading && !hasLoadedOnce) || (!analyticsData && !hasLoadedOnce)) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Image 
-            source={require('@/assets/images/FlowRoll.png')} 
-            style={styles.logo}
-          />
-          <Text style={styles.title}>Analytics</Text>
-          <TouchableOpacity 
-            style={styles.profileButton}
-            onPress={() => setShowProfileModal(true)}
-            activeOpacity={0.7}
-          >
-            <User size={20} color="#000000" />
-          </TouchableOpacity>
-        </View>
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
           <Text style={styles.loadingText}>Loading analytics...</Text>
@@ -381,20 +364,6 @@ export default function Analytics() {
   if (!analyticsData && hasLoadedOnce) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Image 
-            source={require('@/assets/images/FlowRoll.png')} 
-            style={styles.logo}
-          />
-          <Text style={styles.title}>Analytics</Text>
-          <TouchableOpacity 
-            style={styles.profileButton}
-            onPress={() => setShowProfileModal(true)}
-            activeOpacity={0.7}
-          >
-            <User size={20} color="#000000" />
-          </TouchableOpacity>
-        </View>
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
           <Text style={styles.loadingText}>No data available for analytics</Text>
@@ -405,21 +374,6 @@ export default function Analytics() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image 
-          source={require('@/assets/images/FlowRoll.png')} 
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Analytics</Text>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => setShowProfileModal(true)}
-          activeOpacity={0.7}
-        >
-          <User size={20} color="#000000" />
-        </TouchableOpacity>
-      </View>
-
       <TouchableWithoutFeedback onPress={() => {
         Keyboard.dismiss();
         setShowTimeframeDropdown(false);
@@ -614,14 +568,6 @@ export default function Analytics() {
         <View style={styles.bottomSpacing} />
         </ScrollView>
       </TouchableWithoutFeedback>
-      
-      {/* Profile Modal */}
-      <ProfileModal
-        visible={showProfileModal}
-        profile={null}
-        onSave={() => {}}
-        onClose={() => setShowProfileModal(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -630,43 +576,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 9,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    height: 48,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    resizeMode: 'contain',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#000000',
-    flex: 1,
-    textAlign: 'center',
-  },
-  profileButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   timeframeSelectorContainer: {
     position: 'relative',
