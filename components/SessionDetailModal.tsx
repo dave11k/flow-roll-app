@@ -14,6 +14,8 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Pencil, Trash2, Calendar, MapPin, Clock, Star, Target } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import SubmissionDisplayPill from '@/components/SubmissionDisplayPill';
+import StarRating from '@/components/StarRating';
+import { FloatingCloseButton } from './FloatingCloseButton';
 
 interface SessionDetailModalProps {
   visible: boolean;
@@ -35,12 +37,14 @@ export default function SessionDetailModal({
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [isVisible, setIsVisible] = useState(false);
+  const [showCloseButton, setShowCloseButton] = useState(true);
   const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
 
   useEffect(() => {
     if (visible) {
       setIsVisible(true);
+      setShowCloseButton(true);
       dragY.setValue(0);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -73,6 +77,7 @@ export default function SessionDetailModal({
   }, [visible, isVisible]);
 
   const animateClose = () => {
+    setShowCloseButton(false);
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: screenHeight,
@@ -148,16 +153,6 @@ export default function SessionDetailModal({
     }
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        size={24}
-        color={i < rating ? '#f59e0b' : '#e5e7eb'}
-        fill={i < rating ? '#f59e0b' : 'transparent'}
-      />
-    ));
-  };
 
   const getTotalSubmissionCount = () => {
     return Object.values(session.submissionCounts || {}).reduce((total, count) => total + count, 0);
@@ -210,10 +205,12 @@ export default function SessionDetailModal({
                     <TouchableOpacity
                       style={[styles.actionButton, styles.editButton]}
                       onPress={() => {
+                        console.log('Edit button pressed');
                         onEdit(session);
-                        animateClose();
+                        onClose();
                       }}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Pencil size={20} color="#3b82f6" />
                     </TouchableOpacity>
@@ -222,10 +219,12 @@ export default function SessionDetailModal({
                     <TouchableOpacity
                       style={[styles.actionButton, styles.deleteButton]}
                       onPress={() => {
+                        console.log('Delete button pressed');
                         onDelete(session);
-                        animateClose();
+                        onClose();
                       }}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Trash2 size={20} color="#ef4444" />
                     </TouchableOpacity>
@@ -244,8 +243,8 @@ export default function SessionDetailModal({
             {/* Date and Time */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#1e3a2e" />
-                <Text style={styles.sectionTitle}>Session Details</Text>
+                <Calendar size={20} color="#5271ff" />
+                <Text style={styles.sectionTitle}>Date</Text>
               </View>
               <Text style={styles.dateText}>{formatDate(session.date)}</Text>
               <View style={styles.timeRow}>
@@ -258,7 +257,7 @@ export default function SessionDetailModal({
             {session.location && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <MapPin size={20} color="#1e3a2e" />
+                  <MapPin size={20} color="#5271ff" />
                   <Text style={styles.sectionTitle}>Location</Text>
                 </View>
                 <Text style={styles.locationText}>{session.location}</Text>
@@ -268,7 +267,7 @@ export default function SessionDetailModal({
             {/* Session Type */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Target size={20} color="#1e3a2e" />
+                <Target size={20} color="#5271ff" />
                 <Text style={styles.sectionTitle}>Session Type</Text>
               </View>
               <View style={[
@@ -305,16 +304,11 @@ export default function SessionDetailModal({
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Satisfaction Rating</Text>
               </View>
-              <View style={styles.starsContainer}>
-                {renderStars(session.satisfaction)}
-              </View>
-              <Text style={styles.satisfactionLabel}>
-                {session.satisfaction === 1 && 'Poor'}
-                {session.satisfaction === 2 && 'Fair'}
-                {session.satisfaction === 3 && 'Good'}
-                {session.satisfaction === 4 && 'Great'}
-                {session.satisfaction === 5 && 'Excellent'}
-              </Text>
+              <StarRating
+                mode="display"
+                rating={session.satisfaction}
+                size={24}
+              />
             </View>
 
             {/* Notes */}
@@ -330,8 +324,12 @@ export default function SessionDetailModal({
             {/* Invisible spacer to ensure full scrollability */}
             <View style={styles.scrollSpacer} />
           </ScrollView>
+          
+          
         </View>
+        
       </Animated.View>
+      {showCloseButton && <FloatingCloseButton onPress={animateClose} />}
     </Modal>
   );
 }
@@ -413,7 +411,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   section: {
-    marginVertical: 16,
+    marginVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -462,7 +460,6 @@ const styles = StyleSheet.create({
   starsContainer: {
     flexDirection: 'row',
     gap: 4,
-    marginBottom: 8,
   },
   satisfactionLabel: {
     fontSize: 16,

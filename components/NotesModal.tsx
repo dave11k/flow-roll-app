@@ -176,9 +176,6 @@ export default function NotesModal({
                 autoFocus
                 textAlignVertical="top"
                 maxLength={2000}
-                returnKeyType="done"
-                onSubmitEditing={handleClose}
-                blurOnSubmit={true}
               />
               <View style={styles.characterCountContainer}>
                 <Text style={styles.characterCount}>
@@ -198,7 +195,7 @@ export default function NotesModal({
             </View>
           </View>
         </Animated.View>
-        <KeyboardDismissButton />
+        <KeyboardDismissButton isInsideModal />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -219,7 +216,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: screenWidth - 40,
-    maxHeight: screenHeight * 0.7,
+    maxHeight: screenHeight * 0.56,
     justifyContent: 'center',
   },
   modal: {
@@ -238,7 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -262,15 +259,15 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 20,
-    minHeight: 200,
+    height: 250,
   },
   textInput: {
     fontSize: 16,
     color: '#1f2937',
     lineHeight: 24,
     textAlignVertical: 'top',
-    minHeight: 150,
-    maxHeight: 300,
+    height: 180,
+    paddingVertical: 8,
   },
   characterCountContainer: {
     alignItems: 'flex-end',
@@ -285,12 +282,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   footer: {
-    padding: 20,
+    padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
   },
   saveButton: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

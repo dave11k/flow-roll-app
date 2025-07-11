@@ -10,18 +10,18 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Keyboard,
+  TextInput,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { Calendar, Plus, MapPin, Clock, Pencil, Trash2, Filter } from 'lucide-react-native';
+import { Calendar, Plus, MapPin, Clock, Filter, Search, X } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
-import { getSessions, saveSession, deleteSession } from '@/services/storage';
-import CreateSessionModal from '@/components/CreateSessionModal';
-import EditSessionModal from '@/components/EditSessionModal';
+import SessionModal from '@/components/SessionModal';
 import SessionDetailModal from '@/components/SessionDetailModal';
 import SessionFilterModal from '@/components/SessionFilterModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
+import { useData } from '@/contexts/DataContext';
+import StarRating from '@/components/StarRating';
 
 interface SessionFilters {
   dateRange: {
@@ -36,15 +36,27 @@ interface SessionFilters {
 
 export default function Sessions() {
   const { showSuccess, showError } = useToast();
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const {
+    sessions,
+    isInitialLoading,
+    isLoading,
+    refreshSessions,
+    createSession,
+    updateSession,
+    removeSession,
+    error,
+    clearError
+  } = useData();
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [filteredSessions, setFilteredSessions] = useState<TrainingSession[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionModalMode, setSessionModalMode] = useState<'create' | 'edit'>('create');
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<SessionFilters>({
     dateRange: { startDate: null, endDate: null },
     location: '',
@@ -54,33 +66,41 @@ export default function Sessions() {
   });
   const [lastLocation, setLastLocation] = useState('');
 
+  // Handle errors from data context
   useEffect(() => {
-    loadData();
-  }, []);
-
-  // Refresh data when the screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  const loadData = async () => {
-    try {
-      const sessionsData = await getSessions();
-      setSessions(sessionsData);
-      
-      // Set last location for modal default
-      if (sessionsData.length > 0 && sessionsData[0].location) {
-        setLastLocation(sessionsData[0].location);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
+    if (error) {
+      showError(error);
+      clearError();
     }
-  };
+  }, [error, showError, clearError]);
 
-  const applyFilters = React.useCallback((sessions: TrainingSession[], filters: SessionFilters) => {
+  // Track when we've loaded data at least once
+  useEffect(() => {
+    if (sessions.length > 0 || (!isInitialLoading && sessions.length === 0)) {
+      setHasLoadedOnce(true);
+    }
+  }, [sessions.length, isInitialLoading]);
+
+  // Update last location when sessions change
+  useEffect(() => {
+    if (sessions.length > 0 && sessions[0].location) {
+      setLastLocation(sessions[0].location);
+    }
+  }, [sessions]);
+
+  const applyFilters = React.useCallback((sessions: TrainingSession[], filters: SessionFilters, searchQuery: string) => {
     let filtered = [...sessions];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(session =>
+        session.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        session.submissions.some(submission => 
+          submission.toLowerCase().includes(searchQuery.toLowerCase())
+        ) ||
+        session.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
     // Filter by date range
     if (filters.dateRange.startDate) {
@@ -125,31 +145,37 @@ export default function Sessions() {
     return filtered;
   }, []);
 
-  // Apply filters whenever sessions or filters change
+  // Apply filters whenever sessions, filters, or search query change
   useEffect(() => {
-    const filtered = applyFilters(sessions, filters);
+    const filtered = applyFilters(sessions, filters, searchQuery);
     setFilteredSessions(filtered);
-  }, [sessions, filters, applyFilters]);
+  }, [sessions, filters, searchQuery, applyFilters]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadData();
+    await refreshSessions();
     setIsRefreshing(false);
   };
 
-  const handleCreateSession = async (session: TrainingSession) => {
+  const handleSaveSession = async (session: TrainingSession) => {
     try {
-      await saveSession(session);
-      await loadData();
-      setShowCreateModal(false);
+      if (sessionModalMode === 'create') {
+        await createSession(session);
+        showSuccess('Session created successfully!');
+      } else {
+        await updateSession(session);
+        showSuccess('Session updated successfully!');
+      }
+      
+      setShowSessionModal(false);
+      setEditingSession(null);
       
       // Update last location
       if (session.location) {
         setLastLocation(session.location);
       }
-      showSuccess('Session created successfully!');
     } catch {
-      showError('Failed to save session. Please try again.');
+      showError(`Failed to ${sessionModalMode === 'create' ? 'save' : 'update'} session. Please try again.`);
     }
   };
 
@@ -162,25 +188,10 @@ export default function Sessions() {
   const handleEditSession = (session: TrainingSession) => {
     Keyboard.dismiss();
     setEditingSession(session);
-    setShowEditModal(true);
+    setSessionModalMode('edit');
+    setShowSessionModal(true);
   };
 
-  const handleUpdateSession = async (updatedSession: TrainingSession) => {
-    try {
-      await saveSession(updatedSession);
-      await loadData();
-      setShowEditModal(false);
-      setEditingSession(null);
-      
-      // Update last location
-      if (updatedSession.location) {
-        setLastLocation(updatedSession.location);
-      }
-      showSuccess('Session updated successfully!');
-    } catch {
-      showError('Failed to update session. Please try again.');
-    }
-  };
 
   const handleDeleteSession = (session: TrainingSession) => {
     Alert.alert(
@@ -193,9 +204,8 @@ export default function Sessions() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteSession(session.id);
-              await loadData();
-              showError('Session deleted successfully!');
+              await removeSession(session.id);
+              showSuccess('Session deleted successfully!');
             } catch {
               showError('Failed to delete session. Please try again.');
             }
@@ -233,13 +243,6 @@ export default function Sessions() {
     }
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Text key={i} style={[styles.star, { color: i < rating ? '#f59e0b' : '#e5e7eb' }]}>
-        ★
-      </Text>
-    ));
-  };
 
   const getTotalSubmissionCount = (session: TrainingSession) => {
     return Object.values(session.submissionCounts || {}).reduce((total, count) => total + count, 0);
@@ -251,7 +254,8 @@ export default function Sessions() {
 
 
   const hasActiveFilters = () => {
-    return filters.dateRange.startDate !== null ||
+    return searchQuery.trim() !== '' ||
+           filters.dateRange.startDate !== null ||
            filters.dateRange.endDate !== null ||
            filters.location.trim() !== '' ||
            filters.sessionTypes.length > 0 ||
@@ -261,22 +265,66 @@ export default function Sessions() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Training Sessions ({sessions.length})</Text>
-      </View>
+      
+      {/* Search and Filter Row */}
+      <TouchableWithoutFeedback onPress={() => {
+        Keyboard.dismiss();
+      }}>
+        <View style={styles.searchSection}>
+          <View style={styles.searchAndFilterRow}>
+            <View style={styles.searchContainer}>
+              <Search size={20} color="#9ca3af" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search"
+                placeholderTextColor="#9ca3af"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearSearchButton}
+                >
+                  <X size={16} color="#9ca3af" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.filterButtonMain, hasActiveFilters() && styles.filterButtonActive]}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowFilterModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Filter size={20} color="#5271ff" />
+              <Text style={styles.filterButtonText}>Filter</Text>
+              {hasActiveFilters() && <View style={styles.filterIndicatorMain} />}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.content}>
           <ScrollView 
             style={styles.content}
             refreshControl={
-              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+              <RefreshControl refreshing={isRefreshing || isLoading} onRefresh={handleRefresh} />
             }
             keyboardShouldPersistTaps="handled"
           >
 
         {/* Sessions List */}
-        {filteredSessions.length === 0 ? (
+        {(isInitialLoading && !hasLoadedOnce) ? (
+          <View style={styles.emptyState}>
+            <Calendar size={64} color="#9ca3af" />
+            <Text style={styles.emptyTitle}>Loading sessions...</Text>
+          </View>
+        ) : filteredSessions.length === 0 ? (
           <View style={styles.emptyState}>
             <Calendar size={64} color="#9ca3af" />
             <Text style={styles.emptyTitle}>
@@ -288,13 +336,47 @@ export default function Sessions() {
                 : 'Try adjusting your filters to find sessions'
               }
             </Text>
-            <TouchableOpacity 
-              style={styles.createSessionButton}
-              onPress={() => setShowCreateModal(true)}
-            >
-              <Plus size={20} color="#fff" />
-              <Text style={styles.createSessionText}>Create Session</Text>
-            </TouchableOpacity>
+            {sessions.length === 0 ? (
+              <TouchableOpacity 
+                style={styles.createSessionButton}
+                onPress={() => {
+                  setSessionModalMode('create');
+                  setEditingSession(null);
+                  setShowSessionModal(true);
+                }}
+              >
+                <Plus size={20} color="#fff" />
+                <Text style={styles.createSessionText}>Create Session</Text>
+              </TouchableOpacity>
+            ) : hasActiveFilters() ? (
+              <TouchableOpacity 
+                style={styles.clearFiltersButtonLarge}
+                onPress={() => {
+                  setSearchQuery('');
+                  setFilters({
+                    dateRange: { startDate: null, endDate: null },
+                    location: '',
+                    sessionTypes: [],
+                    submission: '',
+                    satisfaction: null,
+                  });
+                }}
+              >
+                <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={styles.createSessionButton}
+                onPress={() => {
+                  setSessionModalMode('create');
+                  setEditingSession(null);
+                  setShowSessionModal(true);
+                }}
+              >
+                <Plus size={20} color="#fff" />
+                <Text style={styles.createSessionText}>Create Session</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.sessionsList}>
@@ -302,21 +384,9 @@ export default function Sessions() {
               <Text style={styles.sessionsTitle}>
                 {hasActiveFilters() 
                   ? `Filtered Sessions (${filteredSessions.length})`
-                  : 'Sessions'
+                  : `Sessions (${sessions.length})`
                 }
               </Text>
-              <TouchableOpacity 
-                style={[styles.filterButtonMain, hasActiveFilters() && styles.filterButtonActive]}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  setShowFilterModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Filter size={20} color="#1e3a2e" />
-                <Text style={styles.filterButtonText}>Filter</Text>
-                {hasActiveFilters() && <View style={styles.filterIndicatorMain} />}
-              </TouchableOpacity>
             </View>
             {filteredSessions.map((session) => (
               <View key={session.id} style={styles.sessionItemContainer}>
@@ -368,9 +438,11 @@ export default function Sessions() {
                 <View style={styles.sessionRating}>
                   <View style={styles.satisfactionContainer}>
                     <Text style={styles.ratingLabel}>Satisfaction:</Text>
-                    <View style={styles.starsContainer}>
-                      {renderStars(session.satisfaction)}
-                    </View>
+                    <StarRating
+                      mode="display"
+                      rating={session.satisfaction}
+                      size={16}
+                    />
                   </View>
                 </View>
 
@@ -378,30 +450,25 @@ export default function Sessions() {
                 </SwipeableCard>
               </View>
             ))}
+            {/* Bottom spacing to ensure last item is visible */}
+            <View style={{ height: 100 }} />
           </View>
         )}
           </ScrollView>
         </View>
       </TouchableWithoutFeedback>
       
-      <CreateSessionModal
-        visible={showCreateModal}
-        onSave={handleCreateSession}
-        onClose={() => setShowCreateModal(false)}
+      <SessionModal
+        visible={showSessionModal}
+        mode={sessionModalMode}
+        session={editingSession || undefined}
+        onSave={handleSaveSession}
+        onClose={() => {
+          setShowSessionModal(false);
+          setEditingSession(null);
+        }}
         lastLocation={lastLocation}
       />
-
-      {editingSession && (
-        <EditSessionModal
-          visible={showEditModal}
-          session={editingSession}
-          onSave={handleUpdateSession}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingSession(null);
-          }}
-        />
-      )}
 
       <SessionDetailModal
         visible={showDetailModal}
@@ -425,7 +492,9 @@ export default function Sessions() {
       <FloatingAddButton
         onPress={() => {
           Keyboard.dismiss();
-          setShowCreateModal(true);
+          setSessionModalMode('create');
+          setEditingSession(null);
+          setShowSessionModal(true);
         }}
       />
     </SafeAreaView>
@@ -437,27 +506,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-  },
   content: {
     flex: 1,
   },
@@ -467,6 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
     paddingBottom: 100,
+    marginTop: 60,
   },
   emptyTitle: {
     fontSize: 20,
@@ -482,7 +531,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   createSessionButton: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#000000',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -496,14 +545,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  clearFiltersButtonLarge: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  clearFiltersButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   sessionsList: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   sessionsHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sessionsTitle: {
     fontSize: 18,
@@ -513,20 +575,21 @@ const styles = StyleSheet.create({
   filterButtonMain: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    height: 44,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     gap: 6,
     position: 'relative',
   },
   filterButtonActive: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#f3f4f6',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1e3a2e',
+    color: '#5271ff',
   },
   filterIndicatorMain: {
     position: 'absolute',
@@ -646,5 +709,41 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontStyle: 'italic',
     lineHeight: 20,
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 10,
+  },
+  searchAndFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1f2937',
+    paddingVertical: 12,
+  },
+  clearSearchButton: {
+    padding: 4,
   },
 });

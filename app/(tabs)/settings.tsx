@@ -12,7 +12,6 @@ import {
   Keyboard,
 } from 'react-native';
 import { 
-  Settings, 
   User, 
   Bell, 
   Database, 
@@ -27,6 +26,13 @@ import {
   Globe,
   Volume2
 } from 'lucide-react-native';
+import { useData } from '@/contexts/DataContext';
+import { useToast } from '@/contexts/ToastContext';
+import ProfileModal from '@/components/ProfileModal';
+import PrivacyPolicyModal from '@/components/PrivacyPolicyModal';
+import ContactSupportModal from '@/components/ContactSupportModal';
+import { UserProfile } from '@/types/profile';
+import { loadTestData } from '@/services/testData';
 
 interface SettingItem {
   id: string;
@@ -40,9 +46,16 @@ interface SettingItem {
 }
 
 export default function SettingsPage() {
+  const { profile, updateProfile, refreshData } = useData();
+  const { showSuccess, showError } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Modal states
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const handleExportData = () => {
     Alert.alert(
@@ -81,22 +94,52 @@ export default function SettingsPage() {
     );
   };
 
-  const handleContactSupport = () => {
+  const handleProfileSave = async (newProfile: UserProfile) => {
+    try {
+      await updateProfile(newProfile);
+      showSuccess('Profile updated successfully!');
+    } catch {
+      showError('Failed to update profile. Please try again.');
+    }
+  };
+
+  const getProfileSubtitle = () => {
+    if (profile) {
+      const beltName = profile.beltRank.charAt(0).toUpperCase() + profile.beltRank.slice(1);
+      return `${profile.name} - ${beltName} Belt`;
+    }
+    return 'Set up your profile';
+  };
+
+  const handleAbout = () => {
     Alert.alert(
-      'Contact Support',
-      'Need help? Send us an email at support@flowroll.app',
+      'About Flow Roll',
+      'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.',
       [
         { text: 'OK' }
       ]
     );
   };
 
-  const handleAbout = () => {
+  const handleLoadTestData = () => {
     Alert.alert(
-      'About Flow Roll',
-      'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.\n\nBuilt with ❤️ for the BJJ community.',
+      'Load Test Data',
+      'This will add 20 sample techniques and 20 training sessions spread over the past year. Continue?',
       [
-        { text: 'OK' }
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Load Test Data', 
+          onPress: async () => {
+            try {
+              await loadTestData(true);
+              await refreshData();
+              showSuccess('Test data loaded successfully!');
+            } catch (error) {
+              showError('Failed to load test data');
+              console.error('Error loading test data:', error);
+            }
+          }
+        }
       ]
     );
   };
@@ -106,10 +149,10 @@ export default function SettingsPage() {
     {
       id: 'profile',
       title: 'Profile',
-      subtitle: 'Edit your profile and belt rank',
+      subtitle: getProfileSubtitle(),
       icon: <User size={20} color="#3b82f6" />,
       type: 'navigate',
-      onPress: () => console.log('Navigate to profile')
+      onPress: () => setShowProfileModal(true)
     },
 
     // Notifications
@@ -184,7 +227,7 @@ export default function SettingsPage() {
       subtitle: 'View our privacy policy',
       icon: <Shield size={20} color="#dc2626" />,
       type: 'navigate',
-      onPress: () => console.log('Navigate to privacy policy')
+      onPress: () => setShowPrivacyModal(true)
     },
 
     // Support
@@ -194,7 +237,7 @@ export default function SettingsPage() {
       subtitle: 'Get help and report issues',
       icon: <HelpCircle size={20} color="#ea580c" />,
       type: 'action',
-      onPress: handleContactSupport
+      onPress: () => setShowContactModal(true)
     },
     {
       id: 'about',
@@ -213,6 +256,14 @@ export default function SettingsPage() {
       icon: <Trash2 size={20} color="#ef4444" />,
       type: 'action',
       onPress: handleClearData
+    },
+    {
+      id: 'loadtest',
+      title: 'Load Test Data',
+      subtitle: 'Add sample techniques and sessions',
+      icon: <Database size={20} color="#5271ff" />,
+      type: 'action',
+      onPress: handleLoadTestData
     }
   ];
 
@@ -239,7 +290,7 @@ export default function SettingsPage() {
           <Switch
             value={item.value}
             onValueChange={item.onToggle}
-            trackColor={{ false: '#e5e7eb', true: '#1e3a2e' }}
+            trackColor={{ false: '#e5e7eb', true: '#5271ff' }}
             thumbColor={item.value ? '#fff' : '#f4f3f4'}
           />
         ) : (
@@ -276,21 +327,12 @@ export default function SettingsPage() {
     },
     {
       title: 'Danger Zone',
-      items: settings.filter(s => ['clear'].includes(s.id))
+      items: settings.filter(s => ['clear', 'loadtest'].includes(s.id))
     }
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Settings size={24} color="#fff" />
-          <Text style={styles.title}>Settings</Text>
-        </View>
-        <View style={styles.headerRight}>
-          {/* Empty space to match other headers */}
-        </View>
-      </View>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.content}>
@@ -306,13 +348,29 @@ export default function SettingsPage() {
         
         <View style={styles.footer}>
           <Text style={styles.footerText}>Flow Roll v1.0.0</Text>
-          <Text style={styles.footerSubtext}>
-            Made with ❤️ for the BJJ community
-          </Text>
+          
         </View>
           </ScrollView>
         </View>
       </TouchableWithoutFeedback>
+      
+      {/* Modals */}
+      <ProfileModal
+        visible={showProfileModal}
+        profile={profile}
+        onSave={handleProfileSave}
+        onClose={() => setShowProfileModal(false)}
+      />
+      
+      <PrivacyPolicyModal
+        visible={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
+      
+      <ContactSupportModal
+        visible={showContactModal}
+        onClose={() => setShowContactModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -321,36 +379,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    minHeight: 64, // Match techniques/sessions header height
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerRight: {
-    // Empty space for consistency
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
   },
   content: {
     flex: 1,

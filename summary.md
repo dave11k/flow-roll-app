@@ -103,11 +103,9 @@ session_techniques: session_id, technique_id, is_submission
 ### Key Component Categories
 
 #### Modal Components
-- `AddTechniqueModal` - Create new techniques
-- `EditTechniqueModal` - Edit existing techniques
+- `TechniqueModal` - Create and edit techniques (unified component)
 - `TechniqueDetailModal` - View technique details
-- `CreateSessionModal` - Create training sessions
-- `EditSessionModal` - Edit session details
+- `SessionModal` - Create and edit training sessions (unified component)
 - `SessionDetailModal` - View session information
 - `SessionFilterModal` - Advanced session filtering
 - `NotesModal` - Notes editing interface

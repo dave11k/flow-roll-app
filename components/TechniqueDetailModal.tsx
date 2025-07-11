@@ -11,8 +11,12 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { Pencil, Trash2, Target, MapPin, FileText, Calendar } from 'lucide-react-native';
+import { Pencil, Trash2, FileText, Calendar, Link2, ExternalLink } from 'lucide-react-native';
 import { Technique } from '@/types/technique';
+import * as Linking from 'expo-linking';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
+import { CATEGORY_COLORS } from '@/constants/colors';
+import { FloatingCloseButton } from './FloatingCloseButton';
 
 interface TechniqueDetailModalProps {
   visible: boolean;
@@ -24,16 +28,6 @@ interface TechniqueDetailModalProps {
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#22c55e',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
-
 export default function TechniqueDetailModal({
   visible,
   technique,
@@ -41,60 +35,29 @@ export default function TechniqueDetailModal({
   onEdit,
   onDelete,
 }: TechniqueDetailModalProps) {
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const [isVisible, setIsVisible] = useState(false);
-  const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
+  const [showCloseButton, setShowCloseButton] = useState(true);
+  
+  const modalAnimation = useModalAnimation(visible, { type: 'slide', duration: 300 });
+  const { 
+    slideAnim, 
+    backgroundOpacityAnim, 
+    dragY, 
+    isVisible, 
+    animateOut, 
+    resetDrag 
+  } = modalAnimation as any; // Type assertion for slide animation
 
   useEffect(() => {
     if (visible) {
-      setIsVisible(true);
-      dragY.setValue(0);
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight * 0.1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else if (isVisible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsVisible(false);
-      });
+      setShowCloseButton(true);
     }
-  }, [visible, isVisible]);
+  }, [visible]);
 
   const animateClose = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: screenHeight,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      dragY.setValue(0);
+    setShowCloseButton(false);
+    animateOut(() => {
+      resetDrag();
       onClose();
     });
   };
@@ -149,7 +112,7 @@ export default function TechniqueDetailModal({
           style={[
             styles.backdrop,
             {
-              opacity: opacityAnim,
+              opacity: backgroundOpacityAnim,
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
             },
           ]}
@@ -184,10 +147,12 @@ export default function TechniqueDetailModal({
                     <TouchableOpacity
                       style={[styles.actionButton, styles.editButton]}
                       onPress={() => {
+                        console.log('Edit button pressed');
                         onEdit(technique);
-                        animateClose();
+                        onClose();
                       }}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Pencil size={20} color="#3b82f6" />
                     </TouchableOpacity>
@@ -196,10 +161,12 @@ export default function TechniqueDetailModal({
                     <TouchableOpacity
                       style={[styles.actionButton, styles.deleteButton]}
                       onPress={() => {
+                        console.log('Delete button pressed');
                         onDelete(technique);
-                        animateClose();
+                        onClose();
                       }}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Trash2 size={20} color="#ef4444" />
                     </TouchableOpacity>
@@ -216,23 +183,37 @@ export default function TechniqueDetailModal({
             scrollEventThrottle={16}
           >
 
-            {/* Category and Position */}
+            {/* Category */}
             <View style={styles.section}>
-              <View style={styles.badgesContainer}>
+              <View style={styles.categoryContainer}>
                 <View style={[
                   styles.categoryBadge,
                   { backgroundColor: CATEGORY_COLORS[technique.category] || '#6b7280' }
                 ]}>
                   <Text style={styles.badgeText}>{technique.category}</Text>
                 </View>
-                <View style={styles.positionBadge}>
-                  <Text style={styles.positionText}>{technique.position}</Text>
-                </View>
               </View>
+              
+              {/* Tags */}
+              {technique.tags && technique.tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  <View style={styles.tagsList}>
+                    {technique.tags.map((tag) => (
+                      <View key={tag} style={styles.tagPill}>
+                        <Text style={styles.tagText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Date Added */}
             <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Calendar size={20} color="#5271ff" />
+                <Text style={styles.sectionTitle}>Date Added</Text>
+              </View>
               <Text style={styles.dateText}>{formatDate(technique.timestamp)}</Text>
               <Text style={styles.timeText}>{formatTime(technique.timestamp)}</Text>
             </View>
@@ -241,18 +222,63 @@ export default function TechniqueDetailModal({
             {technique.notes && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <FileText size={20} color="#1e3a2e" />
+                  <FileText size={20} color="#5271ff" />
                   <Text style={styles.sectionTitle}>Notes</Text>
                 </View>
                 <Text style={styles.notesText}>{technique.notes}</Text>
+              </View>
+            )}
+
+            {/* Links & References */}
+            {technique.links && technique.links.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Link2 size={20} color="#5271ff" />
+                  <Text style={styles.sectionTitle}>Links & References</Text>
+                </View>
+                <View style={styles.linksContainer}>
+                  {technique.links.map((link) => (
+                    <TouchableOpacity
+                      key={link.id}
+                      style={styles.linkItem}
+                      onPress={async () => {
+                        try {
+                          let formattedUrl = link.url;
+                          // Add https:// if no protocol is specified
+                          if (!formattedUrl.match(/^https?:\/\//)) {
+                            formattedUrl = 'https://' + formattedUrl;
+                          }
+                          
+                          const canOpen = await Linking.canOpenURL(formattedUrl);
+                          if (canOpen) {
+                            await Linking.openURL(formattedUrl);
+                          } else {
+                            console.warn('Cannot open URL:', formattedUrl);
+                          }
+                        } catch (error) {
+                          console.error('Error opening URL:', error);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Link2 size={16} color="#6b7280" style={styles.linkIcon} />
+                      <Text style={styles.linkText} numberOfLines={1}>
+                        {link.title || link.url}
+                      </Text>
+                      <ExternalLink size={16} color="#6b7280" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             )}
             
             {/* Invisible spacer to ensure full scrollability */}
             <View style={styles.scrollSpacer} />
           </ScrollView>
+          
         </View>
       </Animated.View>
+      {showCloseButton && <FloatingCloseButton onPress={animateClose} />}
     </Modal>
   );
 }
@@ -309,6 +335,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f2937',
   },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   actionButtons: {
     flexDirection: 'row',
     gap: 8,
@@ -347,11 +378,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
   },
-  techniqueName: {
+  techniqueNameText: {
     fontSize: 24,
     fontWeight: '700',
     color: '#1f2937',
-    textAlign: 'center',
+    marginBottom: 12,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
   },
   badgesContainer: {
     flexDirection: 'row',
@@ -369,16 +405,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  positionBadge: {
+  tagsContainer: {
+    marginTop: 16,
+  },
+  tagsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  tagsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagPill: {
+    backgroundColor: '#5271ff',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#1e3a2e',
+    borderRadius: 16,
   },
-  positionText: {
+  tagText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   dateText: {
     fontSize: 16,
@@ -393,6 +443,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     lineHeight: 24,
+  },
+  linksContainer: {
+    gap: 8,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  linkIcon: {
+    flexShrink: 0,
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4b5563',
   },
   scrollSpacer: {
     height: 100,

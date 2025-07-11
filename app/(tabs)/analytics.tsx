@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,16 +11,13 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import {
-  LineChart,
-  BarChart,
   PieChart,
 } from 'react-native-chart-kit';
-import { TrendingUp, Target, Award, Zap, Trophy, Activity, ChartBar as BarChart3, ChartPie as PieChartIcon } from 'lucide-react-native';
+import { Target, Award, Zap, Trophy, Activity, ChartPie as PieChartIcon, ChevronDown, Filter } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import { Technique } from '@/types/technique';
-import { getSessions, getTechniques } from '@/services/storage';
+import { useData } from '@/contexts/DataContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 50; // Increased padding to prevent overflow
@@ -79,7 +76,7 @@ const chartConfig = {
   propsForDots: {
     r: '6',
     strokeWidth: '2',
-    stroke: '#1e3a2e',
+    stroke: '#5271ff',
   },
   propsForBackgroundLines: {
     strokeDasharray: '',
@@ -88,57 +85,67 @@ const chartConfig = {
   },
 };
 
-export default function Analytics() {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadData = React.useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [sessionsData, techniquesData] = await Promise.all([
-        getSessions(),
-        getTechniques()
-      ]);
-      calculateAnalytics(sessionsData, techniquesData);
-    } catch (error) {
-      console.error('Error loading analytics data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
-
-  const calculateAnalytics = (sessions: TrainingSession[], techniques: Technique[]) => {
+const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Technique[], timeframe: 'all' | 'week' | 'month' | 'year' = 'all'): AnalyticsData => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
 
-    // Basic stats
-    const totalSessions = sessions.length;
-    const totalTechniques = techniques.length;
-    const averageSatisfaction = sessions.length > 0 
-      ? sessions.reduce((sum, s) => sum + s.satisfaction, 0) / sessions.length 
+    // Filter sessions based on timeframe
+    let filteredSessions = sessions;
+    let filteredTechniques = techniques;
+    
+    if (timeframe !== 'all') {
+      let cutoffDate: Date;
+      
+      switch (timeframe) {
+        case 'week':
+          cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate = new Date();
+          cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate = new Date();
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+          break;
+        default:
+          cutoffDate = new Date(0); // Beginning of time
+      }
+      
+      // Handle both Date objects and ISO strings
+      filteredSessions = sessions.filter(s => {
+        const sessionDate = s.date instanceof Date ? s.date : new Date(s.date);
+        return sessionDate >= cutoffDate;
+      });
+      
+      filteredTechniques = techniques.filter(t => {
+        const techniqueDate = t.timestamp instanceof Date ? t.timestamp : new Date(t.timestamp);
+        return techniqueDate >= cutoffDate;
+      });
+    }
+
+    // Basic stats (now using filtered data)
+    const totalSessions = filteredSessions.length;
+    const totalTechniques = filteredTechniques.length;
+    const averageSatisfaction = filteredSessions.length > 0 
+      ? filteredSessions.reduce((sum, s) => sum + s.satisfaction, 0) / filteredSessions.length 
       : 0;
-    const totalSubmissions = sessions.reduce((sum, s) => sum + s.submissions.length, 0);
+    const totalSubmissions = filteredSessions.reduce((sum, s) => sum + s.submissions.length, 0);
 
-    // This month stats
-    const sessionsThisMonth = sessions.filter(s => s.date >= startOfMonth).length;
-    const techniquesThisMonth = techniques.filter(t => t.timestamp >= startOfMonth).length;
+    // This month stats (use filtered data if timeframe is month or less)
+    const sessionsThisMonth = (timeframe === 'all' || timeframe === 'year') 
+      ? sessions.filter(s => new Date(s.date) >= startOfMonth).length
+      : filteredSessions.filter(s => new Date(s.date) >= startOfMonth).length;
+    const techniquesThisMonth = (timeframe === 'all' || timeframe === 'year')
+      ? techniques.filter(t => new Date(t.timestamp) >= startOfMonth).length
+      : filteredTechniques.filter(t => new Date(t.timestamp) >= startOfMonth).length;
 
-    // Submissions distribution
+    // Submissions distribution (using filtered sessions)
     const submissionCount: Record<string, number> = {};
-    sessions.forEach(s => {
+    filteredSessions.forEach(s => {
       s.submissions.forEach(submission => {
         submissionCount[submission] = (submissionCount[submission] || 0) + 1;
       });
@@ -150,14 +157,14 @@ export default function Analytics() {
         name,
         count,
         color: [
-          '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
+          '#ef4444', '#f97316', '#eab308', '#5271ff', '#3b82f6', 
           '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1'
         ][index % 10],
       }));
 
-    // Session type distribution
+    // Session type distribution (using filtered sessions)
     const sessionTypeCount: Record<string, number> = {};
-    sessions.forEach(s => {
+    filteredSessions.forEach(s => {
       const typeName = s.type === 'gi' ? 'Gi' : 
                       s.type === 'nogi' ? 'No-Gi' :
                       s.type === 'open-mat' ? 'Open Mat' : 'Wrestling';
@@ -180,8 +187,8 @@ export default function Analytics() {
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
 
-      const daySessions = sessions.filter(s => s.date >= dayStart && s.date <= dayEnd).length;
-      const dayTechniques = techniques.filter(t => t.timestamp >= dayStart && t.timestamp <= dayEnd).length;
+      const daySessions = filteredSessions.filter(s => new Date(s.date) >= dayStart && new Date(s.date) <= dayEnd).length;
+      const dayTechniques = filteredTechniques.filter(t => new Date(t.timestamp) >= dayStart && new Date(t.timestamp) <= dayEnd).length;
 
       weeklyActivity.push({
         day: dayNames[date.getDay()],
@@ -198,8 +205,8 @@ export default function Analytics() {
       const monthStart = new Date(date);
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-      const monthSessions = sessions.filter(s => s.date >= monthStart && s.date <= monthEnd).length;
-      const monthTechniques = techniques.filter(t => t.timestamp >= monthStart && t.timestamp <= monthEnd).length;
+      const monthSessions = filteredSessions.filter(s => new Date(s.date) >= monthStart && new Date(s.date) <= monthEnd).length;
+      const monthTechniques = filteredTechniques.filter(t => new Date(t.timestamp) >= monthStart && new Date(t.timestamp) <= monthEnd).length;
 
       monthlyProgress.push({
         month: monthNames[date.getMonth()],
@@ -208,8 +215,8 @@ export default function Analytics() {
       });
     }
 
-    // Satisfaction trend (last 10 sessions)
-    const satisfactionTrend = sessions
+    // Satisfaction trend (last 10 sessions from filtered data)
+    const satisfactionTrend = filteredSessions
       .slice(0, 10)
       .reverse()
       .map((session, index) => ({
@@ -217,8 +224,8 @@ export default function Analytics() {
         satisfaction: session.satisfaction,
       }));
 
-    // Streak calculation
-    const sortedSessions = [...sessions].sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Streak calculation (using filtered sessions)
+    const sortedSessions = [...filteredSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
@@ -228,9 +235,9 @@ export default function Analytics() {
       if (!lastDate) {
         currentStreak = 1;
         tempStreak = 1;
-        lastDate = session.date;
+        lastDate = new Date(session.date);
       } else {
-        const daysDiff = Math.floor((lastDate.getTime() - session.date.getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor((lastDate.getTime() - new Date(session.date).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff <= 7) { // Within a week
           tempStreak++;
           if (currentStreak === tempStreak - 1) {
@@ -240,12 +247,12 @@ export default function Analytics() {
           longestStreak = Math.max(longestStreak, tempStreak);
           tempStreak = 1;
         }
-        lastDate = session.date;
+        lastDate = new Date(session.date);
       }
     });
     longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
 
-    setAnalyticsData({
+    return {
       totalSessions,
       totalTechniques,
       averageSatisfaction,
@@ -258,15 +265,41 @@ export default function Analytics() {
       monthlyProgress,
       satisfactionTrend,
       streakData: { current: currentStreak, longest: longestStreak },
-    });
-  };
+    };
+};
+
+export default function Analytics() {
+  const { sessions, techniques, isInitialLoading } = useData();
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'week' | 'month' | 'year'>('all');
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
+
+  // Memoize analytics calculation to prevent unnecessary recalculations
+  const memoizedAnalyticsData = useMemo(() => {
+    if (sessions.length > 0 || techniques.length > 0) {
+      return calculateAnalyticsData(sessions, techniques, selectedTimeframe);
+    }
+    return null;
+  }, [sessions, techniques, selectedTimeframe]);
+
+  // Update analytics data and loaded state when memoized data changes
+  useEffect(() => {
+    if (memoizedAnalyticsData) {
+      setAnalyticsData(memoizedAnalyticsData);
+      setHasLoadedOnce(true);
+    } else if (!isInitialLoading && hasLoadedOnce) {
+      // Only set empty analytics if we're not loading and have loaded before
+      setAnalyticsData(null);
+    }
+  }, [memoizedAnalyticsData, isInitialLoading, hasLoadedOnce]);
 
   const renderStatCard = (
     icon: React.ReactNode,
     title: string,
     value: string | number,
     subtitle?: string,
-    color: string = '#1e3a2e'
+    color: string = '#5271ff'
   ) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
       <View style={styles.statHeader}>
@@ -294,7 +327,7 @@ export default function Analytics() {
     return (
       <View style={styles.chartContainer}>
         <View style={styles.chartHeader}>
-          <PieChartIcon size={20} color="#1e3a2e" />
+          <PieChartIcon size={20} color="#5271ff" />
           <Text style={styles.chartTitle}>{title}</Text>
         </View>
         <PieChart
@@ -315,12 +348,10 @@ export default function Analytics() {
     );
   };
 
-  if (isLoading || !analyticsData) {
+  // Only show loading state on the very first load, not when switching tabs
+  if ((isInitialLoading && !hasLoadedOnce) || (!analyticsData && !hasLoadedOnce)) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Analytics</Text>
-        </View>
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
           <Text style={styles.loadingText}>Loading analytics...</Text>
@@ -329,95 +360,114 @@ export default function Analytics() {
     );
   }
 
+  // If we have loaded before but don't have data, show empty state instead of loading
+  if (!analyticsData && hasLoadedOnce) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Activity size={48} color="#9ca3af" />
+          <Text style={styles.loadingText}>No data available for analytics</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Analytics</Text>
-        <View style={styles.timeframeSelector}>
-          {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
-            <TouchableOpacity
-              key={timeframe}
-              style={[
-                styles.timeframeButton,
-                selectedTimeframe === timeframe && styles.timeframeButtonActive
-              ]}
-              onPress={() => setSelectedTimeframe(timeframe)}
-            >
-              <Text style={[
-                styles.timeframeButtonText,
-                selectedTimeframe === timeframe && styles.timeframeButtonTextActive
-              ]}>
-                {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback onPress={() => {
+        Keyboard.dismiss();
+        setShowTimeframeDropdown(false);
+      }}>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Overview Stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Overview</Text>
+            <View style={styles.timeframeSelectorContainer}>
+              <TouchableOpacity
+                style={styles.timeframeDropdown}
+                onPress={() => setShowTimeframeDropdown(!showTimeframeDropdown)}
+                activeOpacity={0.7}
+              >
+                <Filter size={16} color="#5271ff" />
+                <Text style={styles.timeframeDropdownText}>
+                  {selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1)}
+                </Text>
+                <ChevronDown size={16} color="#5271ff" />
+              </TouchableOpacity>
+              
+              {showTimeframeDropdown && (
+                <TouchableOpacity 
+                  style={StyleSheet.absoluteFillObject} 
+                  onPress={() => setShowTimeframeDropdown(false)}
+                  activeOpacity={1}
+                >
+                  <View style={styles.timeframeDropdownMenu}>
+                    {(['all', 'week', 'month', 'year'] as const).map((timeframe) => (
+                      <TouchableOpacity
+                        key={timeframe}
+                        style={[
+                          styles.timeframeDropdownItem,
+                          selectedTimeframe === timeframe && styles.timeframeDropdownItemSelected
+                        ]}
+                        onPress={() => {
+                          setSelectedTimeframe(timeframe);
+                          setShowTimeframeDropdown(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.timeframeDropdownItemText,
+                          selectedTimeframe === timeframe && styles.timeframeDropdownItemTextSelected
+                        ]}>
+                          {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
           <View style={styles.statsGrid}>
             {renderStatCard(
               <Trophy size={20} color="#f59e0b" />,
               'Total Sessions',
-              analyticsData.totalSessions,
-              `${analyticsData.sessionsThisMonth} this month`,
+              analyticsData?.totalSessions ?? 0,
+              undefined,
               '#f59e0b'
+            )}
+            {renderStatCard(
+              <Award size={20} color="#ef4444" />,
+              'Total Submissions',
+              analyticsData?.totalSubmissions ?? 0,
+              undefined,
+              '#ef4444'
             )}
             {renderStatCard(
               <Zap size={20} color="#3b82f6" />,
               'Techniques Learned',
-              analyticsData.totalTechniques,
-              `${analyticsData.techniquesThisMonth} this month`,
+              analyticsData?.totalTechniques ?? 0,
+              undefined,
               '#3b82f6'
             )}
             {renderStatCard(
               <Target size={20} color="#10b981" />,
               'Avg Satisfaction',
-              analyticsData.averageSatisfaction.toFixed(1),
+              analyticsData?.averageSatisfaction?.toFixed(1) ?? '0.0',
               'out of 5.0',
               '#10b981'
-            )}
-            {renderStatCard(
-              <Award size={20} color="#ef4444" />,
-              'Total Submissions',
-              analyticsData.totalSubmissions,
-              'across all sessions',
-              '#ef4444'
             )}
           </View>
         </View>
 
-        {/* Streak Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Training Streaks</Text>
-          <View style={styles.streakContainer}>
-            <View style={styles.streakCard}>
-              <View style={styles.streakIcon}>
-                <Activity size={24} color="#10b981" />
-              </View>
-              <Text style={styles.streakValue}>{analyticsData.streakData.current}</Text>
-              <Text style={styles.streakLabel}>Current Streak</Text>
-            </View>
-            <View style={styles.streakCard}>
-              <View style={styles.streakIcon}>
-                <Trophy size={24} color="#f59e0b" />
-              </View>
-              <Text style={styles.streakValue}>{analyticsData.streakData.longest}</Text>
-              <Text style={styles.streakLabel}>Longest Streak</Text>
-            </View>
-          </View>
-        </View>
 
             {/* TODO: Add monthly progress chart */}
         {/* Monthly Progress Chart
         {analyticsData.monthlyProgress.some(d => d.sessions > 0 || d.techniques > 0) && (
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
-              <TrendingUp size={20} color="#1e3a2e" />
+              <TrendingUp size={20} color="#5271ff" />
               <Text style={styles.chartTitle}>Monthly Progress</Text>
             </View>
             <LineChart
@@ -458,7 +508,7 @@ export default function Analytics() {
         {/* {analyticsData.satisfactionTrend.length > 0 && (
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
-              <TrendingUp size={20} color="#1e3a2e" />
+              <TrendingUp size={20} color="#5271ff" />
               <Text style={styles.chartTitle}>Satisfaction Trend</Text>
             </View>
             <LineChart
@@ -489,8 +539,29 @@ export default function Analytics() {
 
         {/* Distribution Charts */}
         <View style={styles.distributionContainer}>
-          {renderPieChart(analyticsData.submissionDistribution, 'Submissions')}
-          {renderPieChart(analyticsData.sessionTypeDistribution, 'Session Types')}
+          {renderPieChart(analyticsData?.submissionDistribution ?? [], 'Submissions')}
+          {renderPieChart(analyticsData?.sessionTypeDistribution ?? [], 'Session Types')}
+        </View>
+
+        {/* Streak Stats */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Training Streaks</Text>
+          <View style={styles.streakContainer}>
+            <View style={styles.streakCard}>
+              <View style={styles.streakIcon}>
+                <Activity size={24} color="#10b981" />
+              </View>
+              <Text style={styles.streakValue}>{analyticsData?.streakData?.current ?? 0}</Text>
+              <Text style={styles.streakLabel}>Current Streak</Text>
+            </View>
+            <View style={styles.streakCard}>
+              <View style={styles.streakIcon}>
+                <Trophy size={24} color="#f59e0b" />
+              </View>
+              <Text style={styles.streakValue}>{analyticsData?.streakData?.longest ?? 0}</Text>
+              <Text style={styles.streakLabel}>Longest Streak</Text>
+            </View>
+          </View>
         </View>
 
         {/* Bottom spacing */}
@@ -506,49 +577,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  header: {
+  timeframeSelectorContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  timeframeDropdown: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    minWidth: 80,
+  },
+  timeframeDropdownText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#5271ff',
+  },
+  timeframeDropdownMenu: {
+    position: 'absolute',
+    top: 36,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 3,
-    minHeight: 64, // Match techniques/sessions header height
+    elevation: 5,
+    zIndex: 1001,
+    minWidth: 100,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+  timeframeDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  timeframeSelector: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
-    padding: 2,
+  timeframeDropdownItemSelected: {
+    backgroundColor: '#f0f9ff',
   },
-  timeframeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+  timeframeDropdownItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
   },
-  timeframeButtonActive: {
-    backgroundColor: '#fff',
-  },
-  timeframeButtonText: {
-    fontSize: 12,
+  timeframeDropdownItemTextSelected: {
+    color: '#5271ff',
     fontWeight: '600',
-    color: '#fff',
-  },
-  timeframeButtonTextActive: {
-    color: '#1e3a2e',
   },
   content: {
     flex: 1,
@@ -568,11 +645,16 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 0,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1f2937',
-    marginBottom: 16,
   },
   statsGrid: {
     gap: 12,
@@ -620,6 +702,7 @@ const styles = StyleSheet.create({
   streakContainer: {
     flexDirection: 'row',
     gap: 16,
+    marginTop: 16,
   },
   streakCard: {
     flex: 1,
@@ -681,6 +764,6 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   bottomSpacing: {
-    height: 20,
+    height: 100,
   },
 });

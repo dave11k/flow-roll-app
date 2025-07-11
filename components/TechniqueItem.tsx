@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Technique } from '@/types/technique';
+import TagChip from '@/components/TagChip';
 
 interface TechniqueItemProps {
   technique: Technique;
@@ -13,23 +14,41 @@ export default function TechniqueItem({
   categoryColor,
   noMargin = false
 }: TechniqueItemProps) {
+  const MAX_CHARACTERS = 30;
+  
+  // Calculate how many tags we can show based on character count
+  const calculateVisibleTags = () => {
+    if (technique.tags.length === 0) return [];
+    
+    let totalChars = technique.category.length;
+    const visibleTags = [];
+    
+    for (const tag of technique.tags) {
+      const tagLength = tag.length;
+      // Add some padding for spaces and formatting
+      if (totalChars + tagLength + 2 <= MAX_CHARACTERS) {
+        visibleTags.push(tag);
+        totalChars += tagLength + 2;
+      } else {
+        break;
+      }
+    }
+    
+    // If we exceed the limit and have multiple tags, show just one tag + indicator
+    if (totalChars > MAX_CHARACTERS && technique.tags.length > 1) {
+      return [technique.tags[0]];
+    }
+    
+    return visibleTags;
+  };
+  
+  const visibleTags = calculateVisibleTags();
+  const hiddenTagsCount = technique.tags.length - visibleTags.length;
 
   return (
     <View style={[styles.container, noMargin && styles.noMargin]}>
       <View style={styles.header}>
         <Text style={styles.name}>{technique.name}</Text>
-      </View>
-      <View style={styles.footer}>
-        <View style={styles.tags}>
-          <View style={[styles.tag, { backgroundColor: categoryColor }]}>
-            <Text style={styles.tagText}>{technique.category}</Text>
-          </View>
-          <View style={[styles.tag, styles.positionTag]}>
-            <Text style={[styles.tagText, { color: '#333' }]}>
-              {technique.position}
-            </Text>
-          </View>
-        </View>
         <Text style={styles.timestamp}>
           {technique.timestamp.toLocaleDateString([], { 
             month: 'short', 
@@ -40,6 +59,33 @@ export default function TechniqueItem({
           })}
         </Text>
       </View>
+      <View style={styles.content}>
+        <View style={styles.tagsSection}>
+          {/* Category Badge */}
+          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+            <Text style={styles.categoryText}>{technique.category}</Text>
+          </View>
+          
+          {/* Tags */}
+          {technique.tags.length > 0 && (
+            <>
+              {visibleTags.map((tag) => (
+                <TagChip
+                  key={tag}
+                  tag={tag}
+                  size="small"
+                  variant="default"
+                />
+              ))}
+              {hiddenTagsCount > 0 && (
+                <View style={styles.moreTagsIndicator}>
+                  <Text style={styles.moreTagsText}>+{hiddenTagsCount}</Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -49,20 +95,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 14,
     borderRadius: 12,
-    marginBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     minHeight: 80,
   },
   header: {
-    marginBottom: 12,
-  },
-  footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  content: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   name: {
@@ -71,27 +113,37 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
-  timestamp: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 6,
-  },
-  tags: {
+  tagsSection: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'nowrap',
   },
-  tag: {
+  categoryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  positionTag: {
-    backgroundColor: '#f0f0f0',
-  },
-  tagText: {
+  categoryText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#fff',
+  },
+  moreTagsIndicator: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  moreTagsText: {
+    fontSize: 11,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 8,
   },
   noMargin: {
     marginBottom: 0,

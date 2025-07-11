@@ -16,17 +16,20 @@ import {
   Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Calendar, MapPin, Plus, Trash2, Star, Zap } from 'lucide-react-native';
+import { X, Save, Calendar, MapPin, Trash2, Star, Zap, Pencil } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
-import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import TechniquePill from '@/components/TechniquePill';
 import SubmissionPill from '@/components/SubmissionPill';
-import AddTechniqueModal from '@/components/AddTechniqueModal';
+import TechniqueModal from '@/components/TechniqueModal';
 import NotesModal from '@/components/NotesModal';
-import { searchSubmissionSuggestions, isValidSubmission } from '@/data/submissionSuggestions';
+import { searchSubmissionSuggestions } from '@/data/submissionSuggestions';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
+import StarRating from '@/components/StarRating';
 
-interface CreateSessionModalProps {
+interface SessionModalProps {
   visible: boolean;
+  mode: 'create' | 'edit';
+  session?: TrainingSession;
   onSave: (session: TrainingSession) => void;
   onClose: () => void;
   lastLocation?: string;
@@ -41,12 +44,14 @@ const SESSION_TYPES: { type: SessionType; label: string; color: string }[] = [
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export default function CreateSessionModal({
+export default function SessionModal({
   visible,
+  mode,
+  session,
   onSave,
   onClose,
   lastLocation = '',
-}: CreateSessionModalProps) {
+}: SessionModalProps) {
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState('');
   const [selectedType, setSelectedType] = useState<SessionType | null>(null);
@@ -74,19 +79,33 @@ export default function CreateSessionModal({
 
   useEffect(() => {
     if (visible) {
-      // Reset form
-      setDate(new Date());
-      setLocation(lastLocation);
-      setSelectedType(null);
-      setSubmissions([]);
-      setSubmissionCounts({});
-      setNewSubmission('');
-      setNotes('');
-      setSatisfaction(3);
-      setShowAddTechniqueModal(false);
-      setShowNotesModal(false);
+      if (mode === 'create') {
+        // Reset form for create mode
+        setDate(new Date());
+        setLocation(lastLocation);
+        setSelectedType(null);
+        setSubmissions([]);
+        setSubmissionCounts({});
+        setNewSubmission('');
+        setNotes('');
+        setSatisfaction(3);
+        setShowAddTechniqueModal(false);
+        setShowNotesModal(false);
+      } else if (mode === 'edit' && session) {
+        // Populate form for edit mode
+        setDate(session.date);
+        setLocation(session.location || '');
+        setSelectedType(session.type);
+        setSubmissions(session.submissions);
+        setSubmissionCounts(session.submissionCounts || {});
+        setNewSubmission('');
+        setNotes(session.notes || '');
+        setSatisfaction(session.satisfaction);
+        setShowAddTechniqueModal(false);
+        setShowNotesModal(false);
+      }
     }
-  }, [visible, lastLocation]);
+  }, [visible, mode, session, lastLocation]);
 
   useEffect(() => {
     if (visible) {
@@ -138,15 +157,6 @@ export default function CreateSessionModal({
     setSelectedType(type);
   };
 
-  const handleAddSubmission = () => {
-    const submission = newSubmission.trim();
-    if (submission && isValidSubmission(submission) && !submissions.includes(submission)) {
-      setSubmissions([...submissions, submission]);
-      setSubmissionCounts(prev => ({ ...prev, [submission]: 1 }));
-      setNewSubmission('');
-      setShowSubmissionDropdown(false);
-    }
-  };
 
   const handleSubmissionInputChange = (text: string) => {
     setNewSubmission(text);
@@ -214,19 +224,34 @@ export default function CreateSessionModal({
       return;
     }
 
-    const newSession: TrainingSession = {
-      id: Date.now().toString(),
-      date,
-      location: location.trim() || undefined,
-      type: selectedType,
-      submissions,
-      submissionCounts,
-      notes: notes.trim() || undefined,
-      satisfaction,
-      techniqueIds: [], // Will be populated when techniques are linked to sessions
-    };
+    if (mode === 'create') {
+      const newSession: TrainingSession = {
+        id: Date.now().toString(),
+        date,
+        location: location.trim() || undefined,
+        type: selectedType,
+        submissions,
+        submissionCounts,
+        notes: notes.trim() || undefined,
+        satisfaction,
+        techniqueIds: [], // Will be populated when techniques are linked to sessions
+      };
 
-    onSave(newSession);
+      onSave(newSession);
+    } else if (mode === 'edit' && session) {
+      const updatedSession: TrainingSession = {
+        ...session,
+        date,
+        location: location.trim() || undefined,
+        type: selectedType,
+        submissions,
+        submissionCounts,
+        notes: notes.trim() || undefined,
+        satisfaction,
+      };
+
+      onSave(updatedSession);
+    }
   };
 
   const handleAddTechniqueModalSave = () => {
@@ -249,6 +274,10 @@ export default function CreateSessionModal({
 
   const handleClose = () => {
     onClose();
+  };
+
+  const handleClearLocation = () => {
+    setLocation('');
   };
 
   const isValid = selectedType;
@@ -283,21 +312,13 @@ export default function CreateSessionModal({
     return nextDate > today;
   };
 
-  const renderStars = () => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <TouchableOpacity
-        key={i}
-        onPress={() => setSatisfaction((i + 1) as 1 | 2 | 3 | 4 | 5)}
-        style={styles.starButton}
-        activeOpacity={0.7}
-      >
-        <Star
-          size={32}
-          color={i < satisfaction ? '#f59e0b' : '#e5e7eb'}
-          fill={i < satisfaction ? '#f59e0b' : 'transparent'}
-        />
-      </TouchableOpacity>
-    ));
+
+  const getHeaderIcon = () => {
+    return mode === 'create' ? <Calendar size={24} color="#5271ff" /> : <Pencil size={24} color="#5271ff" />;
+  };
+
+  const getHeaderTitle = () => {
+    return mode === 'create' ? 'New Session' : 'Edit Session';
   };
 
   return (
@@ -338,8 +359,8 @@ export default function CreateSessionModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Calendar size={24} color="#1e3a2e" />
-                <Text style={styles.headerTitle}>New Session</Text>
+                {getHeaderIcon()}
+                <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
               </View>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -354,6 +375,7 @@ export default function CreateSessionModal({
               style={styles.content} 
               showsVerticalScrollIndicator={false} 
               keyboardShouldPersistTaps="handled"
+              contentContainerStyle={mode === 'edit' ? { paddingBottom: 50 } : undefined}
             >
               <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View>
@@ -408,6 +430,15 @@ export default function CreateSessionModal({
                     onChangeText={setLocation}
                     maxLength={100}
                   />
+                  {location.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={handleClearLocation}
+                      activeOpacity={0.7}
+                    >
+                      <X size={16} color="#9ca3af" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -509,7 +540,7 @@ export default function CreateSessionModal({
                   onPress={() => setShowAddTechniqueModal(true)}
                   activeOpacity={0.7}
                 >
-                  <Zap size={20} color="#1e3a2e" />
+                  <Zap size={20} color="#5271ff" />
                   <Text style={styles.addTechniqueButtonText}>Add Technique</Text>
                 </TouchableOpacity>
               </View>
@@ -517,9 +548,12 @@ export default function CreateSessionModal({
               {/* Satisfaction Rating */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Satisfaction</Text>
-                <View style={styles.starsContainer}>
-                  {renderStars()}
-                </View>
+                <StarRating
+                  mode="input"
+                  rating={satisfaction}
+                  onRatingPress={(rating: number) => setSatisfaction(rating as 1 | 2 | 3 | 4 | 5)}
+                  size={32}
+                />
               </View>
 
               {/* Notes */}
@@ -532,10 +566,14 @@ export default function CreateSessionModal({
                   activeOpacity={0.8}
                 >
                   <View style={styles.notesInput}>
-                    <Text style={[
-                      styles.notesText,
-                      !notes && styles.notesPlaceholder
-                    ]}>
+                    <Text 
+                      style={[
+                        styles.notesText,
+                        !notes && styles.notesPlaceholder
+                      ]}
+                      numberOfLines={3}
+                      ellipsizeMode="tail"
+                    >
                       {notes || "How did the session go? What did you work on?"}
                     </Text>
                   </View>
@@ -572,8 +610,9 @@ export default function CreateSessionModal({
           </View>
 
           {/* Add Technique Modal */}
-          <AddTechniqueModal
+          <TechniqueModal
             visible={showAddTechniqueModal}
+            mode="add"
             onSave={handleAddTechniqueModalSave}
             onClose={() => setShowAddTechniqueModal(false)}
           />
@@ -586,8 +625,9 @@ export default function CreateSessionModal({
             onClose={handleNotesModalClose}
             triggerPosition={notesInputPosition}
           />
+          
         </Animated.View>
-        <KeyboardDismissButton />
+        <KeyboardDismissButton isInsideModal />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -607,7 +647,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
-    width: screenWidth - 40,
+    width: screenWidth - 20,
     maxHeight: screenHeight * 0.9,
     justifyContent: 'center',
   },
@@ -628,7 +668,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -654,8 +694,9 @@ const styles = StyleSheet.create({
     maxHeight: screenHeight * 0.6,
   },
   section: {
-    padding: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   sectionTitle: {
     fontSize: 16,
@@ -674,7 +715,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -707,9 +748,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f9fafb',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 12,
   },
   locationInput: {
@@ -815,7 +858,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     gap: 12,
@@ -839,7 +882,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     gap: 8,
   },
   saveButtonDisabled: {
@@ -851,8 +894,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addTechniqueSection: {
-    padding: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   addTechniqueButton: {
     flexDirection: 'row',
@@ -860,15 +904,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f0f9ff',
     borderWidth: 2,
-    borderColor: '#1e3a2e',
+    borderColor: '#5271ff',
     borderStyle: 'dashed',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
   },
   addTechniqueButtonText: {
-    color: '#1e3a2e',
+    color: '#5271ff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  clearButton: {
+    padding: 4,
   },
 });

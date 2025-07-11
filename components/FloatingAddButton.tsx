@@ -48,7 +48,7 @@ export default function FloatingAddButton({ onPress }: FloatingAddButtonProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 14, // Even closer to tab bar
+    bottom: 80, // Moved up to clear tab bar
     right: 20,
     zIndex: 1000,
   },
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#5271ff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

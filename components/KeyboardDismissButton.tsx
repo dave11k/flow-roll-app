@@ -7,8 +7,14 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
+import { useFilterModal } from '@/contexts/FilterModalContext';
 
-export default function KeyboardDismissButton() {
+interface KeyboardDismissButtonProps {
+  isInsideModal?: boolean;
+  isFilterModal?: boolean;
+}
+
+function KeyboardDismissButtonCore({ isInsideModal = false, isFilterModal = false, isFilterModalOpen = false }: KeyboardDismissButtonProps & { isFilterModalOpen?: boolean }) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -76,12 +82,17 @@ export default function KeyboardDismissButton() {
     return null;
   }
 
+  // Hide global button when filter modals are open
+  if (!isInsideModal && isFilterModalOpen) {
+    return null;
+  }
+
   return (
     <Animated.View
       style={[
         styles.container,
         {
-          bottom: keyboardHeight + 10,
+          bottom: keyboardHeight + (isInsideModal ? (isFilterModal ? 80 : 30) : -14),
           opacity: fadeAnim,
         },
       ]}
@@ -98,11 +109,20 @@ export default function KeyboardDismissButton() {
   );
 }
 
+export default function KeyboardDismissButton({ isInsideModal = false, isFilterModal = false }: KeyboardDismissButtonProps) {
+  if (isInsideModal) {
+    return <KeyboardDismissButtonCore isInsideModal={true} isFilterModal={isFilterModal} isFilterModalOpen={false} />;
+  }
+  
+  const { isFilterModalOpen } = useFilterModal();
+  return <KeyboardDismissButtonCore isInsideModal={false} isFilterModal={false} isFilterModalOpen={isFilterModalOpen} />;
+}
+
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     right: 16,
-    zIndex: 9999,
+    zIndex: 99999,
   },
   button: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',

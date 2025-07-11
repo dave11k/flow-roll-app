@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   TouchableOpacity,
 } from 'react-native';
 import { CheckCircle, AlertCircle, X } from 'lucide-react-native';
@@ -18,8 +17,6 @@ interface ToastProps {
   onClose: () => void;
   duration?: number;
 }
-
-const { width: screenWidth } = Dimensions.get('window');
 
 export default function Toast({
   message,
@@ -81,7 +78,7 @@ export default function Toast({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      onClose();
+      setTimeout(() => onClose(), 0);
     });
   };
 

@@ -1,108 +1,71 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   SafeAreaView,
   Alert,
-  FlatList,
+  ScrollView,
+  RefreshControl,
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Search, Pencil, Trash2, Filter, X, Plus, BookOpen } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { Technique, TechniqueCategory, TechniquePosition } from '@/types/technique';
-import { getTechniques, deleteTechnique, saveTechnique } from '@/services/storage';
-import { searchTechniqueSuggestions } from '@/data/techniqueSuggestions';
-import TechniquePill from '@/components/TechniquePill';
+import { Search, X, Plus, BookOpen, Filter } from 'lucide-react-native';
+import { Technique, TechniqueCategory } from '@/types/technique';
+import TechniqueFilterModal from '@/components/TechniqueFilterModal';
 import TechniqueItem from '@/components/TechniqueItem';
-import EditTechniqueModal from '@/components/EditTechniqueModal';
-import AddTechniqueModal from '@/components/AddTechniqueModal';
+import TechniqueModal from '@/components/TechniqueModal';
 import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
+import CategoryDropdown from '@/components/CategoryDropdown';
 import { useToast } from '@/contexts/ToastContext';
-
-const CATEGORIES: TechniqueCategory[] = [
-  'Submission',
-  'Sweep',
-  'Escape',
-  'Guard Pass',
-  'Takedown',
-  'Defense',
-  'Other',
-];
-
-const POSITIONS: TechniquePosition[] = [
-  'Mount',
-  'Full Guard',
-  'Side Control',
-  'Back',
-  'Half Guard',
-  'Standing',
-  'Open Guard',
-  'Butterfly Guard',
-  'De La Riva Guard',
-  'X-Guard',
-  'Spider Guard',
-  'Lasso Guard',
-  'Reverse De La Riva Guard',
-  'Deep Half Guard',
-  'North South',
-  'Knee on Belly',
-  'Turtle',
-  '50/50 Guard',
-  'Leg Entanglement',
-  'Crucifix',
-  'Kesa Gatame',
-  'S-Mount',
-  'Other',
-];
-
-const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#22c55e',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
-
-const POSITION_COLOR = '#1e3a2e';
+import { useData } from '@/contexts/DataContext';
+import { CATEGORY_COLORS } from '@/constants/colors';
 
 export default function TechniquesPage() {
   const { showSuccess, showError } = useToast();
-  const [techniques, setTechniques] = useState<Technique[]>([]);
+  const { 
+    techniques, 
+    isInitialLoading,
+    isLoading, 
+    updateTechnique, 
+    removeTechnique, 
+    refreshTechniques,
+    error,
+    clearError
+  } = useData();
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filteredTechniques, setFilteredTechniques] = useState<Technique[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>(null);
-  const [selectedPosition, setSelectedPosition] = useState<TechniquePosition | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    category: null as TechniqueCategory | null,
+    tags: [] as string[]
+  });
   const [editingTechnique, setEditingTechnique] = useState<Technique | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showTechniqueModal, setShowTechniqueModal] = useState(false);
+  const [techniqueModalMode, setTechniqueModalMode] = useState<'add' | 'edit'>('add');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const justSelectedSuggestion = useRef(false);
-  const categoryScrollRef = useRef<ScrollView>(null);
-  const positionScrollRef = useRef<ScrollView>(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
+  // Handle errors from data context
   useEffect(() => {
-    loadTechniques();
-  }, []);
+    if (error) {
+      showError(error);
+      clearError();
+    }
+  }, [error, showError, clearError]);
 
-  // Refresh techniques when the screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadTechniques();
-    }, [])
-  );
+  // Track when we've loaded data at least once
+  useEffect(() => {
+    if (techniques.length > 0 || (!isInitialLoading && techniques.length === 0)) {
+      setHasLoadedOnce(true);
+    }
+  }, [techniques.length, isInitialLoading]);
 
   const filterTechniques = React.useCallback(() => {
     let filtered = [...techniques];
@@ -111,59 +74,65 @@ export default function TechniquesPage() {
     if (searchQuery.trim()) {
       filtered = filtered.filter(technique =>
         technique.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (technique.notes && technique.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+        technique.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     // Filter by category
-    if (selectedCategory) {
-      filtered = filtered.filter(technique => technique.category === selectedCategory);
+    if (filters.category) {
+      filtered = filtered.filter(technique => technique.category === filters.category);
     }
 
-    // Filter by position
-    if (selectedPosition) {
-      filtered = filtered.filter(technique => technique.position === selectedPosition);
+    // Filter by tags (all selected tags must be present)
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(technique =>
+        filters.tags.every(selectedTag =>
+          technique.tags.some(tag => tag.toLowerCase() === selectedTag.toLowerCase())
+        )
+      );
     }
 
-    // Sort by most recent first
-    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Sort with priority: name matches first, then tag matches, then by date
+    filtered.sort((a, b) => {
+      const searchLower = searchQuery.toLowerCase().trim();
+      
+      // If there's a search query, prioritize name matches
+      if (searchLower) {
+        const aNameMatch = a.name.toLowerCase().includes(searchLower);
+        const bNameMatch = b.name.toLowerCase().includes(searchLower);
+        
+        // If one has name match and other doesn't, prioritize name match
+        if (aNameMatch && !bNameMatch) return -1;
+        if (!aNameMatch && bNameMatch) return 1;
+      }
+      
+      // Otherwise, sort by most recent first
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
 
     setFilteredTechniques(filtered);
-  }, [techniques, searchQuery, selectedCategory, selectedPosition]);
+  }, [techniques, searchQuery, filters]);
 
   useEffect(() => {
     filterTechniques();
   }, [filterTechniques]);
 
-  // Filter suggestions based on search query
-  useEffect(() => {
-    if (searchQuery.length > 0) {
-      const filtered = searchTechniqueSuggestions(searchQuery, 6);
-      setSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [searchQuery]);
 
-  const loadTechniques = async () => {
-    try {
-      setIsLoading(true);
-      const techniquesData = await getTechniques();
-      setTechniques(techniquesData);
-    } catch (error) {
-      console.error('Error loading techniques:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleCategorySelect = (category: TechniqueCategory | null) => {
-    setSelectedCategory(selectedCategory === category ? null : category);
-  };
+  const handleApplyFilters = React.useCallback((newFilters: { category: TechniqueCategory | null; tags: string[] }) => {
+    setFilters(newFilters);
+  }, []);
 
-  const handlePositionSelect = (position: TechniquePosition | null) => {
-    setSelectedPosition(selectedPosition === position ? null : position);
+  const handleCategorySelect = React.useCallback((category: TechniqueCategory) => {
+    setFilters(prev => ({ ...prev, category }));
+  }, []);
+
+  const handleClearCategory = React.useCallback(() => {
+    setFilters(prev => ({ ...prev, category: null }));
+  }, []);
+
+  const hasActiveFilters = () => {
+    return filters.tags.length > 0;
   };
 
   const handleShowTechniqueDetail = (technique: Technique) => {
@@ -175,22 +144,30 @@ export default function TechniquesPage() {
   const handleEditTechnique = (technique: Technique) => {
     Keyboard.dismiss();
     setEditingTechnique(technique);
-    setShowEditModal(true);
+    setTechniqueModalMode('edit');
+    setShowTechniqueModal(true);
   };
 
-  const handleSaveTechnique = async (updatedTechnique: Technique) => {
-    try {
-      // Use the saveTechnique function which now handles updates
-      await saveTechnique(updatedTechnique);
-      
-      // Reload techniques
-      await loadTechniques();
-      setShowEditModal(false);
-      setEditingTechnique(null);
-      showSuccess('Technique updated successfully!');
-    } catch {
-      showError('Failed to update technique. Please try again.');
+  const handleSaveTechnique = async (updatedTechnique?: Technique) => {
+    if (techniqueModalMode === 'edit' && updatedTechnique) {
+      try {
+        await updateTechnique(updatedTechnique);
+        setShowTechniqueModal(false);
+        setEditingTechnique(null);
+        showSuccess(`"${updatedTechnique.name}" updated successfully!`);
+      } catch {
+        showError('Failed to update technique. Please try again.');
+      }
+    } else if (techniqueModalMode === 'add') {
+      // Add mode - just refresh the techniques list
+      await refreshTechniques();
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshTechniques();
+    setIsRefreshing(false);
   };
 
   const handleDeleteTechnique = (technique: Technique) => {
@@ -204,9 +181,8 @@ export default function TechniquesPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteTechnique(technique.id);
-              await loadTechniques();
-              showError('Technique deleted successfully!');
+              await removeTechnique(technique.id);
+              showSuccess(`"${technique.name}" deleted successfully!`);
             } catch {
               showError('Failed to delete technique. Please try again.');
             }
@@ -219,36 +195,11 @@ export default function TechniquesPage() {
   const clearFilters = () => {
     Keyboard.dismiss();
     setSearchQuery('');
-    setSelectedCategory(null);
-    setSelectedPosition(null);
+    setFilters({ category: null, tags: [] });
   };
 
-  const handleSuggestionPress = (suggestion: string) => {
-    justSelectedSuggestion.current = true;
-    setSearchQuery(suggestion);
-    setShowSuggestions(false);
-    Keyboard.dismiss();
-    // Reset the flag after a short delay
-    setTimeout(() => {
-      justSelectedSuggestion.current = false;
-    }, 100);
-  };
 
-  const handleSearchFocus = () => {
-    if (searchQuery.length > 0) {
-      setShowSuggestions(true);
-    }
-  };
-
-  const handleSearchBlur = () => {
-    if (!justSelectedSuggestion.current) {
-      setTimeout(() => {
-        setShowSuggestions(false);
-      }, 150);
-    }
-  };
-
-  const hasActiveFilters = searchQuery.trim() || selectedCategory || selectedPosition;
+  const hasActiveFiltersForClear = searchQuery.trim() || filters.category || filters.tags.length > 0;
 
   const renderTechniqueItem = ({ item }: { item: Technique }) => (
     <View style={styles.techniqueItemContainer}>
@@ -259,6 +210,7 @@ export default function TechniquesPage() {
         <TouchableOpacity
           onPress={() => handleShowTechniqueDetail(item)}
           activeOpacity={1}
+          style={styles.techniqueCard}
         >
           <TechniqueItem
             technique={item}
@@ -272,176 +224,179 @@ export default function TechniquesPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Techniques ({techniques.length})</Text>
-      </View>
 
-      {/* Search Bar */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      {/* Search and Filter Row */}
+      <TouchableWithoutFeedback onPress={() => {
+        Keyboard.dismiss();
+      }}>
         <View style={styles.searchSection}>
-        <View style={styles.searchContainer}>
-          <Search size={20} color="#9ca3af" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search techniques..."
-            placeholderTextColor="#9ca3af"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={handleSearchFocus}
-            onBlur={handleSearchBlur}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearchQuery('')}
-              style={styles.clearSearchButton}
-            >
-              <X size={16} color="#9ca3af" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Auto-suggestions */}
-        {showSuggestions && suggestions.length > 0 && (
-          <View style={styles.suggestionsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
-              {suggestions.map((suggestion, index) => (
+          <View style={styles.searchAndFilterRow}>
+            <View style={styles.searchContainer}>
+              <Search size={20} color="#9ca3af" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search"
+                placeholderTextColor="#9ca3af"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
                 <TouchableOpacity
-                  key={`${suggestion}-${index}`}
-                  style={styles.suggestionPill}
-                  onPress={() => handleSuggestionPress(suggestion)}
-                  delayPressIn={0}
-                  activeOpacity={0.7}
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearSearchButton}
                 >
-                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                  <X size={16} color="#9ca3af" />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              )}
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.filterButton, hasActiveFilters() && styles.filterButtonActive]}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowFilterModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Filter size={20} color="#5271ff" />
+              <Text style={styles.filterButtonText}>Tags</Text>
+              {hasActiveFilters() && <View style={styles.filterIndicator} />}
+            </TouchableOpacity>
           </View>
-        )}
-        
-        {/* Filters */}
-        <View style={[styles.filterRow, styles.firstFilterRow]}>
-          <ScrollView 
-            ref={categoryScrollRef}
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {CATEGORIES.map((category) => (
-              <TechniquePill
-                key={category}
-                label={category}
-                isSelected={selectedCategory === category}
-                onPress={() => handleCategorySelect(category)}
-                color={CATEGORY_COLORS[category]}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.filterRow}>
-          <ScrollView 
-            ref={positionScrollRef}
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {POSITIONS.map((position) => (
-              <TechniquePill
-                key={position}
-                label={position}
-                isSelected={selectedPosition === position}
-                onPress={() => handlePositionSelect(position)}
-                color={POSITION_COLOR}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        {hasActiveFilters && (
-          <TouchableOpacity
-            style={styles.clearFiltersButton}
-            onPress={clearFilters}
-            activeOpacity={0.7}
-          >
-            <Filter size={16} color="#6b7280" />
-            <Text style={styles.clearFiltersText}>Clear Filters</Text>
-          </TouchableOpacity>
-        )}
+          {/* Active Filters Row */}
+          {filters.tags.length > 0 && (
+            <View style={styles.activeFiltersRow}>
+              {(() => {
+                const maxTagsToShow = 5;
+                const visibleTags = filters.tags.slice(0, maxTagsToShow);
+                const hiddenTagsCount = filters.tags.length - maxTagsToShow;
+                
+                return (
+                  <>
+                    {visibleTags.map((tag, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.activeTagPill}
+                        onPress={() => setFilters(prev => ({ 
+                          ...prev, 
+                          tags: prev.tags.filter(t => t !== tag) 
+                        }))}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.activeTagText}>{tag}</Text>
+                        <X size={12} color="#fff" />
+                      </TouchableOpacity>
+                    ))}
+                    {hiddenTagsCount > 0 && (
+                      <View style={styles.morePill}>
+                        <Text style={styles.moreText}>+{hiddenTagsCount}</Text>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
+            </View>
+          )}
         </View>
       </TouchableWithoutFeedback>
 
       {/* Techniques List */}
-      <View style={styles.listContainer}>
-        {isLoading ? (
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.content}>
+          <ScrollView 
+            style={styles.content}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing || isLoading} onRefresh={handleRefresh} />
+            }
+            keyboardShouldPersistTaps="handled"
+          >
+        {(isInitialLoading && !hasLoadedOnce) ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading techniques...</Text>
           </View>
-        ) : filteredTechniques.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <BookOpen size={64} color="#9ca3af" />
-            <Text style={styles.emptyTitle}>
-              {techniques.length === 0 ? 'No Techniques Yet' : 'No Matching Techniques'}
-            </Text>
-            <Text style={styles.emptyDescription}>
-              {techniques.length === 0 
-                ? 'Start adding techniques to build your BJJ library'
-                : 'Try adjusting your search or filters'
-              }
-            </Text>
-            {techniques.length === 0 && (
-              <TouchableOpacity
-                style={styles.createTechniqueButton}
-                onPress={() => setShowAddModal(true)}
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color="#fff" />
-                <Text style={styles.createTechniqueText}>Add Technique</Text>
-              </TouchableOpacity>
-            )}
-            {hasActiveFilters && (
-              <TouchableOpacity
-                style={styles.clearFiltersButtonLarge}
-                onPress={clearFilters}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
-              </TouchableOpacity>
+        ) : (
+          <View style={styles.techniquesList}>
+            <View style={styles.techniquesHeader}>
+              <Text style={styles.techniquesTitle}>
+                {hasActiveFilters() 
+                  ? `Techniques (${filteredTechniques.length})`
+                  : `Techniques (${techniques.length})`
+                }
+              </Text>
+              <View style={styles.categoryDropdownContainer}>
+                <CategoryDropdown
+                  selectedCategory={filters.category}
+                  onCategorySelect={handleCategorySelect}
+                  onClearCategory={handleClearCategory}
+                  showAllOption={true}
+                />
+              </View>
+            </View>
+            {filteredTechniques.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <BookOpen size={64} color="#9ca3af" />
+                <Text style={styles.emptyTitle}>
+                  {techniques.length === 0 ? 'No Techniques Yet' : 'No Matching Techniques'}
+                </Text>
+                <Text style={styles.emptyDescription}>
+                  {techniques.length === 0 
+                    ? 'Start adding techniques to build your BJJ library'
+                    : 'Try adjusting your search or filters'
+                  }
+                </Text>
+                {techniques.length === 0 && (
+                  <TouchableOpacity
+                    style={styles.createTechniqueButton}
+                    onPress={() => {
+                      setTechniqueModalMode('add');
+                      setEditingTechnique(null);
+                      setShowTechniqueModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={20} color="#fff" />
+                    <Text style={styles.createTechniqueText}>Add Technique</Text>
+                  </TouchableOpacity>
+                )}
+                {hasActiveFiltersForClear && (
+                  <TouchableOpacity
+                    style={styles.clearFiltersButtonLarge}
+                    onPress={clearFilters}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <>
+                {filteredTechniques.map((item) => (
+                  <View key={item.id}>
+                    {renderTechniqueItem({ item })}
+                  </View>
+                ))}
+                {/* Empty space at bottom for better scrolling */}
+                <View style={styles.bottomSpacer} />
+              </>
             )}
           </View>
-        ) : (
-          <FlatList
-            data={filteredTechniques}
-            renderItem={renderTechniqueItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-          />
         )}
-      </View>
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
 
-      {/* Add Technique Modal */}
-      <AddTechniqueModal
-        visible={showAddModal}
-        onSave={loadTechniques}
-        onClose={() => setShowAddModal(false)}
+      {/* Technique Modal */}
+      <TechniqueModal
+        visible={showTechniqueModal}
+        mode={techniqueModalMode}
+        technique={editingTechnique || undefined}
+        onSave={handleSaveTechnique}
+        onClose={() => {
+          setShowTechniqueModal(false);
+          setEditingTechnique(null);
+        }}
       />
-
-      {/* Edit Modal */}
-      {editingTechnique && (
-        <EditTechniqueModal
-          visible={showEditModal}
-          technique={editingTechnique}
-          onSave={handleSaveTechnique}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingTechnique(null);
-          }}
-        />
-      )}
 
       {/* Detail Modal */}
       <TechniqueDetailModal
@@ -455,11 +410,21 @@ export default function TechniquesPage() {
         onDelete={handleDeleteTechnique}
       />
 
+      {/* Filter Modal */}
+      <TechniqueFilterModal
+        visible={showFilterModal}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        onClose={() => setShowFilterModal(false)}
+      />
+
       {/* Floating Add Button */}
       <FloatingAddButton
         onPress={() => {
           Keyboard.dismiss();
-          setShowAddModal(true);
+          setTechniqueModalMode('add');
+          setEditingTechnique(null);
+          setShowTechniqueModal(true);
         }}
       />
     </SafeAreaView>
@@ -471,72 +436,114 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: '#1e3a2e',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2d5a3d',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-  },
   searchSection: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
     backgroundColor: '#fff',
-    paddingBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 10,
+  },
+  searchAndFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   searchContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#1f2937',
+    paddingVertical: 12,
   },
   clearSearchButton: {
     padding: 4,
   },
-  suggestionsContainer: {
+  activeFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 12,
+    alignItems: 'center',
   },
-  suggestionPill: {
-    backgroundColor: '#e0e7ff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginRight: 8,
+  activeFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
-  suggestionText: {
-    color: '#1e40af',
-    fontSize: 14,
+  activeFilterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  activeTagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#5271ff',
+    gap: 4,
+  },
+  activeTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  morePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+  },
+  moreText: {
+    fontSize: 12,
     fontWeight: '500',
+    color: '#6b7280',
   },
-  filterRow: {
-    marginBottom: 8,
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    gap: 6,
+    position: 'relative',
   },
-  firstFilterRow: {
-    marginTop: 16,
+  filterButtonActive: {
+    backgroundColor: '#f3f4f6',
   },
-  filterScrollContent: {
-    paddingRight: 20,
+  filterButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#5271ff',
+  },
+  filterIndicator: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
   },
   clearFiltersButton: {
     flexDirection: 'row',
@@ -554,7 +561,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
   },
-  listContainer: {
+  content: {
     flex: 1,
   },
   loadingContainer: {
@@ -571,6 +578,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    paddingBottom: 100,
+    marginTop: 60,
   },
   emptyTitle: {
     fontSize: 20,
@@ -587,7 +596,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   createTechniqueButton: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#000000',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -602,7 +611,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   clearFiltersButtonLarge: {
-    backgroundColor: '#1e3a2e',
+    backgroundColor: '#000000',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
@@ -613,11 +622,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  listContent: {
-    padding: 20,
+  techniquesList: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  techniquesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  techniquesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  categoryDropdownContainer: {
+    minWidth: 140,
+    maxWidth: 180,
+  },
+  bottomSpacer: {
+    height: 100,
   },
   techniqueItemContainer: {
     position: 'relative',
     marginBottom: 12,
+  },
+  techniqueCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
