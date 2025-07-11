@@ -7,7 +7,8 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
-  FlatList,
+  ScrollView,
+  RefreshControl,
   Keyboard,
   TouchableWithoutFeedback,
   Image,
@@ -39,7 +40,8 @@ export default function TechniquesPage() {
   const { showSuccess, showError } = useToast();
   const { 
     techniques, 
-    isInitialLoading, 
+    isInitialLoading,
+    isLoading, 
     updateTechnique, 
     removeTechnique, 
     refreshTechniques,
@@ -47,6 +49,7 @@ export default function TechniquesPage() {
     clearError
   } = useData();
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filteredTechniques, setFilteredTechniques] = useState<Technique[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -142,6 +145,12 @@ export default function TechniquesPage() {
     } catch {
       showError('Failed to update technique. Please try again.');
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshTechniques();
+    setIsRefreshing(false);
   };
 
   const handleDeleteTechnique = (technique: Technique) => {
@@ -300,7 +309,15 @@ export default function TechniquesPage() {
       </TouchableWithoutFeedback>
 
       {/* Techniques List */}
-      <View style={styles.listContainer}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.content}>
+          <ScrollView 
+            style={styles.content}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing || isLoading} onRefresh={handleRefresh} />
+            }
+            keyboardShouldPersistTaps="handled"
+          >
         {(isInitialLoading && !hasLoadedOnce) ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading techniques...</Text>
@@ -339,26 +356,24 @@ export default function TechniquesPage() {
           </View>
         ) : (
           <View style={styles.techniquesList}>
-            <FlatList
-              data={filteredTechniques}
-              renderItem={renderTechniqueItem}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
-              ListHeaderComponent={
-                <View style={styles.techniquesHeader}>
-                  <Text style={styles.techniquesTitle}>
-                    {hasActiveFilters() 
-                      ? `Filtered Techniques (${filteredTechniques.length})`
-                      : `Techniques (${techniques.length})`
-                    }
-                  </Text>
-                </View>
-              }
-            />
+            <View style={styles.techniquesHeader}>
+              <Text style={styles.techniquesTitle}>
+                {hasActiveFilters() 
+                  ? `Filtered Techniques (${filteredTechniques.length})`
+                  : `Techniques (${techniques.length})`
+                }
+              </Text>
+            </View>
+            {filteredTechniques.map((item) => (
+              <View key={item.id}>
+                {renderTechniqueItem({ item })}
+              </View>
+            ))}
           </View>
         )}
-      </View>
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
 
       {/* Add Technique Modal */}
       <AddTechniqueModal
@@ -586,7 +601,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
   },
-  listContainer: {
+  content: {
     flex: 1,
   },
   loadingContainer: {
@@ -660,9 +675,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#374151',
-  },
-  listContent: {
-    paddingBottom: 100,
   },
   techniqueItemContainer: {
     position: 'relative',
