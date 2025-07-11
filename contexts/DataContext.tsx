@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Technique } from '@/types/technique';
 import { TrainingSession } from '@/types/session';
 import { UserProfile } from '@/types/profile';
-import { getTechniques, getSessions, saveTechnique, saveSession, deleteTechnique, deleteSession, getProfile, saveProfile } from '@/services/storage';
+import { getTechniques, getSessions, saveTechnique, saveSession, deleteTechnique, deleteSession, getProfile, saveProfile, getTechniquesBySession } from '@/services/api';
 import { loadTestData } from '@/services/testData';
 
 interface DataContextType {
@@ -148,7 +148,7 @@ export function DataProvider({ children }: DataProviderProps) {
     } catch (err) {
       console.error('Error creating technique:', err);
       setError('Failed to create technique. Please try again.');
-      // Refresh from server in case of error
+      // Refresh from storage in case of error
       await refreshTechniques();
       throw err;
     }
@@ -163,7 +163,7 @@ export function DataProvider({ children }: DataProviderProps) {
     } catch (err) {
       console.error('Error updating technique:', err);
       setError('Failed to update technique. Please try again.');
-      // Refresh from server in case of error
+      // Refresh from storage in case of error
       await refreshTechniques();
       throw err;
     }
@@ -178,7 +178,7 @@ export function DataProvider({ children }: DataProviderProps) {
     } catch (err) {
       console.error('Error deleting technique:', err);
       setError('Failed to delete technique. Please try again.');
-      // Refresh from server in case of error
+      // Refresh from storage in case of error
       await refreshTechniques();
       throw err;
     }
@@ -194,7 +194,7 @@ export function DataProvider({ children }: DataProviderProps) {
     } catch (err) {
       console.error('Error creating session:', err);
       setError('Failed to create session. Please try again.');
-      // Refresh from server in case of error
+      // Refresh from storage in case of error
       await refreshSessions();
       throw err;
     }
@@ -209,7 +209,7 @@ export function DataProvider({ children }: DataProviderProps) {
     } catch (err) {
       console.error('Error updating session:', err);
       setError('Failed to update session. Please try again.');
-      // Refresh from server in case of error
+      // Refresh from storage in case of error
       await refreshSessions();
       throw err;
     }
@@ -224,7 +224,7 @@ export function DataProvider({ children }: DataProviderProps) {
     } catch (err) {
       console.error('Error deleting session:', err);
       setError('Failed to delete session. Please try again.');
-      // Refresh from server in case of error
+      // Refresh from storage in case of error
       await refreshSessions();
       throw err;
     }

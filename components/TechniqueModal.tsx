@@ -17,7 +17,7 @@ import { BlurView } from 'expo-blur';
 import { X, Save, Plus, Link2, Trash2, FileText, Pencil } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniqueLink } from '@/types/technique';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
-import { saveTechnique } from '@/services/storage';
+import { useData } from '@/contexts/DataContext';
 import { searchTechniqueSuggestions, TechniqueSuggestion } from '@/data/techniqueSuggestions';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import TagSelectionModal from '@/components/TagSelectionModal';
@@ -42,6 +42,7 @@ export default function TechniqueModal({
   onSave,
   onClose,
 }: TechniqueModalProps) {
+  const { createTechnique, updateTechnique } = useData();
   const { showSuccess, showError } = useToast();
   const [techniqueName, setTechniqueName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>('Submission');
@@ -185,7 +186,7 @@ export default function TechniqueModal({
           timestamp: new Date(),
         };
 
-        await saveTechnique(newTechnique);
+        await createTechnique(newTechnique);
         
         // Close immediately like session modal
         onSave();
@@ -198,16 +199,29 @@ export default function TechniqueModal({
         setIsLoading(false);
       }
     } else if (mode === 'edit' && technique) {
-      const updatedTechnique: Technique = {
-        ...technique,
-        name: techniqueName.trim(),
-        category: selectedCategory,
-        tags: selectedTags,
-        notes: notes.trim() || undefined,
-        links: links.length > 0 ? links : undefined,
-      };
+      setIsLoading(true);
+      try {
+        const updatedTechnique: Technique = {
+          ...technique,
+          name: techniqueName.trim(),
+          category: selectedCategory,
+          tags: selectedTags,
+          notes: notes.trim() || undefined,
+          links: links.length > 0 ? links : undefined,
+        };
 
-      onSave(updatedTechnique);
+        await updateTechnique(updatedTechnique);
+        
+        // Close immediately like session modal
+        onSave();
+        onClose();
+        showSuccess(`"${updatedTechnique.name}" updated successfully!`);
+        
+      } catch {
+        showError('Failed to update technique. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
