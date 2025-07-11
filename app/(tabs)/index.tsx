@@ -22,16 +22,7 @@ import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
-
-const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#5271ff',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
+import { CATEGORY_COLORS } from '@/constants/colors';
 
 export default function TechniquesPage() {
   const { showSuccess, showError } = useToast();

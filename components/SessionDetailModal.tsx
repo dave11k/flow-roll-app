@@ -14,6 +14,7 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Pencil, Trash2, Calendar, MapPin, Clock, Star, Target } from 'lucide-react-native';
 import { TrainingSession } from '@/types/session';
 import SubmissionDisplayPill from '@/components/SubmissionDisplayPill';
+import StarRating from '@/components/StarRating';
 
 interface SessionDetailModalProps {
   visible: boolean;
@@ -148,16 +149,6 @@ export default function SessionDetailModal({
     }
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        size={24}
-        color={i < rating ? '#f59e0b' : '#e5e7eb'}
-        fill={i < rating ? '#f59e0b' : 'transparent'}
-      />
-    ));
-  };
 
   const getTotalSubmissionCount = () => {
     return Object.values(session.submissionCounts || {}).reduce((total, count) => total + count, 0);
@@ -309,9 +300,11 @@ export default function SessionDetailModal({
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Satisfaction Rating</Text>
               </View>
-              <View style={styles.starsContainer}>
-                {renderStars(session.satisfaction)}
-              </View>
+              <StarRating
+                mode="display"
+                rating={session.satisfaction}
+                size={24}
+              />
             </View>
 
             {/* Notes */}

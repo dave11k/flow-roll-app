@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 interface SimpleDatePickerProps {
   value: Date | null;

@@ -11,14 +11,15 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
-  Platform,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { X, Calendar, MapPin, Target, Star, RotateCcw, ChevronDown } from 'lucide-react-native';
+import { X, Calendar, MapPin, Target, RotateCcw, ChevronDown } from 'lucide-react-native';
 import { SessionType } from '@/types/session';
 import { getLocationsFromDb, getUniqueSubmissionsFromDb } from '@/services/database';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import SimpleDatePicker from '@/components/SimpleDatePicker';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
+import StarRating from '@/components/StarRating';
 
 interface SessionFilters {
   dateRange: {
@@ -54,54 +55,31 @@ export default function SessionFilterModal({
   onClose,
 }: SessionFilterModalProps) {
   const [localFilters, setLocalFilters] = useState<SessionFilters>(filters);
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const [isVisible, setIsVisible] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showSubmissionDropdown, setShowSubmissionDropdown] = useState(false);
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [availableSubmissions, setAvailableSubmissions] = useState<string[]>([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState<string[]>([]);
-  const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const submissionInputRef = useRef<View>(null);
 
+  const modalAnimation = useModalAnimation(visible, { type: 'slide', duration: 300 });
+  const { 
+    slideAnim, 
+    backgroundOpacityAnim, 
+    dragY, 
+    isVisible, 
+    animateOut, 
+    resetDrag 
+  } = modalAnimation as any; // Type assertion for slide animation
+
   useEffect(() => {
     if (visible) {
-      setIsVisible(true);
-      dragY.setValue(0);
       setLocalFilters(filters);
       loadData();
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight * 0.1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else if (isVisible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsVisible(false);
-      });
     }
-  }, [visible, isVisible]);
+  }, [visible]);
 
   const loadData = async () => {
     try {
@@ -118,19 +96,8 @@ export default function SessionFilterModal({
   };
 
   const animateClose = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: screenHeight,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      dragY.setValue(0);
+    animateOut(() => {
+      resetDrag();
       onClose();
     });
   };
@@ -223,26 +190,6 @@ export default function SessionFilterModal({
   };
 
 
-  const renderStars = () => {
-    return Array.from({ length: 5 }, (_, i) => {
-      const rating = i + 1;
-      const isHighlighted = localFilters.satisfaction !== null && rating <= localFilters.satisfaction;
-      return (
-        <TouchableOpacity
-          key={i}
-          onPress={() => handleSatisfactionSelect(rating)}
-          style={styles.starButton}
-          activeOpacity={0.7}
-        >
-          <Star
-            size={28}
-            color={isHighlighted ? '#f59e0b' : '#e5e7eb'}
-            fill={isHighlighted ? '#f59e0b' : 'transparent'}
-          />
-        </TouchableOpacity>
-      );
-    });
-  };
 
   return (
     <Modal
@@ -253,17 +200,15 @@ export default function SessionFilterModal({
     >
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
         <TouchableWithoutFeedback onPress={animateClose}>
-          <View style={styles.backdrop}>
-            <Animated.View
-              style={[
-                styles.backdrop,
-                {
-                  opacity: opacityAnim,
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                },
-              ]}
-            />
-          </View>
+          <Animated.View
+            style={[
+              styles.backdrop,
+              {
+                opacity: backgroundOpacityAnim,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              },
+            ]}
+          />
         </TouchableWithoutFeedback>
 
         <Animated.View
@@ -488,9 +433,17 @@ export default function SessionFilterModal({
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Minimum Satisfaction</Text>
                 </View>
-                <View style={styles.satisfactionContainer}>
-                  {renderStars()}
-                </View>
+                <StarRating
+                  mode="filter"
+                  rating={localFilters.satisfaction || 0}
+                  onRatingPress={(rating: number) => {
+                    setLocalFilters(prev => ({
+                      ...prev,
+                      satisfaction: prev.satisfaction === rating ? null : rating
+                    }));
+                  }}
+                  size={28}
+                />
                 {localFilters.satisfaction && (
                   <Text style={styles.satisfactionLabel}>
                     {localFilters.satisfaction}+ stars

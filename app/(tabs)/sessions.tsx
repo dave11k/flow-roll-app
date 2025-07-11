@@ -21,6 +21,7 @@ import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
+import StarRating from '@/components/StarRating';
 
 interface SessionFilters {
   dateRange: {
@@ -242,13 +243,6 @@ export default function Sessions() {
     }
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Text key={i} style={[styles.star, { color: i < rating ? '#f59e0b' : '#e5e7eb' }]}>
-        ★
-      </Text>
-    ));
-  };
 
   const getTotalSubmissionCount = (session: TrainingSession) => {
     return Object.values(session.submissionCounts || {}).reduce((total, count) => total + count, 0);
@@ -444,9 +438,11 @@ export default function Sessions() {
                 <View style={styles.sessionRating}>
                   <View style={styles.satisfactionContainer}>
                     <Text style={styles.ratingLabel}>Satisfaction:</Text>
-                    <View style={styles.starsContainer}>
-                      {renderStars(session.satisfaction)}
-                    </View>
+                    <StarRating
+                      mode="display"
+                      rating={session.satisfaction}
+                      size={16}
+                    />
                   </View>
                 </View>
 

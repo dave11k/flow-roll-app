@@ -10,7 +10,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { X, Mail, Globe, MessageCircle, HelpCircle } from 'lucide-react-native';
+import { X, Mail, Globe, HelpCircle } from 'lucide-react-native';
 
 interface ContactSupportModalProps {
   visible: boolean;
