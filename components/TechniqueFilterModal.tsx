@@ -260,7 +260,7 @@ export default function TechniqueFilterModal({
                       <View style={styles.tagsContainer}>
                         {filteredTags.length > 0 ? (
                           <>
-                            {filteredTags.slice(0, 20).map((tag) => (
+                            {filteredTags.slice(0, 200).map((tag) => (
                               <TouchableOpacity
                                 key={tag}
                                 style={[
@@ -277,9 +277,9 @@ export default function TechniqueFilterModal({
                                 </Text>
                               </TouchableOpacity>
                             ))}
-                            {filteredTags.length > 20 && (
+                            {filteredTags.length > 200 && (
                               <View style={styles.tagChip}>
-                                <Text style={styles.tagText}>+{filteredTags.length - 20}</Text>
+                                <Text style={styles.tagText}>+{filteredTags.length - 200}</Text>
                               </View>
                             )}
                           </>

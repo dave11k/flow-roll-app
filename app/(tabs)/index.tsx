@@ -119,9 +119,17 @@ export default function TechniquesPage() {
 
 
 
-  const handleApplyFilters = (newFilters: { category: TechniqueCategory | null; tags: string[] }) => {
+  const handleApplyFilters = React.useCallback((newFilters: { category: TechniqueCategory | null; tags: string[] }) => {
     setFilters(newFilters);
-  };
+  }, []);
+
+  const handleCategorySelect = React.useCallback((category: TechniqueCategory) => {
+    setFilters(prev => ({ ...prev, category }));
+  }, []);
+
+  const handleClearCategory = React.useCallback(() => {
+    setFilters(prev => ({ ...prev, category: null }));
+  }, []);
 
   const hasActiveFilters = () => {
     return filters.tags.length > 0;
@@ -307,65 +315,71 @@ export default function TechniquesPage() {
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading techniques...</Text>
           </View>
-        ) : filteredTechniques.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <BookOpen size={64} color="#9ca3af" />
-            <Text style={styles.emptyTitle}>
-              {techniques.length === 0 ? 'No Techniques Yet' : 'No Matching Techniques'}
-            </Text>
-            <Text style={styles.emptyDescription}>
-              {techniques.length === 0 
-                ? 'Start adding techniques to build your BJJ library'
-                : 'Try adjusting your search or filters'
-              }
-            </Text>
-            {techniques.length === 0 && (
-              <TouchableOpacity
-                style={styles.createTechniqueButton}
-                onPress={() => {
-                  setTechniqueModalMode('add');
-                  setEditingTechnique(null);
-                  setShowTechniqueModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color="#fff" />
-                <Text style={styles.createTechniqueText}>Add Technique</Text>
-              </TouchableOpacity>
-            )}
-            {hasActiveFiltersForClear && (
-              <TouchableOpacity
-                style={styles.clearFiltersButtonLarge}
-                onPress={clearFilters}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
         ) : (
           <View style={styles.techniquesList}>
             <View style={styles.techniquesHeader}>
               <Text style={styles.techniquesTitle}>
                 {hasActiveFilters() 
-                  ? `Filtered Techniques (${filteredTechniques.length})`
+                  ? `Techniques (${filteredTechniques.length})`
                   : `Techniques (${techniques.length})`
                 }
               </Text>
               <View style={styles.categoryDropdownContainer}>
                 <CategoryDropdown
                   selectedCategory={filters.category}
-                  onCategorySelect={(category) => setFilters({ ...filters, category })}
-                  onClearCategory={() => setFilters({ ...filters, category: null })}
+                  onCategorySelect={handleCategorySelect}
+                  onClearCategory={handleClearCategory}
                   showAllOption={true}
                 />
               </View>
             </View>
-            {filteredTechniques.map((item) => (
-              <View key={item.id}>
-                {renderTechniqueItem({ item })}
+            {filteredTechniques.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <BookOpen size={64} color="#9ca3af" />
+                <Text style={styles.emptyTitle}>
+                  {techniques.length === 0 ? 'No Techniques Yet' : 'No Matching Techniques'}
+                </Text>
+                <Text style={styles.emptyDescription}>
+                  {techniques.length === 0 
+                    ? 'Start adding techniques to build your BJJ library'
+                    : 'Try adjusting your search or filters'
+                  }
+                </Text>
+                {techniques.length === 0 && (
+                  <TouchableOpacity
+                    style={styles.createTechniqueButton}
+                    onPress={() => {
+                      setTechniqueModalMode('add');
+                      setEditingTechnique(null);
+                      setShowTechniqueModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={20} color="#fff" />
+                    <Text style={styles.createTechniqueText}>Add Technique</Text>
+                  </TouchableOpacity>
+                )}
+                {hasActiveFiltersForClear && (
+                  <TouchableOpacity
+                    style={styles.clearFiltersButtonLarge}
+                    onPress={clearFilters}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            ))}
+            ) : (
+              <>
+                {filteredTechniques.map((item) => (
+                  <View key={item.id}>
+                    {renderTechniqueItem({ item })}
+                  </View>
+                ))}
+                {/* Empty space at bottom for better scrolling */}
+                <View style={styles.bottomSpacer} />
+              </>
+            )}
           </View>
         )}
           </ScrollView>
@@ -628,6 +642,9 @@ const styles = StyleSheet.create({
   categoryDropdownContainer: {
     minWidth: 140,
     maxWidth: 180,
+  },
+  bottomSpacer: {
+    height: 100,
   },
   techniqueItemContainer: {
     position: 'relative',
