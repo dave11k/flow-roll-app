@@ -6,6 +6,7 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { DataProvider } from '@/contexts/DataContext';
+import { FilterModalProvider } from '@/contexts/FilterModalContext';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -15,14 +16,16 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#ffffff' }}>
         <DataProvider>
           <ToastProvider>
-            <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-              <StatusBar style="dark" backgroundColor="#ffffff"  translucent={true} />
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-              <KeyboardDismissButton />
-            </View>
+            <FilterModalProvider>
+              <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+                <StatusBar style="dark" backgroundColor="#ffffff"  translucent={true} />
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+                <KeyboardDismissButton />
+              </View>
+            </FilterModalProvider>
           </ToastProvider>
         </DataProvider>
       </GestureHandlerRootView>

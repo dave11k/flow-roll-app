@@ -18,7 +18,6 @@ import {
 import { BlurView } from 'expo-blur';
 import { X, Search, Plus, Tag as TagIcon } from 'lucide-react-native';
 import { PREDEFINED_TAGS, TAG_VALIDATION } from '@/types/technique';
-import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import TagService from '@/services/tagService';
 
 interface TagSelectionModalProps {
@@ -417,7 +416,6 @@ export default function TagSelectionModal({
             </View>
           </View>
         </Animated.View>
-        <KeyboardDismissButton />
       </KeyboardAvoidingView>
     </Modal>
   );

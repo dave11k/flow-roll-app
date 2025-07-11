@@ -15,6 +15,8 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, RotateCcw, ChevronDown, Search } from 'lucide-react-native';
 import { TechniqueCategory } from '@/types/technique';
 import { getAllTagsFromDb } from '@/services/database';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
+import { useFilterModal } from '@/contexts/FilterModalContext';
 
 interface TechniqueFilters {
   category: TechniqueCategory | null;
@@ -56,6 +58,7 @@ export default function TechniqueFilterModal({
   onApplyFilters,
   onClose,
 }: TechniqueFilterModalProps) {
+  const { setIsFilterModalOpen } = useFilterModal();
   const [localFilters, setLocalFilters] = useState<TechniqueFilters>(filters);
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -72,6 +75,7 @@ export default function TechniqueFilterModal({
   useEffect(() => {
     if (visible) {
       setIsVisible(true);
+      setIsFilterModalOpen(true);
       dragY.setValue(0);
       setLocalFilters(filters);
       loadTags();
@@ -101,9 +105,10 @@ export default function TechniqueFilterModal({
         }),
       ]).start(() => {
         setIsVisible(false);
+        setIsFilterModalOpen(false);
       });
     }
-  }, [visible, isVisible, slideAnim, opacityAnim, dragY, filters]);
+  }, [visible, isVisible, slideAnim, opacityAnim, dragY, filters, setIsFilterModalOpen]);
 
   const loadTags = async () => {
     try {
@@ -259,7 +264,7 @@ export default function TechniqueFilterModal({
               <TouchableWithoutFeedback onPress={() => {
                 setShowCategoryDropdown(false);
               }}>
-                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                   {/* Category Filter */}
                   <View style={styles.section}>
                       <Text style={styles.sectionTitle}>Category</Text>
@@ -415,6 +420,7 @@ export default function TechniqueFilterModal({
               </TouchableOpacity>
             </View>
           </View>
+          <KeyboardDismissButton isInsideModal isFilterModal />
         </Animated.View>
       </View>
     </Modal>
@@ -431,6 +437,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: screenHeight * 0.9,
+    zIndex: 1000,
   },
   modal: {
     backgroundColor: '#fff',
@@ -614,6 +621,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 1,
   },
   clearButton: {
     flex: 1,

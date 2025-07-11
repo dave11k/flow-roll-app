@@ -195,7 +195,7 @@ export default function NotesModal({
             </View>
           </View>
         </Animated.View>
-        <KeyboardDismissButton />
+        <KeyboardDismissButton isInsideModal />
       </KeyboardAvoidingView>
     </Modal>
   );

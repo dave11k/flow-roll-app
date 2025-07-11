@@ -18,12 +18,12 @@ import {
 import { BlurView } from 'expo-blur';
 import { X, Save, Calendar, MapPin, Trash2, Star, Zap, Pencil } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
-import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import TechniquePill from '@/components/TechniquePill';
 import SubmissionPill from '@/components/SubmissionPill';
 import TechniqueModal from '@/components/TechniqueModal';
 import NotesModal from '@/components/NotesModal';
 import { searchSubmissionSuggestions } from '@/data/submissionSuggestions';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 
 interface SessionModalProps {
   visible: boolean;
@@ -633,8 +633,9 @@ export default function SessionModal({
             onClose={handleNotesModalClose}
             triggerPosition={notesInputPosition}
           />
+          
         </Animated.View>
-        <KeyboardDismissButton />
+        <KeyboardDismissButton isInsideModal />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -701,8 +702,9 @@ const styles = StyleSheet.create({
     maxHeight: screenHeight * 0.6,
   },
   section: {
-    padding: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   sectionTitle: {
     fontSize: 16,
@@ -898,8 +900,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addTechniqueSection: {
-    padding: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   addTechniqueButton: {
     flexDirection: 'row',

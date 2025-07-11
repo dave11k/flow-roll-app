@@ -16,7 +16,6 @@ import {
 import { BlurView } from 'expo-blur';
 import { X, Save, Plus, Link2, Trash2, FileText, Pencil } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniqueLink } from '@/types/technique';
-import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { useData } from '@/contexts/DataContext';
 import { searchTechniqueSuggestions, TechniqueSuggestion } from '@/data/techniqueSuggestions';
 import CategoryDropdown from '@/components/CategoryDropdown';
@@ -24,6 +23,7 @@ import TagSelectionModal from '@/components/TagSelectionModal';
 import TagChip from '@/components/TagChip';
 import NotesModal from '@/components/NotesModal';
 import { useToast } from '@/contexts/ToastContext';
+import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 
 interface TechniqueModalProps {
   visible: boolean;
@@ -651,7 +651,7 @@ export default function TechniqueModal({
             />
           </View>
         </Animated.View>
-        <KeyboardDismissButton />
+        <KeyboardDismissButton isInsideModal />
       </View>
     </Modal>
   );

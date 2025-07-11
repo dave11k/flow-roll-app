@@ -19,6 +19,7 @@ import { SessionType } from '@/types/session';
 import { getLocationsFromDb, getUniqueSubmissionsFromDb } from '@/services/database';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import SimpleDatePicker from '@/components/SimpleDatePicker';
+import { useFilterModal } from '@/contexts/FilterModalContext';
 
 interface SessionFilters {
   dateRange: {
@@ -53,6 +54,7 @@ export default function SessionFilterModal({
   onApplyFilters,
   onClose,
 }: SessionFilterModalProps) {
+  const { setIsFilterModalOpen } = useFilterModal();
   const [localFilters, setLocalFilters] = useState<SessionFilters>(filters);
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -70,6 +72,7 @@ export default function SessionFilterModal({
   useEffect(() => {
     if (visible) {
       setIsVisible(true);
+      setIsFilterModalOpen(true);
       dragY.setValue(0);
       setLocalFilters(filters);
       loadData();
@@ -99,9 +102,10 @@ export default function SessionFilterModal({
         }),
       ]).start(() => {
         setIsVisible(false);
+        setIsFilterModalOpen(false);
       });
     }
-  }, [visible, isVisible]);
+  }, [visible, isVisible, setIsFilterModalOpen]);
 
   const loadData = async () => {
     try {
@@ -521,9 +525,9 @@ export default function SessionFilterModal({
               </TouchableOpacity>
             </View>
           </View>
+          <KeyboardDismissButton isInsideModal isFilterModal />
         </Animated.View>
       </View>
-      <KeyboardDismissButton />
     </Modal>
   );
 }
