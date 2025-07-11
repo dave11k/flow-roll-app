@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
 import { TechniqueCategory } from '@/types/technique';
+import { CATEGORY_COLORS as BASE_CATEGORY_COLORS } from '@/constants/colors';
 
 interface CategoryDropdownProps {
   selectedCategory: TechniqueCategory | null;
@@ -33,14 +34,8 @@ const CATEGORIES: TechniqueCategory[] = [
 ];
 
 const CATEGORY_COLORS: Record<TechniqueCategory | 'All', string> = {
+  ...BASE_CATEGORY_COLORS,
   'All': '#9ca3af',
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#22c55e',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
 };
 
 const { width: screenWidth } = Dimensions.get('window');

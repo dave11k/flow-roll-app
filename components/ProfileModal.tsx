@@ -12,7 +12,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { X, ChevronDown, Star } from 'lucide-react-native';
+import { X, ChevronDown } from 'lucide-react-native';
 import { UserProfile, BeltRank, BELT_RANKS, MAX_STRIPES } from '@/types/profile';
 
 interface ProfileModalProps {

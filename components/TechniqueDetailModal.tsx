@@ -11,9 +11,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { Pencil, Trash2, Target, MapPin, FileText, Calendar, Link2, ExternalLink } from 'lucide-react-native';
+import { Pencil, Trash2, FileText, Calendar, Link2, ExternalLink } from 'lucide-react-native';
 import { Technique } from '@/types/technique';
 import * as Linking from 'expo-linking';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
+import { CATEGORY_COLORS } from '@/constants/colors';
 
 interface TechniqueDetailModalProps {
   visible: boolean;
@@ -25,16 +27,6 @@ interface TechniqueDetailModalProps {
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#5271ff',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
-
 export default function TechniqueDetailModal({
   visible,
   technique,
@@ -42,60 +34,21 @@ export default function TechniqueDetailModal({
   onEdit,
   onDelete,
 }: TechniqueDetailModalProps) {
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const [isVisible, setIsVisible] = useState(false);
-  const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
-
-  useEffect(() => {
-    if (visible) {
-      setIsVisible(true);
-      dragY.setValue(0);
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight * 0.1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else if (isVisible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsVisible(false);
-      });
-    }
-  }, [visible, isVisible]);
+  
+  const modalAnimation = useModalAnimation(visible, { type: 'slide', duration: 300 });
+  const { 
+    slideAnim, 
+    backgroundOpacityAnim, 
+    dragY, 
+    isVisible, 
+    animateOut, 
+    resetDrag 
+  } = modalAnimation as any; // Type assertion for slide animation
 
   const animateClose = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: screenHeight,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      dragY.setValue(0);
+    animateOut(() => {
+      resetDrag();
       onClose();
     });
   };
@@ -150,7 +103,7 @@ export default function TechniqueDetailModal({
           style={[
             styles.backdrop,
             {
-              opacity: opacityAnim,
+              opacity: backgroundOpacityAnim,
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
             },
           ]}

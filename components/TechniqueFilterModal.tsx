@@ -11,12 +11,14 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { X, RotateCcw, ChevronDown, Search } from 'lucide-react-native';
 import { TechniqueCategory } from '@/types/technique';
 import { getAllTagsFromDb } from '@/services/database';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { useFilterModal } from '@/contexts/FilterModalContext';
+import { CATEGORY_COLORS } from '@/constants/colors';
 
 interface TechniqueFilters {
   category: TechniqueCategory | null;
@@ -42,16 +44,6 @@ const CATEGORIES: TechniqueCategory[] = [
   'Other',
 ];
 
-const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
-  'Submission': '#ef4444',
-  'Sweep': '#f97316',
-  'Escape': '#eab308',
-  'Guard Pass': '#5271ff',
-  'Takedown': '#3b82f6',
-  'Defense': '#8b5cf6',
-  'Other': '#6b7280',
-};
-
 export default function TechniqueFilterModal({
   visible,
   filters,
@@ -60,55 +52,34 @@ export default function TechniqueFilterModal({
 }: TechniqueFilterModalProps) {
   const { setIsFilterModalOpen } = useFilterModal();
   const [localFilters, setLocalFilters] = useState<TechniqueFilters>(filters);
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const [isVisible, setIsVisible] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [filteredTags, setFilteredTags] = useState<string[]>([]);
-  const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const tagSectionRef = useRef<View>(null);
 
+  const modalAnimation = useModalAnimation(visible, { type: 'slide' });
+  const { 
+    slideAnim, 
+    backgroundOpacityAnim, 
+    dragY, 
+    isVisible, 
+    animateOut,
+    resetDrag 
+  } = modalAnimation as any; // Type assertion for slide animation
+
   useEffect(() => {
     if (visible) {
-      setIsVisible(true);
       setIsFilterModalOpen(true);
-      dragY.setValue(0);
+      resetDrag();
       setLocalFilters(filters);
       loadTags();
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight * 0.1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else if (isVisible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: screenHeight,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsVisible(false);
-        setIsFilterModalOpen(false);
-      });
+    } else if (!visible && isVisible) {
+      setIsFilterModalOpen(false);
     }
-  }, [visible, isVisible, slideAnim, opacityAnim, dragY, filters, setIsFilterModalOpen]);
+  }, [visible, filters, resetDrag, setIsFilterModalOpen, isVisible]);
 
   const loadTags = async () => {
     try {
@@ -126,19 +97,8 @@ export default function TechniqueFilterModal({
   };
 
   const animateClose = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: screenHeight,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      dragY.setValue(0);
+    animateOut(() => {
+      resetDrag();
       onClose();
     });
   };
@@ -217,7 +177,7 @@ export default function TechniqueFilterModal({
             style={[
               styles.backdrop,
               {
-                opacity: opacityAnim,
+                opacity: backgroundOpacityAnim,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 1,
               },

@@ -24,6 +24,7 @@ import TechniqueModal from '@/components/TechniqueModal';
 import NotesModal from '@/components/NotesModal';
 import { searchSubmissionSuggestions } from '@/data/submissionSuggestions';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
+import StarRating from '@/components/StarRating';
 
 interface SessionModalProps {
   visible: boolean;
@@ -311,22 +312,6 @@ export default function SessionModal({
     return nextDate > today;
   };
 
-  const renderStars = () => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <TouchableOpacity
-        key={i}
-        onPress={() => setSatisfaction((i + 1) as 1 | 2 | 3 | 4 | 5)}
-        style={styles.starButton}
-        activeOpacity={0.7}
-      >
-        <Star
-          size={32}
-          color={i < satisfaction ? '#f59e0b' : '#e5e7eb'}
-          fill={i < satisfaction ? '#f59e0b' : 'transparent'}
-        />
-      </TouchableOpacity>
-    ));
-  };
 
   const getHeaderIcon = () => {
     return mode === 'create' ? <Calendar size={24} color="#5271ff" /> : <Pencil size={24} color="#5271ff" />;
@@ -563,9 +548,12 @@ export default function SessionModal({
               {/* Satisfaction Rating */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Satisfaction</Text>
-                <View style={styles.starsContainer}>
-                  {renderStars()}
-                </View>
+                <StarRating
+                  mode="input"
+                  rating={satisfaction}
+                  onRatingPress={(rating: number) => setSatisfaction(rating as 1 | 2 | 3 | 4 | 5)}
+                  size={32}
+                />
               </View>
 
               {/* Notes */}
