@@ -10,7 +10,6 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Keyboard,
-  Image,
 } from 'react-native';
 import { 
   User, 
@@ -334,20 +333,6 @@ export default function SettingsPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image 
-          source={require('@/assets/images/FlowRoll.png')} 
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Settings</Text>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => setShowProfileModal(true)}
-          activeOpacity={0.7}
-        >
-          <User size={20} color="#000000" />
-        </TouchableOpacity>
-      </View>
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.content}>
@@ -394,43 +379,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 9,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    height: 48,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    resizeMode: 'contain',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#000000',
-    flex: 1,
-    textAlign: 'center',
-  },
-  profileButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,

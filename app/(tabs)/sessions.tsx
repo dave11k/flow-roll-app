@@ -11,9 +11,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   TextInput,
-  Image,
 } from 'react-native';
-import { Calendar, Plus, MapPin, Clock, Filter, Search, X, User } from 'lucide-react-native';
+import { Calendar, Plus, MapPin, Clock, Filter, Search, X } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import EditSessionModal from '@/components/EditSessionModal';
@@ -21,10 +20,8 @@ import SessionDetailModal from '@/components/SessionDetailModal';
 import SessionFilterModal from '@/components/SessionFilterModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
-import ProfileModal from '@/components/ProfileModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
-import { StatusBar } from 'expo-status-bar';
 
 interface SessionFilters {
   dateRange: {
@@ -68,7 +65,6 @@ export default function Sessions() {
     satisfaction: null,
   });
   const [lastLocation, setLastLocation] = useState('');
-  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Handle errors from data context
   useEffect(() => {
@@ -283,21 +279,6 @@ export default function Sessions() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <View style={styles.header}>
-        <Image 
-          source={require('@/assets/images/FlowRoll.png')} 
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Sessions</Text>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => setShowProfileModal(true)}
-          activeOpacity={0.7}
-        >
-          <User size={20} color="#000000" />
-        </TouchableOpacity>
-      </View>
       
       {/* Search and Filter Row */}
       <TouchableWithoutFeedback onPress={() => {
@@ -492,14 +473,6 @@ export default function Sessions() {
         onClose={() => setShowFilterModal(false)}
       />
 
-      {/* Profile Modal */}
-      <ProfileModal
-        visible={showProfileModal}
-        profile={null}
-        onSave={() => {}}
-        onClose={() => setShowProfileModal(false)}
-      />
-
       {/* Floating Add Button */}
       <FloatingAddButton
         onPress={() => {
@@ -515,43 +488,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 9,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    height: 48,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    resizeMode: 'contain',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#000000',
-    flex: 1,
-    textAlign: 'center',
-  },
-  profileButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,

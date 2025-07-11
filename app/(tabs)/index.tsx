@@ -11,9 +11,8 @@ import {
   RefreshControl,
   Keyboard,
   TouchableWithoutFeedback,
-  Image,
 } from 'react-native';
-import { Search, X, Plus, BookOpen, Filter, User } from 'lucide-react-native';
+import { Search, X, Plus, BookOpen, Filter } from 'lucide-react-native';
 import { Technique, TechniqueCategory } from '@/types/technique';
 import TechniqueFilterModal from '@/components/TechniqueFilterModal';
 import TechniqueItem from '@/components/TechniqueItem';
@@ -22,7 +21,6 @@ import AddTechniqueModal from '@/components/AddTechniqueModal';
 import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
-import ProfileModal from '@/components/ProfileModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
 
@@ -62,7 +60,6 @@ export default function TechniquesPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Handle errors from data context
   useEffect(() => {
@@ -207,20 +204,6 @@ export default function TechniquesPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image 
-          source={require('@/assets/images/FlowRoll.png')} 
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Techniques</Text>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => setShowProfileModal(true)}
-          activeOpacity={0.7}
-        >
-          <User size={20} color="#000000" />
-        </TouchableOpacity>
-      </View>
 
       {/* Search and Filter Row */}
       <TouchableWithoutFeedback onPress={() => {
@@ -415,14 +398,6 @@ export default function TechniquesPage() {
         onClose={() => setShowFilterModal(false)}
       />
 
-      {/* Profile Modal */}
-      <ProfileModal
-        visible={showProfileModal}
-        profile={null}
-        onSave={() => {}}
-        onClose={() => setShowProfileModal(false)}
-      />
-
       {/* Floating Add Button */}
       <FloatingAddButton
         onPress={() => {
@@ -438,43 +413,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 9,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    height: 48,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    resizeMode: 'contain',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#000000',
-    flex: 1,
-    textAlign: 'center',
-  },
-  profileButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   searchSection: {
     paddingHorizontal: 20,
