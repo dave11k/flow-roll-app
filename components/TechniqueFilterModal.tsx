@@ -66,6 +66,8 @@ export default function TechniqueFilterModal({
   const [filteredTags, setFilteredTags] = useState<string[]>([]);
   const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const tagSectionRef = useRef<View>(null);
 
   useEffect(() => {
     if (visible) {
@@ -257,7 +259,7 @@ export default function TechniqueFilterModal({
               <TouchableWithoutFeedback onPress={() => {
                 setShowCategoryDropdown(false);
               }}>
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
                   {/* Category Filter */}
                   <View style={styles.section}>
                       <Text style={styles.sectionTitle}>Category</Text>
@@ -311,7 +313,7 @@ export default function TechniqueFilterModal({
                     </View>
 
                     {/* Tags Filter - Always visible */}
-                    <View style={styles.section}>
+                    <View ref={tagSectionRef} style={styles.section}>
                       <Text style={styles.sectionTitle}>Tags</Text>
                       {availableTags.length >= 20 && (
                         <View style={styles.tagSearchContainer}>
@@ -322,6 +324,21 @@ export default function TechniqueFilterModal({
                             placeholderTextColor="#9ca3af"
                             value={tagSearchQuery}
                             onChangeText={handleTagSearch}
+                            onFocus={() => {
+                              // Scroll to position the tag section with extra space below
+                              setTimeout(() => {
+                                if (tagSectionRef.current && scrollViewRef.current) {
+                                  tagSectionRef.current.measureInWindow((x, y, width, height) => {
+                                    const modalTop = screenHeight * 0.1;
+                                    const relativeY = y - modalTop;
+                                    scrollViewRef.current?.scrollTo({ 
+                                      y: relativeY - 100, 
+                                      animated: true 
+                                    });
+                                  });
+                                }
+                              }, 100);
+                            }}
                           />
                           {tagSearchQuery.length > 0 && (
                             <TouchableOpacity
@@ -627,7 +644,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scrollSpacer: {
-    height: 200,
+    height: 400,
   },
   tagSearchContainer: {
     flexDirection: 'row',

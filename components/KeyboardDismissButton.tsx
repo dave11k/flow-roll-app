@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     right: 16,
-    zIndex: 9999,
+    zIndex: 99999,
   },
   button: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',

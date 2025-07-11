@@ -16,17 +16,19 @@ import {
   Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Calendar, MapPin, Plus, Trash2, Star, Zap } from 'lucide-react-native';
+import { X, Save, Calendar, MapPin, Trash2, Star, Zap, Pencil } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import TechniquePill from '@/components/TechniquePill';
 import SubmissionPill from '@/components/SubmissionPill';
-import AddTechniqueModal from '@/components/AddTechniqueModal';
+import TechniqueModal from '@/components/TechniqueModal';
 import NotesModal from '@/components/NotesModal';
-import { searchSubmissionSuggestions, isValidSubmission } from '@/data/submissionSuggestions';
+import { searchSubmissionSuggestions } from '@/data/submissionSuggestions';
 
-interface CreateSessionModalProps {
+interface SessionModalProps {
   visible: boolean;
+  mode: 'create' | 'edit';
+  session?: TrainingSession;
   onSave: (session: TrainingSession) => void;
   onClose: () => void;
   lastLocation?: string;
@@ -41,12 +43,14 @@ const SESSION_TYPES: { type: SessionType; label: string; color: string }[] = [
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export default function CreateSessionModal({
+export default function SessionModal({
   visible,
+  mode,
+  session,
   onSave,
   onClose,
   lastLocation = '',
-}: CreateSessionModalProps) {
+}: SessionModalProps) {
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState('');
   const [selectedType, setSelectedType] = useState<SessionType | null>(null);
@@ -74,19 +78,33 @@ export default function CreateSessionModal({
 
   useEffect(() => {
     if (visible) {
-      // Reset form
-      setDate(new Date());
-      setLocation(lastLocation);
-      setSelectedType(null);
-      setSubmissions([]);
-      setSubmissionCounts({});
-      setNewSubmission('');
-      setNotes('');
-      setSatisfaction(3);
-      setShowAddTechniqueModal(false);
-      setShowNotesModal(false);
+      if (mode === 'create') {
+        // Reset form for create mode
+        setDate(new Date());
+        setLocation(lastLocation);
+        setSelectedType(null);
+        setSubmissions([]);
+        setSubmissionCounts({});
+        setNewSubmission('');
+        setNotes('');
+        setSatisfaction(3);
+        setShowAddTechniqueModal(false);
+        setShowNotesModal(false);
+      } else if (mode === 'edit' && session) {
+        // Populate form for edit mode
+        setDate(session.date);
+        setLocation(session.location || '');
+        setSelectedType(session.type);
+        setSubmissions(session.submissions);
+        setSubmissionCounts(session.submissionCounts || {});
+        setNewSubmission('');
+        setNotes(session.notes || '');
+        setSatisfaction(session.satisfaction);
+        setShowAddTechniqueModal(false);
+        setShowNotesModal(false);
+      }
     }
-  }, [visible, lastLocation]);
+  }, [visible, mode, session, lastLocation]);
 
   useEffect(() => {
     if (visible) {
@@ -138,15 +156,6 @@ export default function CreateSessionModal({
     setSelectedType(type);
   };
 
-  const handleAddSubmission = () => {
-    const submission = newSubmission.trim();
-    if (submission && isValidSubmission(submission) && !submissions.includes(submission)) {
-      setSubmissions([...submissions, submission]);
-      setSubmissionCounts(prev => ({ ...prev, [submission]: 1 }));
-      setNewSubmission('');
-      setShowSubmissionDropdown(false);
-    }
-  };
 
   const handleSubmissionInputChange = (text: string) => {
     setNewSubmission(text);
@@ -214,19 +223,34 @@ export default function CreateSessionModal({
       return;
     }
 
-    const newSession: TrainingSession = {
-      id: Date.now().toString(),
-      date,
-      location: location.trim() || undefined,
-      type: selectedType,
-      submissions,
-      submissionCounts,
-      notes: notes.trim() || undefined,
-      satisfaction,
-      techniqueIds: [], // Will be populated when techniques are linked to sessions
-    };
+    if (mode === 'create') {
+      const newSession: TrainingSession = {
+        id: Date.now().toString(),
+        date,
+        location: location.trim() || undefined,
+        type: selectedType,
+        submissions,
+        submissionCounts,
+        notes: notes.trim() || undefined,
+        satisfaction,
+        techniqueIds: [], // Will be populated when techniques are linked to sessions
+      };
 
-    onSave(newSession);
+      onSave(newSession);
+    } else if (mode === 'edit' && session) {
+      const updatedSession: TrainingSession = {
+        ...session,
+        date,
+        location: location.trim() || undefined,
+        type: selectedType,
+        submissions,
+        submissionCounts,
+        notes: notes.trim() || undefined,
+        satisfaction,
+      };
+
+      onSave(updatedSession);
+    }
   };
 
   const handleAddTechniqueModalSave = () => {
@@ -304,6 +328,14 @@ export default function CreateSessionModal({
     ));
   };
 
+  const getHeaderIcon = () => {
+    return mode === 'create' ? <Calendar size={24} color="#5271ff" /> : <Pencil size={24} color="#5271ff" />;
+  };
+
+  const getHeaderTitle = () => {
+    return mode === 'create' ? 'New Session' : 'Edit Session';
+  };
+
   return (
     <Modal
       visible={visible}
@@ -342,8 +374,8 @@ export default function CreateSessionModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Calendar size={24} color="#5271ff" />
-                <Text style={styles.headerTitle}>New Session</Text>
+                {getHeaderIcon()}
+                <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
               </View>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -358,6 +390,7 @@ export default function CreateSessionModal({
               style={styles.content} 
               showsVerticalScrollIndicator={false} 
               keyboardShouldPersistTaps="handled"
+              contentContainerStyle={mode === 'edit' ? { paddingBottom: 50 } : undefined}
             >
               <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View>
@@ -585,8 +618,9 @@ export default function CreateSessionModal({
           </View>
 
           {/* Add Technique Modal */}
-          <AddTechniqueModal
+          <TechniqueModal
             visible={showAddTechniqueModal}
+            mode="add"
             onSave={handleAddTechniqueModalSave}
             onClose={() => setShowAddTechniqueModal(false)}
           />
@@ -641,7 +675,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -667,8 +701,8 @@ const styles = StyleSheet.create({
     maxHeight: screenHeight * 0.6,
   },
   section: {
-    padding: 20,
-    paddingBottom: 16,
+    padding: 16,
+    paddingBottom: 12,
   },
   sectionTitle: {
     fontSize: 16,
@@ -828,7 +862,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     gap: 12,

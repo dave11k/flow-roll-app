@@ -9,14 +9,12 @@ import {
   Modal,
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Alert,
   Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Save, Plus, Link2, Trash2, FileText } from 'lucide-react-native';
+import { X, Save, Plus, Link2, Trash2, FileText, Pencil } from 'lucide-react-native';
 import { Technique, TechniqueCategory, TechniqueLink } from '@/types/technique';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { saveTechnique } from '@/services/storage';
@@ -27,21 +25,23 @@ import TagChip from '@/components/TagChip';
 import NotesModal from '@/components/NotesModal';
 import { useToast } from '@/contexts/ToastContext';
 
-interface AddTechniqueModalProps {
+interface TechniqueModalProps {
   visible: boolean;
-  onSave: () => void;
+  mode: 'add' | 'edit';
+  technique?: Technique;
+  onSave: (technique?: Technique) => void;
   onClose: () => void;
 }
 
-
-
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export default function AddTechniqueModal({
+export default function TechniqueModal({
   visible,
+  mode,
+  technique,
   onSave,
   onClose,
-}: AddTechniqueModalProps) {
+}: TechniqueModalProps) {
   const { showSuccess, showError } = useToast();
   const [techniqueName, setTechniqueName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>('Submission');
@@ -70,17 +70,29 @@ export default function AddTechniqueModal({
 
   useEffect(() => {
     if (visible) {
-      // Reset form
-      setTechniqueName('');
-      setSelectedCategory('Submission');
-      setSelectedTags([]);
-      setNotes('');
-      setLinks([]);
-      setNewLinkUrl('');
-      setShowAddLinkInput(false);
-      setShowSuggestions(false);
+      if (mode === 'add') {
+        // Reset form for add mode
+        setTechniqueName('');
+        setSelectedCategory('Submission');
+        setSelectedTags([]);
+        setNotes('');
+        setLinks([]);
+        setNewLinkUrl('');
+        setShowAddLinkInput(false);
+        setShowSuggestions(false);
+      } else if (mode === 'edit' && technique) {
+        // Populate form for edit mode
+        setTechniqueName(technique.name);
+        setSelectedCategory(technique.category);
+        setSelectedTags(technique.tags || []);
+        setNotes(technique.notes || '');
+        setLinks(technique.links || []);
+        setNewLinkUrl('');
+        setShowAddLinkInput(false);
+        setShowSuggestions(false);
+      }
     }
-  }, [visible]);
+  }, [visible, mode, technique]);
 
   useEffect(() => {
     if (visible) {
@@ -149,7 +161,7 @@ export default function AddTechniqueModal({
     }
   }, [techniqueName]);
 
-  const handleAddTechnique = async () => {
+  const handleSaveTechnique = async () => {
     if (!techniqueName.trim()) {
       Alert.alert('Error', 'Please enter a technique name');
       return;
@@ -159,32 +171,43 @@ export default function AddTechniqueModal({
       Alert.alert('Error', 'Please select a category');
       return;
     }
-    
 
-    setIsLoading(true);
+    if (mode === 'add') {
+      setIsLoading(true);
+      try {
+        const newTechnique: Technique = {
+          id: Date.now().toString(),
+          name: techniqueName.trim(),
+          category: selectedCategory,
+          tags: selectedTags,
+          notes: notes.trim() || undefined,
+          links: links.length > 0 ? links : undefined,
+          timestamp: new Date(),
+        };
 
-    try {
-      const newTechnique: Technique = {
-        id: Date.now().toString(),
+        await saveTechnique(newTechnique);
+        
+        // Close immediately like session modal
+        onSave();
+        onClose();
+        showSuccess(`"${newTechnique.name}" added successfully!`);
+        
+      } catch {
+        showError('Failed to save technique. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (mode === 'edit' && technique) {
+      const updatedTechnique: Technique = {
+        ...technique,
         name: techniqueName.trim(),
         category: selectedCategory,
         tags: selectedTags,
         notes: notes.trim() || undefined,
         links: links.length > 0 ? links : undefined,
-        timestamp: new Date(),
       };
 
-      await saveTechnique(newTechnique);
-      
-      // Close immediately like session modal
-      onSave();
-      onClose();
-      showSuccess(`"${newTechnique.name}" added successfully!`);
-      
-    } catch {
-      showError('Failed to save technique. Please try again.');
-    } finally {
-      setIsLoading(false);
+      onSave(updatedTechnique);
     }
   };
 
@@ -193,7 +216,6 @@ export default function AddTechniqueModal({
   };
 
   const handleTagsChange = (tags: string[]) => {
-    console.log('AddTechniqueModal - handleTagsChange called with:', tags);
     setSelectedTags(tags);
   };
 
@@ -233,7 +255,9 @@ export default function AddTechniqueModal({
   };
 
   const handleTechniqueNameBlur = () => {
-    // Don't hide suggestions on blur - let user interaction handle it
+    // Hide suggestions when field loses focus
+    setShowSuggestions(false);
+    setSuggestions([]);
   };
 
   const handleTechniqueNameFocus = () => {
@@ -277,7 +301,36 @@ export default function AddTechniqueModal({
     setTechniqueName('');
   };
 
-  const isValid = techniqueName.trim() && selectedCategory && !isLoading;
+  const isValid = techniqueName.trim() && selectedCategory && (mode === 'add' ? !isLoading : true);
+
+  const getHeaderIcon = () => {
+    return mode === 'add' ? <Plus size={24} color="#5271ff" /> : <Pencil size={24} color="#5271ff" />;
+  };
+
+  const getHeaderTitle = () => {
+    return mode === 'add' ? 'Add Technique' : 'Edit Technique';
+  };
+
+  const getButtonText = () => {
+    if (mode === 'add') {
+      return isLoading ? 'Saving...' : 'Add';
+    }
+    return 'Save';
+  };
+
+  const getTagButtonText = () => {
+    return mode === 'add' ? 'Add Tags' : 'Edit Tags';
+  };
+
+  const getNotesPlaceholder = () => {
+    return mode === 'add' 
+      ? "Add notes about the technique, key details, or what you learned..."
+      : "Add notes about the technique...";
+  };
+
+  const getMaxHeight = () => {
+    return mode === 'add' ? screenHeight * 0.6 : screenHeight * 0.65;
+  };
 
   return (
     <Modal
@@ -314,8 +367,8 @@ export default function AddTechniqueModal({
           <View style={styles.modal}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Plus size={24} color="#5271ff" />
-                <Text style={styles.headerTitle}>Add Technique</Text>
+                {getHeaderIcon()}
+                <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
               </View>
               <View style={styles.headerRight}>
                 <TouchableOpacity
@@ -328,7 +381,11 @@ export default function AddTechniqueModal({
               </View>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView 
+              style={[styles.content, { maxHeight: getMaxHeight() }]} 
+              showsVerticalScrollIndicator={false} 
+              keyboardShouldPersistTaps="handled"
+            >
               <TouchableWithoutFeedback onPress={() => {
                 Keyboard.dismiss();
                 setShowSuggestions(false);
@@ -401,24 +458,21 @@ export default function AddTechniqueModal({
                     activeOpacity={0.7}
                   >
                     <Plus size={16} color="#5271ff" />
-                    <Text style={styles.addTagText}>Add Tags</Text>
+                    <Text style={styles.addTagText}>{getTagButtonText()}</Text>
                   </TouchableOpacity>
                 </View>
                 
                 {selectedTags.length > 0 ? (
                   <View style={styles.selectedTagsContainer}>
-                    {selectedTags.map((tag) => {
-                      console.log('Rendering tag chip for:', tag);
-                      return (
-                        <TagChip
-                          key={tag}
-                          tag={tag}
-                          variant="removable"
-                          size="small"
-                          onRemove={() => handleRemoveTag(tag)}
-                        />
-                      );
-                    })}
+                    {selectedTags.map((tag) => (
+                      <TagChip
+                        key={tag}
+                        tag={tag}
+                        variant="removable"
+                        size="small"
+                        onRemove={() => handleRemoveTag(tag)}
+                      />
+                    ))}
                   </View>
                 ) : (
                   <View style={styles.noTagsContainer}>
@@ -438,14 +492,28 @@ export default function AddTechniqueModal({
                   onPress={handleNotesPress}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.notesInput}>
-                    <Text style={[
-                      styles.notesText,
-                      !notes && styles.notesPlaceholder
-                    ]}>
-                      {notes || "Add notes about the technique, key details, or what you learned..."}
-                    </Text>
-                  </View>
+                  {mode === 'add' ? (
+                    <View style={styles.notesInput}>
+                      <Text style={[
+                        styles.notesText,
+                        !notes && styles.notesPlaceholder
+                      ]}>
+                        {notes || getNotesPlaceholder()}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.notesInput}>
+                      <View style={styles.notesInputContent}>
+                        <FileText size={20} color="#9ca3af" style={styles.notesIcon} />
+                        <Text style={[
+                          styles.notesText,
+                          !notes && styles.notesPlaceholder
+                        ]}>
+                          {notes || getNotesPlaceholder()}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                   <Text style={styles.characterCount}>
                     {notes.length}/2000
                   </Text>
@@ -542,13 +610,13 @@ export default function AddTechniqueModal({
                   styles.saveButton,
                   !isValid && styles.saveButtonDisabled
                 ]}
-                onPress={handleAddTechnique}
+                onPress={handleSaveTechnique}
                 disabled={!isValid}
                 activeOpacity={0.8}
               >
                 <Save size={16} color="#fff" />
                 <Text style={styles.saveButtonText}>
-                  {isLoading ? 'Saving...' : 'Add'}
+                  {getButtonText()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -628,20 +696,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
-  },
-  successIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#d1fae5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-  },
-  successText: {
-    color: '#059669',
-    fontSize: 14,
-    fontWeight: '600',
   },
   closeButton: {
     width: 40,
@@ -742,10 +796,19 @@ const styles = StyleSheet.create({
     minHeight: 120,
     justifyContent: 'flex-start',
   },
+  notesInputContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  notesIcon: {
+    marginTop: 2,
+  },
   notesText: {
     fontSize: 16,
     color: '#1f2937',
     lineHeight: 24,
+    flex: 1,
   },
   notesPlaceholder: {
     color: '#c1c5d0',

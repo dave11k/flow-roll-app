@@ -17,8 +17,7 @@ import { Search, X, Plus, BookOpen, Filter, User } from 'lucide-react-native';
 import { Technique, TechniqueCategory } from '@/types/technique';
 import TechniqueFilterModal from '@/components/TechniqueFilterModal';
 import TechniqueItem from '@/components/TechniqueItem';
-import EditTechniqueModal from '@/components/EditTechniqueModal';
-import AddTechniqueModal from '@/components/AddTechniqueModal';
+import TechniqueModal from '@/components/TechniqueModal';
 import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
@@ -57,8 +56,8 @@ export default function TechniquesPage() {
     tags: [] as string[]
   });
   const [editingTechnique, setEditingTechnique] = useState<Technique | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showTechniqueModal, setShowTechniqueModal] = useState(false);
+  const [techniqueModalMode, setTechniqueModalMode] = useState<'add' | 'edit'>('add');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -133,17 +132,23 @@ export default function TechniquesPage() {
   const handleEditTechnique = (technique: Technique) => {
     Keyboard.dismiss();
     setEditingTechnique(technique);
-    setShowEditModal(true);
+    setTechniqueModalMode('edit');
+    setShowTechniqueModal(true);
   };
 
-  const handleSaveTechnique = async (updatedTechnique: Technique) => {
-    try {
-      await updateTechnique(updatedTechnique);
-      setShowEditModal(false);
-      setEditingTechnique(null);
-      showSuccess(`"${updatedTechnique.name}" updated successfully!`);
-    } catch {
-      showError('Failed to update technique. Please try again.');
+  const handleSaveTechnique = async (updatedTechnique?: Technique) => {
+    if (techniqueModalMode === 'edit' && updatedTechnique) {
+      try {
+        await updateTechnique(updatedTechnique);
+        setShowTechniqueModal(false);
+        setEditingTechnique(null);
+        showSuccess(`"${updatedTechnique.name}" updated successfully!`);
+      } catch {
+        showError('Failed to update technique. Please try again.');
+      }
+    } else if (techniqueModalMode === 'add') {
+      // Add mode - just refresh the techniques list
+      await refreshTechniques();
     }
   };
 
@@ -337,7 +342,11 @@ export default function TechniquesPage() {
             {techniques.length === 0 && (
               <TouchableOpacity
                 style={styles.createTechniqueButton}
-                onPress={() => setShowAddModal(true)}
+                onPress={() => {
+                  setTechniqueModalMode('add');
+                  setEditingTechnique(null);
+                  setShowTechniqueModal(true);
+                }}
                 activeOpacity={0.7}
               >
                 <Plus size={20} color="#fff" />
@@ -375,25 +384,17 @@ export default function TechniquesPage() {
         </View>
       </TouchableWithoutFeedback>
 
-      {/* Add Technique Modal */}
-      <AddTechniqueModal
-        visible={showAddModal}
-        onSave={refreshTechniques}
-        onClose={() => setShowAddModal(false)}
+      {/* Technique Modal */}
+      <TechniqueModal
+        visible={showTechniqueModal}
+        mode={techniqueModalMode}
+        technique={editingTechnique || undefined}
+        onSave={handleSaveTechnique}
+        onClose={() => {
+          setShowTechniqueModal(false);
+          setEditingTechnique(null);
+        }}
       />
-
-      {/* Edit Modal */}
-      {editingTechnique && (
-        <EditTechniqueModal
-          visible={showEditModal}
-          technique={editingTechnique}
-          onSave={handleSaveTechnique}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingTechnique(null);
-          }}
-        />
-      )}
 
       {/* Detail Modal */}
       <TechniqueDetailModal
@@ -427,7 +428,9 @@ export default function TechniquesPage() {
       <FloatingAddButton
         onPress={() => {
           Keyboard.dismiss();
-          setShowAddModal(true);
+          setTechniqueModalMode('add');
+          setEditingTechnique(null);
+          setShowTechniqueModal(true);
         }}
       />
     </SafeAreaView>
@@ -618,6 +621,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    paddingBottom: 100,
+    marginTop: 60,
   },
   emptyTitle: {
     fontSize: 20,

@@ -15,8 +15,7 @@ import {
 } from 'react-native';
 import { Calendar, Plus, MapPin, Clock, Filter, Search, X, User } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
-import CreateSessionModal from '@/components/CreateSessionModal';
-import EditSessionModal from '@/components/EditSessionModal';
+import SessionModal from '@/components/SessionModal';
 import SessionDetailModal from '@/components/SessionDetailModal';
 import SessionFilterModal from '@/components/SessionFilterModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
@@ -53,8 +52,8 @@ export default function Sessions() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [filteredSessions, setFilteredSessions] = useState<TrainingSession[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionModalMode, setSessionModalMode] = useState<'create' | 'edit'>('create');
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
@@ -161,18 +160,25 @@ export default function Sessions() {
     setIsRefreshing(false);
   };
 
-  const handleCreateSession = async (session: TrainingSession) => {
+  const handleSaveSession = async (session: TrainingSession) => {
     try {
-      await createSession(session);
-      setShowCreateModal(false);
+      if (sessionModalMode === 'create') {
+        await createSession(session);
+        showSuccess('Session created successfully!');
+      } else {
+        await updateSession(session);
+        showSuccess('Session updated successfully!');
+      }
+      
+      setShowSessionModal(false);
+      setEditingSession(null);
       
       // Update last location
       if (session.location) {
         setLastLocation(session.location);
       }
-      showSuccess('Session created successfully!');
     } catch {
-      showError('Failed to save session. Please try again.');
+      showError(`Failed to ${sessionModalMode === 'create' ? 'save' : 'update'} session. Please try again.`);
     }
   };
 
@@ -185,24 +191,10 @@ export default function Sessions() {
   const handleEditSession = (session: TrainingSession) => {
     Keyboard.dismiss();
     setEditingSession(session);
-    setShowEditModal(true);
+    setSessionModalMode('edit');
+    setShowSessionModal(true);
   };
 
-  const handleUpdateSession = async (updatedSession: TrainingSession) => {
-    try {
-      await updateSession(updatedSession);
-      setShowEditModal(false);
-      setEditingSession(null);
-      
-      // Update last location
-      if (updatedSession.location) {
-        setLastLocation(updatedSession.location);
-      }
-      showSuccess('Session updated successfully!');
-    } catch {
-      showError('Failed to update session. Please try again.');
-    }
-  };
 
   const handleDeleteSession = (session: TrainingSession) => {
     Alert.alert(
@@ -369,13 +361,47 @@ export default function Sessions() {
                 : 'Try adjusting your filters to find sessions'
               }
             </Text>
-            <TouchableOpacity 
-              style={styles.createSessionButton}
-              onPress={() => setShowCreateModal(true)}
-            >
-              <Plus size={20} color="#fff" />
-              <Text style={styles.createSessionText}>Create Session</Text>
-            </TouchableOpacity>
+            {sessions.length === 0 ? (
+              <TouchableOpacity 
+                style={styles.createSessionButton}
+                onPress={() => {
+                  setSessionModalMode('create');
+                  setEditingSession(null);
+                  setShowSessionModal(true);
+                }}
+              >
+                <Plus size={20} color="#fff" />
+                <Text style={styles.createSessionText}>Create Session</Text>
+              </TouchableOpacity>
+            ) : hasActiveFilters() ? (
+              <TouchableOpacity 
+                style={styles.clearFiltersButtonLarge}
+                onPress={() => {
+                  setSearchQuery('');
+                  setFilters({
+                    dateRange: { startDate: null, endDate: null },
+                    location: '',
+                    sessionTypes: [],
+                    submission: '',
+                    satisfaction: null,
+                  });
+                }}
+              >
+                <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={styles.createSessionButton}
+                onPress={() => {
+                  setSessionModalMode('create');
+                  setEditingSession(null);
+                  setShowSessionModal(true);
+                }}
+              >
+                <Plus size={20} color="#fff" />
+                <Text style={styles.createSessionText}>Create Session</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.sessionsList}>
@@ -455,24 +481,17 @@ export default function Sessions() {
         </View>
       </TouchableWithoutFeedback>
       
-      <CreateSessionModal
-        visible={showCreateModal}
-        onSave={handleCreateSession}
-        onClose={() => setShowCreateModal(false)}
+      <SessionModal
+        visible={showSessionModal}
+        mode={sessionModalMode}
+        session={editingSession || undefined}
+        onSave={handleSaveSession}
+        onClose={() => {
+          setShowSessionModal(false);
+          setEditingSession(null);
+        }}
         lastLocation={lastLocation}
       />
-
-      {editingSession && (
-        <EditSessionModal
-          visible={showEditModal}
-          session={editingSession}
-          onSave={handleUpdateSession}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingSession(null);
-          }}
-        />
-      )}
 
       <SessionDetailModal
         visible={showDetailModal}
@@ -504,7 +523,9 @@ export default function Sessions() {
       <FloatingAddButton
         onPress={() => {
           Keyboard.dismiss();
-          setShowCreateModal(true);
+          setSessionModalMode('create');
+          setEditingSession(null);
+          setShowSessionModal(true);
         }}
       />
     </SafeAreaView>
@@ -562,6 +583,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
     paddingBottom: 100,
+    marginTop: 60,
   },
   emptyTitle: {
     fontSize: 20,
@@ -587,6 +609,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createSessionText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  clearFiltersButtonLarge: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  clearFiltersButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

@@ -186,7 +186,6 @@ export default function SessionFilterModal({
     setShowLocationDropdown(false);
     setShowSubmissionDropdown(false);
     onApplyFilters(clearedFilters);
-    onClose();
   };
 
   const handleApply = () => {
@@ -212,8 +211,10 @@ export default function SessionFilterModal({
   const handleSubmissionSelect = (submission: string) => {
     setLocalFilters(prev => ({ ...prev, submission }));
     setShowSubmissionDropdown(false);
-    // Dismiss keyboard when suggestion is selected
-    Keyboard.dismiss();
+    // Add slight delay to ensure state update happens before dismissing keyboard
+    setTimeout(() => {
+      Keyboard.dismiss();
+    }, 50);
   };
 
   const handleLocationSelect = (location: string) => {
@@ -299,11 +300,7 @@ export default function SessionFilterModal({
             </PanGestureHandler>
 
             <View style={styles.contentWrapper}>
-              <TouchableWithoutFeedback onPress={() => {
-                setShowLocationDropdown(false);
-                setShowSubmissionDropdown(false);
-              }}>
-                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* Date Range */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -362,7 +359,7 @@ export default function SessionFilterModal({
                   </TouchableOpacity>
                   {showLocationDropdown && (
                     <View style={styles.dropdownList}>
-                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="always">
                         <TouchableOpacity
                           style={styles.dropdownItem}
                           onPress={() => handleLocationSelect('')}
@@ -435,7 +432,7 @@ export default function SessionFilterModal({
                   </View>
                   {showSubmissionDropdown && filteredSubmissions.length > 0 && (
                     <View style={styles.dropdownList}>
-                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="always">
                         {filteredSubmissions.map((submission, index) => (
                           <TouchableOpacity
                             key={index}
@@ -504,7 +501,6 @@ export default function SessionFilterModal({
               {/* Invisible spacer to ensure full scrollability */}
               <View style={styles.scrollSpacer} />
                 </ScrollView>
-              </TouchableWithoutFeedback>
             </View>
 
             <View style={styles.footer}>
