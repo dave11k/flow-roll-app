@@ -16,6 +16,7 @@ import { Technique } from '@/types/technique';
 import * as Linking from 'expo-linking';
 import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { CATEGORY_COLORS } from '@/constants/colors';
+import { FloatingCloseButton } from './FloatingCloseButton';
 
 interface TechniqueDetailModalProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export default function TechniqueDetailModal({
   onDelete,
 }: TechniqueDetailModalProps) {
   const lastGestureY = useRef(0);
+  const [showCloseButton, setShowCloseButton] = useState(true);
   
   const modalAnimation = useModalAnimation(visible, { type: 'slide', duration: 300 });
   const { 
@@ -46,7 +48,14 @@ export default function TechniqueDetailModal({
     resetDrag 
   } = modalAnimation as any; // Type assertion for slide animation
 
+  useEffect(() => {
+    if (visible) {
+      setShowCloseButton(true);
+    }
+  }, [visible]);
+
   const animateClose = () => {
+    setShowCloseButton(false);
     animateOut(() => {
       resetDrag();
       onClose();
@@ -266,8 +275,10 @@ export default function TechniqueDetailModal({
             {/* Invisible spacer to ensure full scrollability */}
             <View style={styles.scrollSpacer} />
           </ScrollView>
+          
         </View>
       </Animated.View>
+      {showCloseButton && <FloatingCloseButton onPress={animateClose} />}
     </Modal>
   );
 }

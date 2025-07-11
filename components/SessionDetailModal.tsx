@@ -15,6 +15,7 @@ import { Pencil, Trash2, Calendar, MapPin, Clock, Star, Target } from 'lucide-re
 import { TrainingSession } from '@/types/session';
 import SubmissionDisplayPill from '@/components/SubmissionDisplayPill';
 import StarRating from '@/components/StarRating';
+import { FloatingCloseButton } from './FloatingCloseButton';
 
 interface SessionDetailModalProps {
   visible: boolean;
@@ -36,12 +37,14 @@ export default function SessionDetailModal({
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [isVisible, setIsVisible] = useState(false);
+  const [showCloseButton, setShowCloseButton] = useState(true);
   const dragY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
 
   useEffect(() => {
     if (visible) {
       setIsVisible(true);
+      setShowCloseButton(true);
       dragY.setValue(0);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -74,6 +77,7 @@ export default function SessionDetailModal({
   }, [visible, isVisible]);
 
   const animateClose = () => {
+    setShowCloseButton(false);
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: screenHeight,
@@ -320,8 +324,12 @@ export default function SessionDetailModal({
             {/* Invisible spacer to ensure full scrollability */}
             <View style={styles.scrollSpacer} />
           </ScrollView>
+          
+          
         </View>
+        
       </Animated.View>
+      {showCloseButton && <FloatingCloseButton onPress={animateClose} />}
     </Modal>
   );
 }
