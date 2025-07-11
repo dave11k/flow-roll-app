@@ -323,28 +323,11 @@ export default function TagSelectionModal({
             </View>
 
             {/* Selected Tags Display */}
-            {selectedTags.length > 0 && (
-              <View style={styles.selectedTagsSection}>
-                <Text style={styles.selectedTagsTitle}>
-                  Selected ({selectedTags.length}/{TAG_VALIDATION.MAX_TAGS_PER_TECHNIQUE})
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.selectedTagsContainer}>
-                    {selectedTags.map((tag) => (
-                      <TouchableOpacity
-                        key={tag}
-                        style={styles.selectedTag}
-                        onPress={() => handleTagPress(tag)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.selectedTagText}>{tag}</Text>
-                        <X size={16} color="#fff" />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-              </View>
-            )}
+            <View style={styles.selectedTagsSection}>
+              <Text style={styles.selectedTagsTitle}>
+                Selected {selectedTags.length} of {TAG_VALIDATION.MAX_TAGS_PER_TECHNIQUE}
+              </Text>
+            </View>
 
             {/* Search Bar */}
             <View style={styles.searchSection}>
@@ -567,11 +550,11 @@ const styles = StyleSheet.create({
   },
   tagButton: {
     backgroundColor: '#f3f4f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#e5e7eb',
   },
   tagButtonSelected: {
     backgroundColor: '#5271ff',

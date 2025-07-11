@@ -81,9 +81,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', // Size to content
   },
   chipSmall: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     alignSelf: 'flex-start', // Size to content
   },
   chipSelected: {

@@ -566,10 +566,14 @@ export default function SessionModal({
                   activeOpacity={0.8}
                 >
                   <View style={styles.notesInput}>
-                    <Text style={[
-                      styles.notesText,
-                      !notes && styles.notesPlaceholder
-                    ]}>
+                    <Text 
+                      style={[
+                        styles.notesText,
+                        !notes && styles.notesPlaceholder
+                      ]}
+                      numberOfLines={3}
+                      ellipsizeMode="tail"
+                    >
                       {notes || "How did the session go? What did you work on?"}
                     </Text>
                   </View>
@@ -744,9 +748,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f9fafb',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 12,
   },
   locationInput: {

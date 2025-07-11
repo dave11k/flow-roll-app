@@ -14,9 +14,36 @@ export default function TechniqueItem({
   categoryColor,
   noMargin = false
 }: TechniqueItemProps) {
-  const MAX_VISIBLE_TAGS = 2;
-  const visibleTags = technique.tags.slice(0, MAX_VISIBLE_TAGS);
-  const hiddenTagsCount = technique.tags.length - MAX_VISIBLE_TAGS;
+  const MAX_CHARACTERS = 30;
+  
+  // Calculate how many tags we can show based on character count
+  const calculateVisibleTags = () => {
+    if (technique.tags.length === 0) return [];
+    
+    let totalChars = technique.category.length;
+    const visibleTags = [];
+    
+    for (const tag of technique.tags) {
+      const tagLength = tag.length;
+      // Add some padding for spaces and formatting
+      if (totalChars + tagLength + 2 <= MAX_CHARACTERS) {
+        visibleTags.push(tag);
+        totalChars += tagLength + 2;
+      } else {
+        break;
+      }
+    }
+    
+    // If we exceed the limit and have multiple tags, show just one tag + indicator
+    if (totalChars > MAX_CHARACTERS && technique.tags.length > 1) {
+      return [technique.tags[0]];
+    }
+    
+    return visibleTags;
+  };
+  
+  const visibleTags = calculateVisibleTags();
+  const hiddenTagsCount = technique.tags.length - visibleTags.length;
 
   return (
     <View style={[styles.container, noMargin && styles.noMargin]}>

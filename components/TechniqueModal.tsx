@@ -52,10 +52,12 @@ export default function TechniqueModal({
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [suggestions, setSuggestions] = useState<TechniqueSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [hasUserTyped, setHasUserTyped] = useState(false);
+  const [isNameFieldFocused, setIsNameFieldFocused] = useState(false);
+  const [isLinkFieldFocused, setIsLinkFieldFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
-  const [showAddLinkInput, setShowAddLinkInput] = useState(false);
   const [notesInputPosition, setNotesInputPosition] = useState<{
     x: number;
     y: number;
@@ -79,8 +81,8 @@ export default function TechniqueModal({
         setNotes('');
         setLinks([]);
         setNewLinkUrl('');
-        setShowAddLinkInput(false);
         setShowSuggestions(false);
+        setHasUserTyped(false);
       } else if (mode === 'edit' && technique) {
         // Populate form for edit mode
         setTechniqueName(technique.name);
@@ -89,8 +91,8 @@ export default function TechniqueModal({
         setNotes(technique.notes || '');
         setLinks(technique.links || []);
         setNewLinkUrl('');
-        setShowAddLinkInput(false);
         setShowSuggestions(false);
+        setHasUserTyped(false);
       }
     }
   }, [visible, mode, technique]);
@@ -143,7 +145,7 @@ export default function TechniqueModal({
 
   // Filter suggestions based on input
   useEffect(() => {
-    if (techniqueName.length > 0) {
+    if (techniqueName.length > 0 && hasUserTyped) {
       const filtered = searchTechniqueSuggestions(techniqueName, 8);
       // Hide suggestions if there's an exact match
       const hasExactMatch = filtered.some(
@@ -160,7 +162,7 @@ export default function TechniqueModal({
       setShowSuggestions(false);
       setSuggestions([]);
     }
-  }, [techniqueName]);
+  }, [techniqueName, hasUserTyped]);
 
   const handleSaveTechnique = async () => {
     if (!techniqueName.trim()) {
@@ -270,12 +272,14 @@ export default function TechniqueModal({
 
   const handleTechniqueNameBlur = () => {
     // Hide suggestions when field loses focus
+    setIsNameFieldFocused(false);
     setShowSuggestions(false);
     setSuggestions([]);
   };
 
   const handleTechniqueNameFocus = () => {
-    if (techniqueName.length > 0) {
+    setIsNameFieldFocused(true);
+    if (techniqueName.length > 0 && hasUserTyped) {
       setShowSuggestions(true);
     }
   };
@@ -303,7 +307,6 @@ export default function TechniqueModal({
     if (links.length < 10) {
       setLinks([...links, newLink]);
       setNewLinkUrl('');
-      setShowAddLinkInput(false);
     }
   };
 
@@ -313,6 +316,18 @@ export default function TechniqueModal({
 
   const handleClearName = () => {
     setTechniqueName('');
+  };
+
+  const handleLinkFieldFocus = () => {
+    setIsLinkFieldFocused(true);
+  };
+
+  const handleLinkFieldBlur = () => {
+    setIsLinkFieldFocused(false);
+  };
+
+  const handleClearLink = () => {
+    setNewLinkUrl('');
   };
 
   const isValid = techniqueName.trim() && selectedCategory && (mode === 'add' ? !isLoading : true);
@@ -407,20 +422,22 @@ export default function TechniqueModal({
                 <View>
               {/* Technique Name Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Name</Text>
                 <View style={styles.nameInputContainer}>
                   <TextInput
                     style={styles.techniqueInput}
                     placeholder="Enter technique name..."
                     placeholderTextColor="#c1c5d0"
                     value={techniqueName}
-                    onChangeText={setTechniqueName}
+                    onChangeText={(text) => {
+                      setTechniqueName(text);
+                      setHasUserTyped(true);
+                    }}
                     onFocus={handleTechniqueNameFocus}
                     onBlur={handleTechniqueNameBlur}
                     numberOfLines={1}
                     maxLength={100}
                   />
-                  {techniqueName.length > 0 && (
+                  {techniqueName.length > 0 && isNameFieldFocused && (
                     <TouchableOpacity
                       style={styles.clearButton}
                       onPress={handleClearName}
@@ -453,7 +470,6 @@ export default function TechniqueModal({
 
               {/* Category Selection */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Category</Text>
                 <CategoryDropdown
                   selectedCategory={selectedCategory}
                   onCategorySelect={handleCategorySelect}
@@ -464,37 +480,27 @@ export default function TechniqueModal({
 
               {/* Tags Selection */}
               <View style={styles.section}>
-                <View style={styles.tagsHeader}>
-                  <Text style={styles.sectionTitle}>Tags</Text>
+                <Text style={styles.sectionTitle}>Tags</Text>
+                
+                <View style={styles.tagsContainer}>
+                  {selectedTags.map((tag) => (
+                    <TagChip
+                      key={tag}
+                      tag={tag}
+                      variant="removable"
+                      size="small"
+                      onRemove={() => handleRemoveTag(tag)}
+                    />
+                  ))}
                   <TouchableOpacity
-                    style={styles.addTagButton}
+                    style={styles.addTagPill}
                     onPress={() => setShowTagModal(true)}
                     activeOpacity={0.7}
                   >
-                    <Plus size={16} color="#5271ff" />
-                    <Text style={styles.addTagText}>{getTagButtonText()}</Text>
+                    <Plus size={14} color="#5271ff" />
+                    <Text style={styles.addTagPillText}>Add tag</Text>
                   </TouchableOpacity>
                 </View>
-                
-                {selectedTags.length > 0 ? (
-                  <View style={styles.selectedTagsContainer}>
-                    {selectedTags.map((tag) => (
-                      <TagChip
-                        key={tag}
-                        tag={tag}
-                        variant="removable"
-                        size="small"
-                        onRemove={() => handleRemoveTag(tag)}
-                      />
-                    ))}
-                  </View>
-                ) : (
-                  <View style={styles.noTagsContainer}>
-                    <Text style={styles.noTagsText}>
-                      No tags selected. Tags help categorize and find techniques later.
-                    </Text>
-                  </View>
-                )}
               </View>
 
               {/* Notes Section */}
@@ -508,10 +514,14 @@ export default function TechniqueModal({
                 >
                   {mode === 'add' ? (
                     <View style={styles.notesInput}>
-                      <Text style={[
-                        styles.notesText,
-                        !notes && styles.notesPlaceholder
-                      ]}>
+                      <Text 
+                        style={[
+                          styles.notesText,
+                          !notes && styles.notesPlaceholder
+                        ]}
+                        numberOfLines={3}
+                        ellipsizeMode="tail"
+                      >
                         {notes || getNotesPlaceholder()}
                       </Text>
                     </View>
@@ -519,10 +529,14 @@ export default function TechniqueModal({
                     <View style={styles.notesInput}>
                       <View style={styles.notesInputContent}>
                         <FileText size={20} color="#9ca3af" style={styles.notesIcon} />
-                        <Text style={[
-                          styles.notesText,
-                          !notes && styles.notesPlaceholder
-                        ]}>
+                        <Text 
+                          style={[
+                            styles.notesText,
+                            !notes && styles.notesPlaceholder
+                          ]}
+                          numberOfLines={3}
+                          ellipsizeMode="tail"
+                        >
                           {notes || getNotesPlaceholder()}
                         </Text>
                       </View>
@@ -536,37 +550,35 @@ export default function TechniqueModal({
 
               {/* Links Section */}
               <View style={styles.section}>
-                <View style={styles.linksHeader}>
-                  <Text style={styles.sectionTitle}>Links & References</Text>
-                  {links.length < 10 && (
-                    <TouchableOpacity
-                      style={styles.addLinkButton}
-                      onPress={() => {
-                        setShowAddLinkInput(true);
-                        setTimeout(() => linkInputRef.current?.focus(), 100);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Plus size={16} color="#5271ff" />
-                      <Text style={styles.addLinkText}>Add Link</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {showAddLinkInput && (
+                <Text style={styles.sectionTitle}>Links & References</Text>
+                
+                {links.length < 10 && (
                   <View style={styles.addLinkInputContainer}>
-                    <TextInput
-                      ref={linkInputRef}
-                      style={styles.linkInput}
-                      placeholder="Enter reference link..."
-                      placeholderTextColor="#9ca3af"
-                      value={newLinkUrl}
-                      onChangeText={setNewLinkUrl}
-                      onSubmitEditing={handleAddLink}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="url"
-                    />
+                    <View style={styles.linkInputWrapper}>
+                      <TextInput
+                        ref={linkInputRef}
+                        style={styles.linkInput}
+                        placeholder="Enter reference link..."
+                        placeholderTextColor="#9ca3af"
+                        value={newLinkUrl}
+                        onChangeText={setNewLinkUrl}
+                        onSubmitEditing={handleAddLink}
+                        onFocus={handleLinkFieldFocus}
+                        onBlur={handleLinkFieldBlur}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="url"
+                      />
+                      {newLinkUrl.length > 0 && isLinkFieldFocused && (
+                        <TouchableOpacity
+                          style={styles.clearLinkButton}
+                          onPress={handleClearLink}
+                          activeOpacity={0.7}
+                        >
+                          <X size={16} color="#9ca3af" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     <TouchableOpacity
                       style={styles.addLinkConfirmButton}
                       onPress={handleAddLink}
@@ -748,6 +760,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  addTagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f2ff',
+    borderWidth: 1,
+    borderColor: '#5271ff',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  addTagPillText: {
+    color: '#5271ff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   selectedTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -774,13 +807,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   techniqueInput: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    backgroundColor: '#f9fafb',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
     paddingRight: 40,
-    paddingVertical: 8,
-    fontSize: 14,
-    height: 36,
+    paddingVertical: 14,
+    fontSize: 16,
     color: '#1f2937',
   },
   suggestionsContainer: {
@@ -807,8 +841,9 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 16,
-    minHeight: 120,
+    height: 90,
     justifyContent: 'flex-start',
+    overflow: 'hidden',
   },
   notesInputContent: {
     flexDirection: 'row',
@@ -913,6 +948,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 8,
   },
+  linkInputWrapper: {
+    position: 'relative',
+    flex: 1,
+  },
   linkInput: {
     flex: 1,
     backgroundColor: '#f9fafb',
@@ -920,9 +959,19 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     borderRadius: 12,
     paddingHorizontal: 16,
+    paddingRight: 40,
     paddingVertical: 14,
     fontSize: 16,
     color: '#1f2937',
+  },
+  clearLinkButton: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    width: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addLinkConfirmButton: {
     width: 40,
@@ -978,7 +1027,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   keyboardSpacer: {
-    height: 200,
+    height: 100,
   },
   scrollContent: {
     paddingBottom: 20,

@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: screenWidth - 40,
-    maxHeight: screenHeight * 0.7,
+    maxHeight: screenHeight * 0.56,
     justifyContent: 'center',
   },
   modal: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -259,15 +259,15 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 20,
-    minHeight: 200,
+    height: 250,
   },
   textInput: {
     fontSize: 16,
     color: '#1f2937',
     lineHeight: 24,
     textAlignVertical: 'top',
-    minHeight: 150,
-    maxHeight: 300,
+    height: 180,
+    paddingVertical: 8,
   },
   characterCountContainer: {
     alignItems: 'flex-end',
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   footer: {
-    padding: 20,
+    padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
   },
