@@ -91,6 +91,11 @@ export function useModalAnimation(
           duration,
           useNativeDriver: true,
         }),
+        Animated.timing(backgroundOpacityAnim, {
+          toValue: 1,
+          duration,
+          useNativeDriver: true,
+        }),
       ];
     } else if (type === 'scale') {
       animations = [
@@ -158,6 +163,11 @@ export function useModalAnimation(
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backgroundOpacityAnim, {
           toValue: 0,
           duration,
           useNativeDriver: true,
