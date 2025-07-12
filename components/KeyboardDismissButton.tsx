@@ -14,7 +14,7 @@ interface KeyboardDismissButtonProps {
   isFilterModal?: boolean;
 }
 
-function KeyboardDismissButtonCore({ isInsideModal = false, isFilterModal = false, isFilterModalOpen = false }: KeyboardDismissButtonProps & { isFilterModalOpen?: boolean }) {
+function KeyboardDismissButtonCore({ isInsideModal = false, isFilterModal = false }: KeyboardDismissButtonProps) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -110,13 +110,12 @@ function KeyboardDismissButtonCore({ isInsideModal = false, isFilterModal = fals
 }
 
 export default function KeyboardDismissButton({ isInsideModal = false, isFilterModal = false }: KeyboardDismissButtonProps) {
-  const { isFilterModalOpen } = useFilterModal();
   
   if (isInsideModal) {
-    return <KeyboardDismissButtonCore isInsideModal={true} isFilterModal={isFilterModal} isFilterModalOpen={false} />;
+    return <KeyboardDismissButtonCore isInsideModal={true} isFilterModal={isFilterModal}/>;
   }
   
-  return <KeyboardDismissButtonCore isInsideModal={false} isFilterModal={false} isFilterModalOpen={isFilterModalOpen} />;
+  return <KeyboardDismissButtonCore isInsideModal={false} isFilterModal={false}/>;
 }
 
 const styles = StyleSheet.create({
