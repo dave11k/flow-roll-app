@@ -589,32 +589,25 @@ export default function TechniqueModal({
                   </View>
                 )}
 
-                {links.length > 0 ? (
-                  <View style={styles.linksContainer}>
-                    {links.map((link) => (
-                      <View key={link.id} style={styles.linkItem}>
-                        <Link2 size={16} color="#6b7280" style={styles.linkIcon} />
-                        <Text style={styles.linkText} numberOfLines={1}>
-                          {link.url}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.removeLinkButton}
-                          onPress={() => handleRemoveLink(link.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Trash2 size={16} color="#ef4444" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                    <Text style={styles.linkCount}>{links.length}/10 links</Text>
-                  </View>
-                ) : (
-                  <View style={styles.noLinksContainer}>
-                    <Text style={styles.noLinksText}>
-                      No links added. Add YouTube videos or posts for reference.
-                    </Text>
-                  </View>
-                )}
+                
+                <View style={styles.linksContainer}>
+                  {links.map((link) => (
+                    <View key={link.id} style={styles.linkItem}>
+                      <Link2 size={16} color="#6b7280" style={styles.linkIcon} />
+                      <Text style={styles.linkText} numberOfLines={1}>
+                        {link.url}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.removeLinkButton}
+                        onPress={() => handleRemoveLink(link.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Trash2 size={16} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <Text style={styles.linkCount}>{links.length}/10 links</Text>
+                </View>
               </View>
               
               {/* Spacer for keyboard */}
@@ -841,7 +834,8 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 16,
-    height: 90,
+    minHeight: 90,
+    maxHeight: 120,
     justifyContent: 'flex-start',
     overflow: 'hidden',
   },

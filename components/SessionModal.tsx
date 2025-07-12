@@ -837,7 +837,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     minHeight: 100,
+    maxHeight: 120,
     justifyContent: 'flex-start',
+    overflow: 'hidden',
   },
   notesText: {
     fontSize: 16,

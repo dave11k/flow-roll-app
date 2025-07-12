@@ -210,10 +210,6 @@ export default function TechniqueDetailModal({
 
             {/* Date Added */}
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Calendar size={20} color="#5271ff" />
-                <Text style={styles.sectionTitle}>Date Added</Text>
-              </View>
               <Text style={styles.dateText}>{formatDate(technique.timestamp)}</Text>
               <Text style={styles.timeText}>{formatTime(technique.timestamp)}</Text>
             </View>
