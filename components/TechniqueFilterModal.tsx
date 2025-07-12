@@ -102,6 +102,14 @@ export default function TechniqueFilterModal({
     });
   };
 
+  const animateCloseWithCallback = (callback?: () => void) => {
+    animateOut(() => {
+      resetDrag();
+      onClose();
+      callback?.();
+    });
+  };
+
   const handlePanGesture = Animated.event(
     [{ nativeEvent: { translationY: dragY } }],
     { useNativeDriver: true }
@@ -308,8 +316,10 @@ export default function TechniqueFilterModal({
               <TouchableOpacity
                 style={styles.applyButton}
                 onPress={() => {
-                  onApplyFilters(localFilters);
-                  animateClose();
+                  // Apply filters after modal close animation completes
+                  animateCloseWithCallback(() => {
+                    onApplyFilters(localFilters);
+                  });
                 }}
                 activeOpacity={0.8}
               >

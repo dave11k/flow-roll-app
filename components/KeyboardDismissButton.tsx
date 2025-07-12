@@ -110,11 +110,12 @@ function KeyboardDismissButtonCore({ isInsideModal = false, isFilterModal = fals
 }
 
 export default function KeyboardDismissButton({ isInsideModal = false, isFilterModal = false }: KeyboardDismissButtonProps) {
+  const { isFilterModalOpen } = useFilterModal();
+  
   if (isInsideModal) {
     return <KeyboardDismissButtonCore isInsideModal={true} isFilterModal={isFilterModal} isFilterModalOpen={false} />;
   }
   
-  const { isFilterModalOpen } = useFilterModal();
   return <KeyboardDismissButtonCore isInsideModal={false} isFilterModal={false} isFilterModalOpen={isFilterModalOpen} />;
 }
 
