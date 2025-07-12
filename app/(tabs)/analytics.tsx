@@ -133,7 +133,18 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
     const averageSatisfaction = filteredSessions.length > 0 
       ? filteredSessions.reduce((sum, s) => sum + s.satisfaction, 0) / filteredSessions.length 
       : 0;
-    const totalSubmissions = filteredSessions.reduce((sum, s) => sum + s.submissions.length, 0);
+    const totalSubmissions = filteredSessions.reduce((sum, s) => {
+      // Sum up the actual counts from submissionCounts, not just array length
+      const sessionSubmissionTotal = Object.values(s.submissionCounts || {}).reduce((sessionSum, count) => sessionSum + (count as number), 0);
+      
+      // Fallback: if submissionCounts is empty but submissions array has data, count the array length
+      // This handles legacy sessions that might not have proper submission counts
+      const fallbackCount = sessionSubmissionTotal === 0 && s.submissions && s.submissions.length > 0 
+        ? s.submissions.length 
+        : 0;
+      
+      return sum + sessionSubmissionTotal + fallbackCount;
+    }, 0);
 
     // This month stats (use filtered data if timeframe is month or less)
     const sessionsThisMonth = (timeframe === 'all' || timeframe === 'year') 
@@ -146,8 +157,9 @@ const calculateAnalyticsData = (sessions: TrainingSession[], techniques: Techniq
     // Submissions distribution (using filtered sessions)
     const submissionCount: Record<string, number> = {};
     filteredSessions.forEach(s => {
-      s.submissions.forEach(submission => {
-        submissionCount[submission] = (submissionCount[submission] || 0) + 1;
+      // Use submissionCounts to get actual quantities, not just presence
+      Object.entries(s.submissionCounts || {}).forEach(([submission, count]) => {
+        submissionCount[submission] = (submissionCount[submission] || 0) + (count as number);
       });
     });
     const submissionDistribution = Object.entries(submissionCount)
