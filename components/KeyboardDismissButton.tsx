@@ -83,7 +83,7 @@ function KeyboardDismissButtonCore({ isInsideModal = false, isFilterModal = fals
   }
 
   // Hide global button when filter modals are open
-  if (!isInsideModal && isFilterModalOpen) {
+  if (!isInsideModal && isFilterModal) {
     return null;
   }
 
