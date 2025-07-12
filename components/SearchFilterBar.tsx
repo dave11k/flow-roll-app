@@ -12,6 +12,7 @@ import { Search, X, Filter } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '@/styles/common';
 import { CATEGORY_COLORS } from '@/constants/colors';
 import { TechniqueCategory } from '@/types/technique';
+import { INPUT_LIMITS, validateSearch } from '@/utils/inputValidation';
 
 interface SearchFilterBarProps {
   // Search props
@@ -109,8 +110,12 @@ export default function SearchFilterBar({
               placeholder={searchPlaceholder}
               placeholderTextColor={Colors.textTertiary}
               value={searchQuery}
-              onChangeText={onSearchChange}
+              onChangeText={(text) => {
+                const { sanitized } = validateSearch(text);
+                onSearchChange(sanitized);
+              }}
               returnKeyType="search"
+              maxLength={INPUT_LIMITS.SEARCH}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity

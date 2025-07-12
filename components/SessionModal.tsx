@@ -25,6 +25,7 @@ import NotesModal from '@/components/NotesModal';
 import { searchSubmissionSuggestions } from '@/data/submissionSuggestions';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import StarRating from '@/components/StarRating';
+import { INPUT_LIMITS, validateSubmission, validateLocation, sanitizeInput } from '@/utils/inputValidation';
 
 interface SessionModalProps {
   visible: boolean;
@@ -159,10 +160,11 @@ export default function SessionModal({
 
 
   const handleSubmissionInputChange = (text: string) => {
-    setNewSubmission(text);
+    const sanitized = sanitizeInput(text);
+    setNewSubmission(sanitized);
     
-    if (text.trim()) {
-      const suggestions = searchSubmissionSuggestions(text, 6);
+    if (sanitized.trim()) {
+      const suggestions = searchSubmissionSuggestions(sanitized, 6);
       setSubmissionSuggestions(suggestions);
       setShowSubmissionDropdown(suggestions.length > 0);
     } else {
@@ -427,8 +429,11 @@ export default function SessionModal({
                     placeholder="Gym name or location..."
                     placeholderTextColor="#9ca3af"
                     value={location}
-                    onChangeText={setLocation}
-                    maxLength={100}
+                    onChangeText={(text) => {
+                      const { sanitized } = validateLocation(text);
+                      setLocation(sanitized);
+                    }}
+                    maxLength={INPUT_LIMITS.LOCATION}
                   />
                   {location.length > 0 && (
                     <TouchableOpacity
@@ -487,7 +492,7 @@ export default function SessionModal({
                       }, 150);
                     }}
                     returnKeyType="done"
-                    maxLength={50}
+                    maxLength={INPUT_LIMITS.SUBMISSION}
                   />
                   
                   {/* Submission Suggestions Dropdown */}

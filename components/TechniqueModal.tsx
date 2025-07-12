@@ -24,6 +24,7 @@ import TagChip from '@/components/TagChip';
 import NotesModal from '@/components/NotesModal';
 import { useToast } from '@/contexts/ToastContext';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
+import { INPUT_LIMITS, validateName, validateURL, sanitizeInput } from '@/utils/inputValidation';
 
 interface TechniqueModalProps {
   visible: boolean;
@@ -70,6 +71,7 @@ export default function TechniqueModal({
   const backgroundOpacityAnim = useRef(new Animated.Value(0)).current;
   const notesInputRef = useRef<View>(null);
   const linkInputRef = useRef<TextInput>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (visible) {
@@ -292,6 +294,12 @@ export default function TechniqueModal({
   const handleAddLink = () => {
     if (!newLinkUrl.trim()) return;
     
+    const urlValidation = validateURL(newLinkUrl);
+    if (!urlValidation.isValid) {
+      showToast(urlValidation.error || 'Invalid URL', 'error');
+      return;
+    }
+    
     let formattedUrl = newLinkUrl.trim();
     // Add https:// if no protocol is specified
     if (!formattedUrl.match(/^https?:\/\//)) {
@@ -330,7 +338,8 @@ export default function TechniqueModal({
     setNewLinkUrl('');
   };
 
-  const isValid = techniqueName.trim() && selectedCategory && (mode === 'add' ? !isLoading : true);
+  const nameValidation = validateName(techniqueName);
+  const isValid = nameValidation.isValid && selectedCategory && (mode === 'add' ? !isLoading : true);
 
   const getHeaderIcon = () => {
     return mode === 'add' ? <Plus size={24} color="#5271ff" /> : <Pencil size={24} color="#5271ff" />;
@@ -429,13 +438,14 @@ export default function TechniqueModal({
                     placeholderTextColor="#c1c5d0"
                     value={techniqueName}
                     onChangeText={(text) => {
-                      setTechniqueName(text);
+                      const sanitized = sanitizeInput(text);
+                      setTechniqueName(sanitized);
                       setHasUserTyped(true);
                     }}
                     onFocus={handleTechniqueNameFocus}
                     onBlur={handleTechniqueNameBlur}
                     numberOfLines={1}
-                    maxLength={100}
+                    maxLength={INPUT_LIMITS.TECHNIQUE_NAME}
                   />
                   {techniqueName.length > 0 && isNameFieldFocused && (
                     <TouchableOpacity
@@ -561,13 +571,17 @@ export default function TechniqueModal({
                         placeholder="Enter reference link..."
                         placeholderTextColor="#9ca3af"
                         value={newLinkUrl}
-                        onChangeText={setNewLinkUrl}
+                        onChangeText={(text) => {
+                          const sanitized = sanitizeInput(text);
+                          setNewLinkUrl(sanitized);
+                        }}
                         onSubmitEditing={handleAddLink}
                         onFocus={handleLinkFieldFocus}
                         onBlur={handleLinkFieldBlur}
                         autoCapitalize="none"
                         autoCorrect={false}
                         keyboardType="url"
+                        maxLength={INPUT_LIMITS.URL}
                       />
                       {newLinkUrl.length > 0 && isLinkFieldFocused && (
                         <TouchableOpacity

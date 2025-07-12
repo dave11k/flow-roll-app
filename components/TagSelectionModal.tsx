@@ -19,6 +19,7 @@ import { BlurView } from 'expo-blur';
 import { X, Search, Plus, Tag as TagIcon } from 'lucide-react-native';
 import { PREDEFINED_TAGS, TAG_VALIDATION } from '@/types/technique';
 import TagService from '@/services/tagService';
+import { INPUT_LIMITS, validateTag, validateSearch, sanitizeInput } from '@/utils/inputValidation';
 
 interface TagSelectionModalProps {
   visible: boolean;
@@ -182,12 +183,8 @@ export default function TagSelectionModal({
   }, [searchQuery, selectedTags, allSections]);
 
   const isValidNewTag = (tagName: string): boolean => {
-    const trimmed = tagName.trim();
-    return (
-      trimmed.length >= TAG_VALIDATION.MIN_TAG_NAME_LENGTH &&
-      trimmed.length <= TAG_VALIDATION.MAX_TAG_NAME_LENGTH &&
-      !selectedTags.includes(trimmed)
-    );
+    const tagValidation = validateTag(tagName);
+    return tagValidation.isValid && !selectedTags.includes(tagName.trim());
   };
 
   const handleTagPress = (tagName: string) => {
@@ -208,8 +205,16 @@ export default function TagSelectionModal({
   };
 
   const handleCreateNewTag = async () => {
-    const trimmed = newTagName.trim();
-    if (!isValidNewTag(trimmed)) {
+    const sanitized = sanitizeInput(newTagName);
+    const tagValidation = validateTag(sanitized);
+    
+    if (!tagValidation.isValid) {
+      Alert.alert('Invalid Tag', tagValidation.error || 'Please enter a valid tag name.');
+      return;
+    }
+    
+    if (selectedTags.includes(sanitized)) {
+      Alert.alert('Duplicate Tag', 'This tag is already selected.');
       return;
     }
 
@@ -222,9 +227,9 @@ export default function TagSelectionModal({
     }
 
     // Create the custom tag in the database
-    const success = await TagService.createCustomTag(trimmed);
+    const success = await TagService.createCustomTag(sanitized);
     if (success) {
-      onTagsChange([...selectedTags, trimmed]);
+      onTagsChange([...selectedTags, sanitized]);
       setSearchQuery('');
       setNewTagName('');
       setShowCreateNew(false);
@@ -338,8 +343,12 @@ export default function TagSelectionModal({
                   placeholder="Search tags..."
                   placeholderTextColor="#9ca3af"
                   value={searchQuery}
-                  onChangeText={setSearchQuery}
+                  onChangeText={(text) => {
+                    const { sanitized } = validateSearch(text);
+                    setSearchQuery(sanitized);
+                  }}
                   returnKeyType="search"
+                  maxLength={INPUT_LIMITS.SEARCH}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity

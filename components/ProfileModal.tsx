@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { X, ChevronDown } from 'lucide-react-native';
 import { UserProfile, BeltRank, BELT_RANKS, MAX_STRIPES } from '@/types/profile';
+import { INPUT_LIMITS, validateProfileName, sanitizeInput } from '@/utils/inputValidation';
 
 interface ProfileModalProps {
   visible: boolean;
@@ -42,8 +43,9 @@ export default function ProfileModal({ visible, profile, onSave, onClose }: Prof
   }, [visible, profile]);
 
   const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+    const nameValidation = validateProfileName(name);
+    if (!nameValidation.isValid) {
+      Alert.alert('Invalid Name', nameValidation.error || 'Please enter a valid name');
       return;
     }
 
@@ -153,11 +155,15 @@ export default function ProfileModal({ visible, profile, onSave, onClose }: Prof
               <TextInput
                 style={styles.input}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  const sanitized = sanitizeInput(text);
+                  setName(sanitized);
+                }}
                 placeholder="Enter your name"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="words"
                 returnKeyType="done"
+                maxLength={INPUT_LIMITS.PROFILE_NAME}
               />
             </View>
 
