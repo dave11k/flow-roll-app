@@ -537,7 +537,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    height: 34,
+    height: Platform.select({
+      ios: 34,
+      android: 44, // Taller height for Android
+    }),
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     gap: 6,
@@ -642,7 +645,7 @@ const styles = StyleSheet.create({
   },
   techniquesList: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24, // Increased from 20 to 24 to allow shadow space
     paddingVertical: 12,
   },
   techniquesHeader: {
@@ -666,9 +669,27 @@ const styles = StyleSheet.create({
   },
   techniqueItemContainer: {
     position: 'relative',
-    marginBottom: 12,
-  },
+    marginBottom: 14,
+    },
+  // techniqueCard: {
+  //   ...Platform.select({
+  //     ios: {
+  //       shadowColor: '#000',
+  //       shadowOffset: { width: 0, height: 2 },
+  //       shadowOpacity: 0.1,
+  //       shadowRadius: 4,
+  //     },
+  //     android: {
+  //       elevation: 3,
+  //       padding: 2,
+  //       borderRadius: 0,
+  //     },
+  //   }),
+  // },
   techniqueCard: {
+    backgroundColor: '#fff',
+    padding: 2,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -676,3 +697,4 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 });
+

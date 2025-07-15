@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   TextInput,
+  Platform,
 } from 'react-native';
 import { Calendar, Plus, MapPin, Clock, Filter, Search, X } from 'lucide-react-native';
 import { TrainingSession, SessionType } from '@/types/session';
@@ -577,7 +578,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    height: 34,
+    height: Platform.select({
+      ios: 34,
+      android: 44, // Taller height for Android
+    }),
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     gap: 6,
@@ -734,7 +738,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
-    height: 34,
+    height: Platform.select({
+      ios: 34,
+      android: 44, // Taller height for Android
+    }),
     gap: 10,
     width: '70%',
   },
