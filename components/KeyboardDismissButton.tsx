@@ -7,7 +7,6 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
-import { useFilterModal } from '@/contexts/FilterModalContext';
 
 interface KeyboardDismissButtonProps {
   isInsideModal?: boolean;
