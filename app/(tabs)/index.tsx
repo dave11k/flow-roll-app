@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Keyboard,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { Search, X, Plus, BookOpen, Filter } from 'lucide-react-native';
 import { Technique, TechniqueCategory } from '@/types/technique';
@@ -21,6 +22,7 @@ import TechniqueDetailModal from '@/components/TechniqueDetailModal';
 import FloatingAddButton from '@/components/FloatingAddButton';
 import SwipeableCard from '@/components/SwipeableCard';
 import CategoryDropdown from '@/components/CategoryDropdown';
+import CrossPlatformTouchable from '@/components/CrossPlatformTouchable';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
 import { CATEGORY_COLORS } from '@/constants/colors';
@@ -207,17 +209,18 @@ export default function TechniquesPage() {
         onSwipeLeft={() => handleEditTechnique(item)}
         onSwipeRight={() => handleDeleteTechnique(item)}
       >
-        <TouchableOpacity
+        <CrossPlatformTouchable
           onPress={() => handleShowTechniqueDetail(item)}
           activeOpacity={1}
           style={styles.techniqueCard}
+          rippleColor="rgba(82, 113, 255, 0.1)"
         >
           <TechniqueItem
             technique={item}
             categoryColor={CATEGORY_COLORS[item.category]}
             noMargin={true}
           />
-        </TouchableOpacity>
+        </CrossPlatformTouchable>
       </SwipeableCard>
     </View>
   );
@@ -459,7 +462,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 12,
-    height: 34,
+    height: Platform.select({
+      ios: 34,
+      android: 44, // Taller height for Android
+    }),
     gap: 10,
     width: '70%',
   },
@@ -467,6 +473,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     color: '#1f2937',
+    ...Platform.select({
+      ios: {
+        // iOS default styling
+      },
+      android: {
+        padding: 0,
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+      },
+    }),
   },
   clearSearchButton: {
     padding: 4,
@@ -568,6 +584,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 400, // Ensures the container has enough height to center content
+    paddingVertical: 100,
   },
   loadingText: {
     fontSize: 16,

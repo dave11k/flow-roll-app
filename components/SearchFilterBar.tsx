@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Keyboard,
+  Platform,
 } from 'react-native';
 import { Search, X, Filter } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '@/styles/common';
@@ -156,11 +157,17 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
     backgroundColor: Colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
     zIndex: 10,
   },
   
@@ -177,7 +184,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gray100,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    ...Platform.select({
+      ios: {
+        paddingVertical: Spacing.sm,
+      },
+      android: {
+        height: 48, // Increased height for Android
+        paddingVertical: 0, // Remove vertical padding when using fixed height
+      },
+    }),
   },
   
   searchInput: {
@@ -185,7 +200,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     marginLeft: Spacing.sm,
-    padding: 0,
+    ...Platform.select({
+      ios: {
+        padding: 0,
+      },
+      android: {
+        padding: 0,
+        paddingVertical: 8, // Add some vertical padding to the input itself
+        textAlignVertical: 'center',
+        includeFontPadding: false, // Remove extra font padding on Android
+      },
+    }),
   },
   
   clearSearchButton: {
