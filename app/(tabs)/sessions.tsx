@@ -443,6 +443,7 @@ export default function Sessions() {
                       mode="display"
                       rating={session.satisfaction}
                       size={16}
+                      alignment="left"
                     />
                   </View>
                 </View>

@@ -308,6 +308,7 @@ export default function SessionDetailModal({
                 mode="display"
                 rating={session.satisfaction}
                 size={24}
+                alignment="left"
               />
             </View>
 

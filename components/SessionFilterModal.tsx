@@ -441,6 +441,7 @@ export default function SessionFilterModal({
                 <StarRating
                   mode="filter"
                   rating={localFilters.satisfaction || 0}
+                  alignment="left"
                   onRatingPress={(rating: number) => {
                     setLocalFilters(prev => ({
                       ...prev,

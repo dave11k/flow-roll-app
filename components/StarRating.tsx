@@ -20,6 +20,7 @@ interface StarRatingProps {
   showLabel?: boolean;
   labelSuffix?: string;
   starStyle?: 'icon' | 'text';
+  alignment?: 'left' | 'center';
 }
 
 export default function StarRating({
@@ -32,6 +33,7 @@ export default function StarRating({
   showLabel = false,
   labelSuffix = '',
   starStyle = 'icon',
+  alignment = 'left',
 }: StarRatingProps) {
   
   const handleStarPress = (selectedRating: number) => {
@@ -113,7 +115,11 @@ export default function StarRating({
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[
+      styles.container,
+      alignment === 'left' && styles.leftAligned,
+      style
+    ]}>
       <View style={[
         styles.starsContainer,
         mode === 'filter' && styles.filterStarsContainer,
@@ -133,6 +139,10 @@ export default function StarRating({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+  },
+  
+  leftAligned: {
+    alignItems: 'flex-start',
   },
   
   starsContainer: {

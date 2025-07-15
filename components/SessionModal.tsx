@@ -557,6 +557,7 @@ export default function SessionModal({
                   mode="input"
                   rating={satisfaction}
                   onRatingPress={(rating: number) => setSatisfaction(rating as 1 | 2 | 3 | 4 | 5)}
+                  alignment="left"
                   size={32}
                 />
               </View>
