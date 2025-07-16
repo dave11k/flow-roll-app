@@ -360,8 +360,8 @@ export default function Analytics() {
     );
   };
 
-  // Only show loading state on the very first load, not when switching tabs
-  if ((isInitialLoading && !hasLoadedOnce) || (!analyticsData && !hasLoadedOnce)) {
+  // Only show loading state during initial data loading
+  if (isInitialLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -372,13 +372,14 @@ export default function Analytics() {
     );
   }
 
-  // If we have loaded before but don't have data, show empty state instead of loading
-  if (!analyticsData && hasLoadedOnce) {
+  // If we have loaded but don't have data, show empty state
+  if (!analyticsData) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Activity size={48} color="#9ca3af" />
-          <Text style={styles.loadingText}>No data available for analytics</Text>
+          <Text style={styles.loadingText}>No session data found</Text>
+          <Text style={styles.emptySubtext}>Start tracking your training sessions to see analytics</Text>
         </View>
       </SafeAreaView>
     );
@@ -652,6 +653,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     fontWeight: '500',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    marginTop: 8,
   },
   section: {
     padding: 20,

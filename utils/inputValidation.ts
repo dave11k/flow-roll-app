@@ -38,11 +38,9 @@ export const sanitizeInput = (input: string): string => {
   // Remove dangerous characters
   sanitized = sanitized.replace(/[<>\"'`;\\]/g, '');
   
-  // Trim whitespace
-  sanitized = sanitized.trim();
-  
-  // Collapse multiple spaces
-  sanitized = sanitized.replace(/\s+/g, ' ');
+  // Don't trim or collapse spaces during real-time input
+  // Only collapse excessive whitespace (3+ consecutive spaces)
+  sanitized = sanitized.replace(/\s{3,}/g, '  ');
   
   return sanitized;
 };
@@ -51,7 +49,7 @@ export const sanitizeInput = (input: string): string => {
  * Validate technique/session names
  */
 export const validateName = (name: string): { isValid: boolean; error?: string } => {
-  const sanitized = sanitizeInput(name);
+  const sanitized = sanitizeInput(name).trim().replace(/\s+/g, ' ');
   
   if (!sanitized) {
     return { isValid: false, error: 'Name is required' };
@@ -76,7 +74,7 @@ export const validateName = (name: string): { isValid: boolean; error?: string }
  * Validate search input
  */
 export const validateSearch = (search: string): { isValid: boolean; sanitized: string } => {
-  const sanitized = sanitizeInput(search);
+  const sanitized = sanitizeInput(search).trim().replace(/\s+/g, ' ');
   
   // Search can be empty
   if (!sanitized) {
@@ -171,7 +169,7 @@ export const validateLocation = (location: string): { isValid: boolean; sanitize
   const sanitized = sanitizeInput(location);
   
   // Location is optional
-  if (!sanitized) {
+  if (!sanitized.trim()) {
     return { isValid: true, sanitized: '' };
   }
   

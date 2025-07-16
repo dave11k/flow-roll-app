@@ -226,11 +226,13 @@ export default function SessionModal({
       return;
     }
 
+    const trimmedLocation = location.trim().replace(/\s+/g, ' ');
+
     if (mode === 'create') {
       const newSession: TrainingSession = {
         id: Date.now().toString(),
         date,
-        location: location.trim() || undefined,
+        location: trimmedLocation || undefined,
         type: selectedType,
         submissions,
         submissionCounts,
@@ -244,7 +246,7 @@ export default function SessionModal({
       const updatedSession: TrainingSession = {
         ...session,
         date,
-        location: location.trim() || undefined,
+        location: trimmedLocation || undefined,
         type: selectedType,
         submissions,
         submissionCounts,

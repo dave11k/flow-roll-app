@@ -167,7 +167,9 @@ export default function TechniqueModal({
   }, [techniqueName, hasUserTyped]);
 
   const handleSaveTechnique = async () => {
-    if (!techniqueName.trim()) {
+    const trimmedName = techniqueName.trim().replace(/\s+/g, ' ');
+    
+    if (!trimmedName) {
       Alert.alert('Error', 'Please enter a technique name');
       return;
     }
@@ -182,7 +184,7 @@ export default function TechniqueModal({
       try {
         const newTechnique: Technique = {
           id: Date.now().toString(),
-          name: techniqueName.trim(),
+          name: trimmedName,
           category: selectedCategory,
           tags: selectedTags,
           notes: notes.trim() || undefined,
@@ -207,7 +209,7 @@ export default function TechniqueModal({
       try {
         const updatedTechnique: Technique = {
           ...technique,
-          name: techniqueName.trim(),
+          name: trimmedName,
           category: selectedCategory,
           tags: selectedTags,
           notes: notes.trim() || undefined,

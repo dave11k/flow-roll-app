@@ -6,8 +6,8 @@ export const CATEGORY_COLORS: Record<TechniqueCategory, string> = {
   'Submission': '#ef4444',
   'Sweep': '#f97316', 
   'Escape': '#eab308',
-  'Guard Pass': '#5271ff',
-  'Takedown': '#3b82f6',
+  'Guard Pass': '#1ed11b',
+  'Takedown': '#1ba7d1',
   'Defense': '#8b5cf6',
   'Other': '#6b7280',
 } as const;
