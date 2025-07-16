@@ -216,8 +216,14 @@ export default function ProfileModal({ visible, profile, onSave, onClose }: Prof
           </ScrollView>
         </TouchableWithoutFeedback>
 
-        {/* Save Button */}
+        {/* Privacy Policy and Save Button */}
         <View style={styles.footer}>
+          {!profile && (
+            <Text style={styles.privacyText}>
+              By creating a profile, you agree to our{' '}
+              <Text style={styles.privacyLink}>Privacy Policy</Text>
+            </Text>
+          )}
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Save Profile</Text>
           </TouchableOpacity>
@@ -434,6 +440,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     backgroundColor: '#fff',
+  },
+  privacyText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 16,
+  },
+  privacyLink: {
+    color: '#5271ff',
+    textDecorationLine: 'underline',
   },
   saveButton: {
     backgroundColor: '#5271ff',

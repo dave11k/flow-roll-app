@@ -19,7 +19,7 @@ interface ContactSupportModalProps {
 
 export default function ContactSupportModal({ visible, onClose }: ContactSupportModalProps) {
   const handleEmailPress = () => {
-    const email = 'support@bjjflowapp.com';
+    const email = 'flowrollapp@gmail.com';
     const subject = 'Flow Roll App Support';
     const body = 'Hi Flow Roll team,\n\nI need help with:\n\n[Please describe your issue or question]\n\nApp Version: 1.0.0\nDevice: [Your device info]\n\nThanks!';
     
@@ -35,7 +35,7 @@ export default function ContactSupportModal({ visible, onClose }: ContactSupport
   };
 
   const handleWebsitePress = () => {
-    const url = 'https://bjjflowapp.com';
+    const url = 'https://github.com/yourusername/flow-roll';
     Linking.openURL(url).catch(() => {
       Alert.alert(
         'Cannot Open Website',
@@ -79,7 +79,7 @@ export default function ContactSupportModal({ visible, onClose }: ContactSupport
               </View>
               <View style={styles.contactContent}>
                 <Text style={styles.contactTitle}>Email Support</Text>
-                <Text style={styles.contactSubtitle}>support@bjjflowapp.com</Text>
+                <Text style={styles.contactSubtitle}>flowrollapp@gmail.com</Text>
                 <Text style={styles.contactDescription}>
                   Send us an email for detailed support, bug reports, or feature requests
                 </Text>
@@ -92,10 +92,10 @@ export default function ContactSupportModal({ visible, onClose }: ContactSupport
                 <Globe size={24} color="#3b82f6" />
               </View>
               <View style={styles.contactContent}>
-                <Text style={styles.contactTitle}>Visit Our Website</Text>
-                <Text style={styles.contactSubtitle}>bjjflowapp.com</Text>
+                <Text style={styles.contactTitle}>Visit GitHub</Text>
+                <Text style={styles.contactSubtitle}>github.com/yourusername/flow-roll</Text>
                 <Text style={styles.contactDescription}>
-                  Find documentation, FAQs, and latest updates about Flow Roll
+                  View source code, report issues, and contribute to Flow Roll
                 </Text>
               </View>
             </TouchableOpacity>

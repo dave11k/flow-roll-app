@@ -155,62 +155,62 @@ export default function SettingsPage() {
       onPress: () => setShowProfileModal(true)
     },
 
-    // Notifications
-    {
-      id: 'notifications',
-      title: 'Push Notifications',
-      subtitle: 'Receive training reminders',
-      icon: <Bell size={20} color="#f59e0b" />,
-      type: 'toggle',
-      value: notificationsEnabled,
-      onToggle: setNotificationsEnabled
-    },
-    {
-      id: 'sounds',
-      title: 'Sound Effects',
-      subtitle: 'Play sounds for interactions',
-      icon: <Volume2 size={20} color="#10b981" />,
-      type: 'toggle',
-      value: soundEnabled,
-      onToggle: setSoundEnabled
-    },
+    // Notifications (Commented out until implementation)
+    // {
+    //   id: 'notifications',
+    //   title: 'Push Notifications',
+    //   subtitle: 'Receive training reminders',
+    //   icon: <Bell size={20} color="#f59e0b" />,
+    //   type: 'toggle',
+    //   value: notificationsEnabled,
+    //   onToggle: setNotificationsEnabled
+    // },
+    // {
+    //   id: 'sounds',
+    //   title: 'Sound Effects',
+    //   subtitle: 'Play sounds for interactions',
+    //   icon: <Volume2 size={20} color="#10b981" />,
+    //   type: 'toggle',
+    //   value: soundEnabled,
+    //   onToggle: setSoundEnabled
+    // },
 
-    // App Preferences
-    {
-      id: 'darkmode',
-      title: 'Dark Mode',
-      subtitle: 'Use dark theme',
-      icon: <Moon size={20} color="#6366f1" />,
-      type: 'toggle',
-      value: darkModeEnabled,
-      onToggle: setDarkModeEnabled
-    },
-    {
-      id: 'language',
-      title: 'Language',
-      subtitle: 'English',
-      icon: <Globe size={20} color="#8b5cf6" />,
-      type: 'navigate',
-      onPress: () => console.log('Navigate to language settings')
-    },
+    // App Preferences (Commented out until implementation)
+    // {
+    //   id: 'darkmode',
+    //   title: 'Dark Mode',
+    //   subtitle: 'Use dark theme',
+    //   icon: <Moon size={20} color="#6366f1" />,
+    //   type: 'toggle',
+    //   value: darkModeEnabled,
+    //   onToggle: setDarkModeEnabled
+    // },
+    // {
+    //   id: 'language',
+    //   title: 'Language',
+    //   subtitle: 'English',
+    //   icon: <Globe size={20} color="#8b5cf6" />,
+    //   type: 'navigate',
+    //   onPress: () => console.log('Navigate to language settings')
+    // },
 
-    // Data & Storage
-    {
-      id: 'export',
-      title: 'Export Data',
-      subtitle: 'Download your data as JSON',
-      icon: <Download size={20} color="#059669" />,
-      type: 'action',
-      onPress: handleExportData
-    },
-    {
-      id: 'import',
-      title: 'Import Data',
-      subtitle: 'Restore from backup file',
-      icon: <Upload size={20} color="#0891b2" />,
-      type: 'action',
-      onPress: handleImportData
-    },
+    // Data & Storage (Commented out until implementation)
+    // {
+    //   id: 'export',
+    //   title: 'Export Data',
+    //   subtitle: 'Download your data as JSON',
+    //   icon: <Download size={20} color="#059669" />,
+    //   type: 'action',
+    //   onPress: handleExportData
+    // },
+    // {
+    //   id: 'import',
+    //   title: 'Import Data',
+    //   subtitle: 'Restore from backup file',
+    //   icon: <Upload size={20} color="#0891b2" />,
+    //   type: 'action',
+    //   onPress: handleImportData
+    // },
     {
       id: 'storage',
       title: 'Data Storage',
@@ -257,14 +257,15 @@ export default function SettingsPage() {
       type: 'action',
       onPress: handleClearData
     },
-    {
+    // Only show test data in development
+    ...__DEV__ ? [{
       id: 'loadtest',
       title: 'Load Test Data',
       subtitle: 'Add sample techniques and sessions',
       icon: <Database size={20} color="#5271ff" />,
-      type: 'action',
+      type: 'action' as const,
       onPress: handleLoadTestData
-    }
+    }] : []
   ];
 
   const renderSettingItem = (item: SettingItem) => (
