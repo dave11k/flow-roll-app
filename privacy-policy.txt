@@ -1,0 +1,75 @@
+FLOWROLL PRIVACY POLICY
+
+Last Updated: January 2025
+
+FlowRoll - BJJ Notes & Technique Tracker ("FlowRoll", "we", "our", or "the app") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use our mobile application.
+
+1. INFORMATION WE COLLECT
+
+FlowRoll collects and stores the following information that you provide:
+
+• Profile Information: Your name, belt rank, and stripe count
+• Training Techniques: Technique names, categories (submission, sweep, escape, etc.), custom tags, notes, and reference links
+• Training Sessions: Session dates, locations, training type (gi/no-gi), satisfaction ratings, techniques practiced, and submissions achieved
+• App Usage: Locally stored preferences and settings
+
+2. HOW WE STORE YOUR DATA
+
+All data is stored locally on your device using SQLite database technology. FlowRoll does not:
+• Send your data to external servers
+• Store your data in the cloud
+• Share your data with third parties
+• Collect analytics or tracking information
+• Require an internet connection to function
+
+Your data remains entirely on your device under your control.
+
+3. HOW WE USE YOUR INFORMATION
+
+The information you provide is used solely within the app to:
+• Display your training history and progress
+• Generate analytics and insights about your training
+• Filter and search your techniques and sessions
+• Provide a personalized experience based on your belt rank and preferences
+
+4. DATA SHARING
+
+FlowRoll does not share, sell, rent, or trade your personal information with third parties. Since all data is stored locally on your device, you have complete control over your information.
+
+5. DATA SECURITY
+
+Your data security depends on:
+• Your device's security settings and passcode
+• The physical security of your device
+• Your device's backup settings (if you backup your device, your FlowRoll data may be included)
+
+We recommend using your device's built-in security features to protect your data.
+
+6. YOUR RIGHTS AND CHOICES
+
+You have complete control over your data:
+• View and Edit: Access and modify all your data within the app
+• Delete: Remove individual techniques, sessions, or your entire profile
+• Export: Future versions may include data export functionality
+• Uninstall: Removing the app from your device will delete all associated data
+
+7. CHILDREN'S PRIVACY
+
+FlowRoll is not intended for children under 13 years of age. We do not knowingly collect information from children under 13. If you are a parent or guardian and believe your child has provided information to the app, please uninstall the app from their device.
+
+8. CHANGES TO THIS POLICY
+
+We may update this Privacy Policy from time to time. Changes will be reflected in the app with an updated "Last Updated" date. Continued use of FlowRoll after changes indicates acceptance of the updated policy.
+
+9. CONTACT US
+
+If you have questions or concerns about this Privacy Policy or FlowRoll's data practices, please contact us at:
+
+Email: [Your support email]
+GitHub: https://github.com/anthropics/claude-code/issues
+
+By using FlowRoll, you agree to this Privacy Policy.
+
+---
+
+Note: This privacy policy is for a completely offline app. If you add any online features (cloud sync, social features, analytics, crash reporting, etc.), this policy must be updated accordingly.
