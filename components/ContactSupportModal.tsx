@@ -34,17 +34,6 @@ export default function ContactSupportModal({ visible, onClose }: ContactSupport
     });
   };
 
-  const handleWebsitePress = () => {
-    const url = 'https://github.com/yourusername/flow-roll';
-    Linking.openURL(url).catch(() => {
-      Alert.alert(
-        'Cannot Open Website',
-        `Please visit:\n${url}`,
-        [{ text: 'OK' }]
-      );
-    });
-  };
-
   return (
     <Modal
       visible={visible}
@@ -86,19 +75,6 @@ export default function ContactSupportModal({ visible, onClose }: ContactSupport
               </View>
             </TouchableOpacity>
 
-            {/* Website */}
-            <TouchableOpacity style={styles.contactItem} onPress={handleWebsitePress}>
-              <View style={styles.contactIcon}>
-                <Globe size={24} color="#3b82f6" />
-              </View>
-              <View style={styles.contactContent}>
-                <Text style={styles.contactTitle}>Visit GitHub</Text>
-                <Text style={styles.contactSubtitle}>github.com/yourusername/flow-roll</Text>
-                <Text style={styles.contactDescription}>
-                  View source code, report issues, and contribute to Flow Roll
-                </Text>
-              </View>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.helpSection}>

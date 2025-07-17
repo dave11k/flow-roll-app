@@ -31,6 +31,7 @@ import { useToast } from '@/contexts/ToastContext';
 import ProfileModal from '@/components/ProfileModal';
 import PrivacyPolicyModal from '@/components/PrivacyPolicyModal';
 import ContactSupportModal from '@/components/ContactSupportModal';
+import TermsOfServiceModal from '@/components/TermsOfServiceModal';
 import { UserProfile } from '@/types/profile';
 import { loadTestData } from '@/services/testData';
 
@@ -56,6 +57,7 @@ export default function SettingsPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const handleExportData = () => {
     Alert.alert(
@@ -113,8 +115,8 @@ export default function SettingsPage() {
 
   const handleAbout = () => {
     Alert.alert(
-      'About Flow Roll',
-      'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.',
+      'About FlowRoll',
+      'Version 1.0.0\n\nTrack your BJJ journey with techniques, sessions, and analytics.\n\n© 2025 FlowRoll. All rights reserved.',
       [
         { text: 'OK' }
       ]
@@ -229,6 +231,14 @@ export default function SettingsPage() {
       type: 'navigate',
       onPress: () => setShowPrivacyModal(true)
     },
+    {
+      id: 'terms',
+      title: 'Terms of Service',
+      subtitle: 'View terms and conditions',
+      icon: <Shield size={20} color="#7c3aed" />,
+      type: 'navigate',
+      onPress: () => setShowTermsModal(true)
+    },
 
     // Support
     {
@@ -320,7 +330,7 @@ export default function SettingsPage() {
     // },
     {
       title: 'Privacy & Security',
-      items: settings.filter(s => ['privacy'].includes(s.id))
+      items: settings.filter(s => ['privacy', 'terms'].includes(s.id))
     },
     {
       title: 'Support',
@@ -348,8 +358,8 @@ export default function SettingsPage() {
         ))}
         
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Flow Roll v1.0.0</Text>
-          
+          <Text style={styles.footerText}>FlowRoll v1.0.0</Text>
+          <Text style={styles.footerSubtext}>© 2025 FlowRoll. All rights reserved.</Text>
         </View>
           </ScrollView>
         </View>
@@ -371,6 +381,11 @@ export default function SettingsPage() {
       <ContactSupportModal
         visible={showContactModal}
         onClose={() => setShowContactModal(false)}
+      />
+      
+      <TermsOfServiceModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
     </SafeAreaView>
   );

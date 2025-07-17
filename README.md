@@ -54,7 +54,7 @@ A React Native/Expo application for tracking Brazilian Jiu-Jitsu techniques and 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/flow-roll.git
+git clone https://github.com/dave11k/flow-roll-app.git
 cd flow-roll
 ```
 
@@ -140,8 +140,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For issues, feature requests, or questions:
-- Open an issue on GitHub
-- Contact: [your-email@example.com]
+- Contact: [davidkiely97@gmail.com]
 
 ## Acknowledgments
 
