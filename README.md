@@ -43,7 +43,7 @@ A React Native/Expo application for tracking Brazilian Jiu-Jitsu techniques and 
 
 ## Getting Started
 
-### Prerequisites
+### Prerequisites 
 
 - Node.js (v16 or higher)
 - npm or yarn
