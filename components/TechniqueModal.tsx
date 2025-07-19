@@ -25,6 +25,8 @@ import NotesModal from '@/components/NotesModal';
 import { useToast } from '@/contexts/ToastContext';
 import KeyboardDismissButton from '@/components/KeyboardDismissButton';
 import { INPUT_LIMITS, validateName, validateURL, sanitizeInput } from '@/utils/inputValidation';
+import LimitReachedModal from '@/components/LimitReachedModal';
+import { usageTracker } from '@/services/usageTracker';
 
 interface TechniqueModalProps {
   visible: boolean;
@@ -43,11 +45,12 @@ export default function TechniqueModal({
   onSave,
   onClose,
 }: TechniqueModalProps) {
-  const { createTechnique, updateTechnique } = useData();
+  const { createTechnique, updateTechnique, usage, subscription } = useData();
   const { showSuccess, showError } = useToast();
   const [techniqueName, setTechniqueName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TechniqueCategory | null>('Submission');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [notes, setNotes] = useState('');
   const [links, setLinks] = useState<TechniqueLink[]>([]);
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -180,6 +183,13 @@ export default function TechniqueModal({
     }
 
     if (mode === 'add') {
+      // Check if user can add technique before attempting to save
+      const canAdd = await usageTracker.canAddTechnique();
+      if (!canAdd.allowed) {
+        setShowLimitModal(true);
+        return;
+      }
+
       setIsLoading(true);
       try {
         const newTechnique: Technique = {
@@ -199,8 +209,13 @@ export default function TechniqueModal({
         onClose();
         showSuccess(`"${newTechnique.name}" added successfully!`);
         
-      } catch {
-        showError('Failed to save technique. Please try again.');
+      } catch (error: any) {
+        // Check if it's a limit error
+        if (error.message && error.message.includes('limit')) {
+          setShowLimitModal(true);
+        } else {
+          showError('Failed to save technique. Please try again.');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -674,6 +689,14 @@ export default function TechniqueModal({
         </Animated.View>
         <KeyboardDismissButton isInsideModal />
       </View>
+      
+      <LimitReachedModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        type="technique"
+        currentCount={usage?.techniqueCount || 0}
+        limit={subscription?.limits.maxTechniques || 50}
+      />
     </Modal>
   );
 }

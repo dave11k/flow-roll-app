@@ -24,7 +24,9 @@ import {
   Trash2,
   Moon,
   Globe,
-  Volume2
+  Volume2,
+  Crown,
+  TrendingUp
 } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -32,8 +34,10 @@ import ProfileModal from '@/components/ProfileModal';
 import PrivacyPolicyModal from '@/components/PrivacyPolicyModal';
 import ContactSupportModal from '@/components/ContactSupportModal';
 import TermsOfServiceModal from '@/components/TermsOfServiceModal';
+import UpgradeModal from '@/components/UpgradeModal';
 import { UserProfile } from '@/types/profile';
 import { loadTestData } from '@/services/testData';
+import { usageTracker } from '@/services/usageTracker';
 
 interface SettingItem {
   id: string;
@@ -47,7 +51,7 @@ interface SettingItem {
 }
 
 export default function SettingsPage() {
-  const { profile, updateProfile, refreshData } = useData();
+  const { profile, updateProfile, refreshData, subscription, usage } = useData();
   const { showSuccess, showError } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -58,6 +62,7 @@ export default function SettingsPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleExportData = () => {
     Alert.alert(
@@ -113,6 +118,22 @@ export default function SettingsPage() {
     return 'Set up your profile';
   };
 
+  const getSubscriptionSubtitle = () => {
+    if (!subscription) return 'Loading...';
+    
+    if (subscription.status === 'pro') {
+      return 'Pro Member';
+    } else if (subscription.status === 'trial') {
+      const remainingDays = subscription.trialEndsAt ? 
+        Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+      return `Trial - ${remainingDays} days left`;
+    } else {
+      const techUsage = usage ? `${usage.techniqueCount}/${subscription.limits.maxTechniques}` : '0/50';
+      const sessionUsage = usage ? `${usage.sessionCount}/${subscription.limits.maxSessions}` : '0/50';
+      return `Free - ${techUsage} techniques, ${sessionUsage} sessions`;
+    }
+  };
+
   const handleAbout = () => {
     Alert.alert(
       'About FlowRoll',
@@ -155,6 +176,16 @@ export default function SettingsPage() {
       icon: <User size={20} color="#3b82f6" />,
       type: 'navigate',
       onPress: () => setShowProfileModal(true)
+    },
+    
+    // Subscription
+    {
+      id: 'subscription',
+      title: 'Subscription',
+      subtitle: getSubscriptionSubtitle(),
+      icon: <Crown size={20} color="#f59e0b" />,
+      type: 'navigate',
+      onPress: () => setShowUpgradeModal(true)
     },
 
     // Notifications (Commented out until implementation)
@@ -314,7 +345,7 @@ export default function SettingsPage() {
   const sections = [
     {
       title: 'Account',
-      items: settings.filter(s => ['profile'].includes(s.id))
+      items: settings.filter(s => ['profile', 'subscription'].includes(s.id))
     },
     // {
     //   title: 'Notifications',
@@ -386,6 +417,12 @@ export default function SettingsPage() {
       <TermsOfServiceModal
         visible={showTermsModal}
         onClose={() => setShowTermsModal(false)}
+      />
+      
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        source="settings"
       />
     </SafeAreaView>
   );

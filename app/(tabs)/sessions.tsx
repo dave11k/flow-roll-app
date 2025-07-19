@@ -23,6 +23,8 @@ import SwipeableCard from '@/components/SwipeableCard';
 import { useToast } from '@/contexts/ToastContext';
 import { useData } from '@/contexts/DataContext';
 import StarRating from '@/components/StarRating';
+import LimitReachedModal from '@/components/LimitReachedModal';
+import { usageTracker } from '@/services/usageTracker';
 
 interface SessionFilters {
   dateRange: {
@@ -46,7 +48,9 @@ export default function Sessions() {
     updateSession,
     removeSession,
     error,
-    clearError
+    clearError,
+    usage,
+    subscription
   } = useData();
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [filteredSessions, setFilteredSessions] = useState<TrainingSession[]>([]);
@@ -66,6 +70,7 @@ export default function Sessions() {
     satisfaction: null,
   });
   const [lastLocation, setLastLocation] = useState('');
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Handle errors from data context
   useEffect(() => {
@@ -161,6 +166,13 @@ export default function Sessions() {
   const handleSaveSession = async (session: TrainingSession) => {
     try {
       if (sessionModalMode === 'create') {
+        // Check if user can add session before attempting to save
+        const canAdd = await usageTracker.canAddSession();
+        if (!canAdd.allowed) {
+          setShowLimitModal(true);
+          return;
+        }
+        
         await createSession(session);
         showSuccess('Session created successfully!');
       } else {
@@ -175,8 +187,13 @@ export default function Sessions() {
       if (session.location) {
         setLastLocation(session.location);
       }
-    } catch {
-      showError(`Failed to ${sessionModalMode === 'create' ? 'save' : 'update'} session. Please try again.`);
+    } catch (error: any) {
+      // Check if it's a limit error
+      if (error.message && error.message.includes('limit')) {
+        setShowLimitModal(true);
+      } else {
+        showError(`Failed to ${sessionModalMode === 'create' ? 'save' : 'update'} session. Please try again.`);
+      }
     }
   };
 
@@ -498,6 +515,14 @@ export default function Sessions() {
           setEditingSession(null);
           setShowSessionModal(true);
         }}
+      />
+      
+      <LimitReachedModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        type="session"
+        currentCount={usage?.sessionCount || 0}
+        limit={subscription?.limits.maxSessions || 50}
       />
     </SafeAreaView>
   );

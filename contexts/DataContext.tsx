@@ -2,13 +2,20 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Technique } from '@/types/technique';
 import { TrainingSession } from '@/types/session';
 import { UserProfile } from '@/types/profile';
+import { SubscriptionInfo, UsageInfo } from '@/types/subscription';
 import { getTechniques, getSessions, saveTechnique, saveSession, deleteTechnique, deleteSession, getProfile, saveProfile, getTechniquesBySession } from '@/services/api';
+import { subscriptionService } from '@/services/subscription';
+import { usageTracker } from '@/services/usageTracker';
 
 interface DataContextType {
   // Data
   techniques: Technique[];
   sessions: TrainingSession[];
   profile: UserProfile | null;
+  
+  // Subscription data
+  subscription: SubscriptionInfo | null;
+  usage: UsageInfo | null;
   
   // Loading states
   isLoading: boolean;
@@ -20,6 +27,7 @@ interface DataContextType {
   refreshData: () => Promise<void>;
   refreshTechniques: () => Promise<void>;
   refreshSessions: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
   
   // CRUD operations with automatic cache updates
   createTechnique: (technique: Technique) => Promise<void>;
@@ -48,6 +56,8 @@ export function DataProvider({ children }: DataProviderProps) {
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [techniquesLoading, setTechniquesLoading] = useState(false);
@@ -57,6 +67,8 @@ export function DataProvider({ children }: DataProviderProps) {
   // Load all data on mount
   useEffect(() => {
     loadInitialData();
+    // Initialize subscription service
+    subscriptionService.initialize().catch(console.error);
   }, []);
 
   const loadInitialData = async () => {
@@ -64,16 +76,20 @@ export function DataProvider({ children }: DataProviderProps) {
       setIsInitialLoading(true);
       setError(null);
       
-      // Load techniques, sessions, and profile concurrently
-      const [techniquesData, sessionsData, profileData] = await Promise.all([
+      // Load techniques, sessions, profile, and subscription data concurrently
+      const [techniquesData, sessionsData, profileData, subscriptionData, usageData] = await Promise.all([
         getTechniques(),
         getSessions(),
-        getProfile()
+        getProfile(),
+        subscriptionService.getSubscriptionInfo(),
+        usageTracker.getUsageInfo()
       ]);
       
       setTechniques(techniquesData);
       setSessions(sessionsData);
       setProfile(profileData);
+      setSubscription(subscriptionData);
+      setUsage(usageData);
     } catch (err) {
       console.error('Error loading initial data:', err);
       setError('Failed to load data. Please try again.');
@@ -87,15 +103,19 @@ export function DataProvider({ children }: DataProviderProps) {
       setIsLoading(true);
       setError(null);
       
-      const [techniquesData, sessionsData, profileData] = await Promise.all([
+      const [techniquesData, sessionsData, profileData, subscriptionData, usageData] = await Promise.all([
         getTechniques(),
         getSessions(),
-        getProfile()
+        getProfile(),
+        subscriptionService.getSubscriptionInfo(),
+        usageTracker.getUsageInfo(true) // Force refresh usage
       ]);
       
       setTechniques(techniquesData);
       setSessions(sessionsData);
       setProfile(profileData);
+      setSubscription(subscriptionData);
+      setUsage(usageData);
     } catch (err) {
       console.error('Error refreshing data:', err);
       setError('Failed to refresh data. Please try again.');
@@ -134,21 +154,48 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
+  const refreshSubscription = useCallback(async () => {
+    try {
+      const [subscriptionData, usageData] = await Promise.all([
+        subscriptionService.refreshSubscriptionStatus(),
+        usageTracker.getUsageInfo(true)
+      ]);
+      setSubscription(subscriptionData);
+      setUsage(usageData);
+    } catch (err) {
+      console.error('Error refreshing subscription:', err);
+    }
+  }, []);
+
   // Technique CRUD operations
   const createTechnique = useCallback(async (technique: Technique) => {
     try {
+      // Check if user can add technique
+      const canAdd = await usageTracker.canAddTechnique();
+      if (!canAdd.allowed) {
+        setError(canAdd.reason || 'Cannot add technique');
+        throw new Error(canAdd.reason || 'Cannot add technique');
+      }
+
       await saveTechnique(technique);
       // Optimistically update the local state
       setTechniques(prev => [technique, ...prev]);
       setError(null);
+      
+      // Invalidate usage cache and refresh
+      await usageTracker.invalidateCache();
+      const newUsage = await usageTracker.getUsageInfo();
+      setUsage(newUsage);
     } catch (err) {
       console.error('Error creating technique:', err);
-      setError('Failed to create technique. Please try again.');
+      if (!error) {
+        setError('Failed to create technique. Please try again.');
+      }
       // Refresh from storage in case of error
       await refreshTechniques();
       throw err;
     }
-  }, [refreshTechniques]);
+  }, [refreshTechniques, error]);
 
   const updateTechnique = useCallback(async (technique: Technique) => {
     try {
@@ -171,6 +218,11 @@ export function DataProvider({ children }: DataProviderProps) {
       // Optimistically update the local state
       setTechniques(prev => prev.filter(t => t.id !== techniqueId));
       setError(null);
+      
+      // Invalidate usage cache and refresh
+      await usageTracker.invalidateCache();
+      const newUsage = await usageTracker.getUsageInfo();
+      setUsage(newUsage);
     } catch (err) {
       console.error('Error deleting technique:', err);
       setError('Failed to delete technique. Please try again.');
@@ -183,18 +235,32 @@ export function DataProvider({ children }: DataProviderProps) {
   // Session CRUD operations
   const createSession = useCallback(async (session: TrainingSession) => {
     try {
+      // Check if user can add session
+      const canAdd = await usageTracker.canAddSession();
+      if (!canAdd.allowed) {
+        setError(canAdd.reason || 'Cannot add session');
+        throw new Error(canAdd.reason || 'Cannot add session');
+      }
+
       await saveSession(session);
       // Optimistically update the local state (add to beginning for most recent first)
       setSessions(prev => [session, ...prev]);
       setError(null);
+      
+      // Invalidate usage cache and refresh
+      await usageTracker.invalidateCache();
+      const newUsage = await usageTracker.getUsageInfo();
+      setUsage(newUsage);
     } catch (err) {
       console.error('Error creating session:', err);
-      setError('Failed to create session. Please try again.');
+      if (!error) {
+        setError('Failed to create session. Please try again.');
+      }
       // Refresh from storage in case of error
       await refreshSessions();
       throw err;
     }
-  }, [refreshSessions]);
+  }, [refreshSessions, error]);
 
   const updateSession = useCallback(async (session: TrainingSession) => {
     try {
@@ -217,6 +283,11 @@ export function DataProvider({ children }: DataProviderProps) {
       // Optimistically update the local state
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       setError(null);
+      
+      // Invalidate usage cache and refresh
+      await usageTracker.invalidateCache();
+      const newUsage = await usageTracker.getUsageInfo();
+      setUsage(newUsage);
     } catch (err) {
       console.error('Error deleting session:', err);
       setError('Failed to delete session. Please try again.');
@@ -248,6 +319,8 @@ export function DataProvider({ children }: DataProviderProps) {
     techniques,
     sessions,
     profile,
+    subscription,
+    usage,
     isLoading,
     isInitialLoading,
     techniquesLoading,
@@ -255,6 +328,7 @@ export function DataProvider({ children }: DataProviderProps) {
     refreshData,
     refreshTechniques,
     refreshSessions,
+    refreshSubscription,
     createTechnique,
     updateTechnique,
     removeTechnique,

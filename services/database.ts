@@ -833,6 +833,35 @@ export const cleanupUnusedCustomTags = async (): Promise<number> => {
   }
 };
 
+// Count functions for usage tracking
+export const getTechniqueCount = async (): Promise<number> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM techniques'
+    );
+    return result?.count || 0;
+  } catch (error) {
+    console.error('Error getting technique count:', error);
+    return 0;
+  }
+};
+
+export const getSessionCount = async (): Promise<number> => {
+  const database = getDatabase();
+  
+  try {
+    const result = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM sessions'
+    );
+    return result?.count || 0;
+  } catch (error) {
+    console.error('Error getting session count:', error);
+    return 0;
+  }
+};
+
 // Database cleanup
 export const closeDatabase = async (): Promise<void> => {
   if (db) {

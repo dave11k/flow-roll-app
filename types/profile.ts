@@ -1,9 +1,13 @@
+import { SubscriptionInfo } from './subscription';
+
 export type BeltRank = 'white' | 'blue' | 'purple' | 'brown' | 'black';
 
 export interface UserProfile {
   name: string;
   beltRank: BeltRank;
   stripes: number; // 0-4 stripes
+  subscription?: SubscriptionInfo;
+  customerId?: string; // RevenueCat customer ID
 }
 
 export const BELT_RANKS: { value: BeltRank; label: string; color: string }[] = [
